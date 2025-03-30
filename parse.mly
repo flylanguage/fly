@@ -28,11 +28,9 @@ open Ast
 %left AND
 %left EQ NEQ
 %left LT
-%left PLUS MINUS
-%left PREINCR
-%left PREINCR
-%right POSTINCR
-%right PREINCR
+%left PLUS MINUS DIVIDE TIMES
+%left PREINCR PREDECR
+%right POSTINCR POSTDECR
 
 %%
 
