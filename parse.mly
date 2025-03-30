@@ -22,12 +22,11 @@ open Ast
 %start program_rule
 %type <Ast.program> program_rule
 
-%left COMMA
 %right ASSIGN
 %left OR
 %left AND
 %left EQ NEQ
-%left LT
+%left LT GT
 %left PLUS MINUS DIVIDE TIMES
 %left PREINCR PREDECR
 %right POSTINCR POSTDECR
