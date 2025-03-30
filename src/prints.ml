@@ -1,6 +1,5 @@
-{
-    open Pparser (* replace with Parser *)
-}
+open Pparser (* replace with Parser *)
+
 
 let print_token = function
   | PLUS -> "PLUS" (* Basic arithmetic operations *)

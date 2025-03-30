@@ -1,0 +1,19 @@
+(executable
+ (name fly)
+ (libraries stdlib)
+ (modules fly prints scanner pparser test_scanner))
+
+(rule
+ (targets pparser.ml pparser.mli)
+ (deps pparser.mly)
+ (action (run ocamlyacc -v -b pparser pparser.mly)))
+
+(rule
+ (targets scanner.ml)
+ (deps scanner.mll)
+ (action (run ocamllex -o scanner.ml scanner.mll)))
+
+(executable
+ (name test_scanner)
+ (modules test_scanner prints scanner pparser)
+ (libraries stdlib ))
