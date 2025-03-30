@@ -4,7 +4,7 @@
 open Ast
 %}
 
-%token SEMI COLON DCOLON LPAREN RPAREN LBRACE RBRACE PLUS MINUS COMMA
+%token SEMI COLON DCOLON LPAREN RPAREN LBRACE RBRACE PLUS MINUS TIMES DIVIDE COMMA
 %token ASSIGN WALRUS
 %token EQ NEQ LT AND OR
 %token IF ELSE WHILE FOR BREAK CONT
@@ -21,6 +21,7 @@ open Ast
 %start program_rule
 %type <Ast.program> program_rule
 
+%left COMMA
 %right ASSIGN
 %left OR
 %left AND
