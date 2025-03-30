@@ -11,7 +11,7 @@ open Ast
 %token IF ELSE WHILE FOR BREAK CONT IN
 %token INT BOOL CHAR FLOAT STRING LIST TUPLE
 %token FUN ARROW RETURN
-%token LET MUT MATCH
+%token LET MUT MATCH INTERFACE
 %token TYPE SELF ENUM BIND AS
 %token IMPORT EXPORT
 %token <int> LITERAL
@@ -32,7 +32,7 @@ open Ast
 %left PREINCR
 %left PREINCR
 %right POSTINCR
-%right PREINCR 
+%right PREINCR
 
 %%
 
