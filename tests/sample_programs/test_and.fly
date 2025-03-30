@@ -1,3 +1,39 @@
-let x := false
-let y := true
-let z: bool = x && y
+//Pass
+let a1 := true;
+let b1 := false;
+a1 && b1;
+
+//Pass
+let a2 := true;
+let b2 := true;
+a2 && b2;
+
+//Pass
+let a3 := false;
+let b3 := false;
+a3 && b3;
+
+//Fail
+let a4 := true;
+let b4 := 5;
+a4 && b4;
+
+//Fail
+let a5 := false;
+let b5 := "hello";
+a5 && b5;
+
+//Pass
+true && false;
+
+//Pass
+let a6 := true;
+let b6 := false;
+!(a6 && b6);
+
+//Pass
+let a7 := 5;
+let b7 := 10;
+(a7 < b7) && (b7 > 5);
+
+

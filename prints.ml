@@ -70,7 +70,8 @@ let print_token = function
 
   | DOT -> "DOT"
   | CONS -> "CONS"
-
-  | NEWLINE -> "NEWLINE"
   | ARROW -> "ARROW"
+
+  | COMMENT -> "COMMENT"
+  | NEWLINE -> "NEWLINE"
   | EOF -> "EOF"

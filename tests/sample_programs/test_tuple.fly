@@ -1,1 +1,45 @@
-This is a test file for tuple
+//Pass
+let x1 := (1, 2, 3);
+x1;
+
+//Pass
+let x2 := (1, 2.5, "hello");
+x2;
+
+//Pass
+let x3 := (true, false);
+x3;
+
+//Pass
+let x4 := (1, 2, 3);
+x4[0];
+x4[1];
+x4[2];
+
+//Fail
+let x5 := (1, 2, 3);
+x5[1] := 4;
+
+//Fail
+let x6 := (1, 2, 3);
+let x7 := (4, 5, 6);
+x6 + x7;
+
+//Pass
+let x8 := ("hello", "world");
+x8;
+
+
+//Fail
+let x10 := (1, 2);
+let x11 := 3;
+x10 + x11;
+
+//Pass
+let x12 := (1, [2, 3], 4);
+x12;  // Should pass: Tuple (1, [2, 3], 4)
+
+//Pass
+let x13 := ({1, 2}, 3);
+x13;
+

@@ -1,0 +1,15 @@
+
+fun map(f: fun a -> b) -> fun list<a> -> list<b> {
+	return match l {
+		[] -> [],
+		head :: tail -> map(f)(tail),
+	}
+}
+
+let lst: list<int> = [0,1,2,3,4]; //map creates a new list so we don't need mut here.
+
+fun typecast(x: int) -> float {
+	return float(x);
+}
+
+let float_lst := map(lst)(typecast);

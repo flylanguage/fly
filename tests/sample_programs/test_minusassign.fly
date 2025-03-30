@@ -1,1 +1,48 @@
-This is a test file for minusassign
+//Pass
+let mut a1 := 10;
+a1 -= 5;
+
+//Pass
+let mut a2 := 5.5;
+a2 -= 3.2;
+
+//Fail
+let mut a3 := 5;
+a3 -= 3.5;
+
+//Fail
+let mut a4 := 3.5;
+a4 -= 2;
+
+//Fail
+let mut a5 := 5;
+a5 -= "string";
+
+//Fail
+let mut a6 := "hello";
+a6 -= 5;
+
+//Fail
+let mut a7 := (1, 2);
+a7 -= 5;
+
+//Fail
+let mut a8 := [1, 2, 3];
+a8 -= 5;
+
+//Fail
+let mut a9 := {1, 2, 3};
+a9 -= 5;
+
+//Fail
+let mut a10 := true;
+a10 -= 5;
+
+//Fail
+let mut a11 := 10;
+a11 -= "string";
+
+//Fail
+let mut a12 := 5.5;
+a12 -= [1, 2];
+

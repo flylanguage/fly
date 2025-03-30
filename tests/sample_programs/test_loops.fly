@@ -1,1 +1,16 @@
-This is a test file for loops
+let test_lst: list<int> = [-5, 0, 5, 9, 100];
+
+for i, v := test_lst {
+	//do work here
+}
+
+for v := test_lst {
+	//do work here
+}
+
+let mut i: int = 0;
+
+while (i < 5) {
+	//do work here
+	i += 1
+}

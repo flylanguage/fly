@@ -1,1 +1,43 @@
-This is a test file for plusassign
+//Pass, x1 now 8
+let mut x1 := 5;
+x1 += 3;
+
+//Pass, x2 now 9.0
+let mut x2 := 5.5;
+x2 += 3.5;
+
+//Fail
+let mut x3 := 5;
+x3 += 3.5;
+
+//Fail
+let x4 := 5.5;
+x4 += 3;
+
+//Fail with type error
+let mut x6 := true;
+x6 += false;
+
+//Fail or pass???
+let mut x7 := "Hello";
+x7 += " World";
+
+//Fail or pass???
+let mut x8 := [1, 2, 3];
+x8 += [4, 5];
+
+//Fail with type error
+let mut x9 := {1, 2, 3};
+x9 += {4, 5};
+
+//Fail with type error
+let mut x10 := 'a';
+x10 += 'b';
+
+//Fail with type error
+let mut x11 := (1, 2);
+x11 += (3, 4);
+
+/*
+We probably also want to raise an error if no mut has been used when declaring a variable and we want to do plus assign with it.
+*/

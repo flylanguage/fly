@@ -1,1 +1,44 @@
-This is a test file for postincrement
+//Pass
+let mut a1 := 10;
+a1++; 
+
+//Pass
+let mut a2 := 5;
+a2++;
+
+//Fail
+let mut a3 := 3.5;
+a3++; 
+
+//Fail
+let mut a4 := "hello";
+a4++; 
+
+//Fail
+let mut a5 := (1, 2);
+a5++; 
+
+//Fail
+let mut a6 := [1, 2, 3];
+a6++; 
+
+//Fail
+let mut a7 := {1, 2, 3};
+a7++; 
+
+//Fail
+let mut a8 := true;
+a8++; 
+
+//Fail
+let a9 := 5;
+a9++; 
+
+//Fail
+let a10 := 10;
+a10++; 
+
+//Fail
+let a11 := 5.5;
+a11++;
+

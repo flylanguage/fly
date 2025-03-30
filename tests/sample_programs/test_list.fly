@@ -1,1 +1,35 @@
-This is a test file for list
+//Pass
+let mut a1 := [1, 2, 3];
+a1[0] = 4;
+
+//Pass
+let a2 := [1, 2, 3];
+let a3 := 0 :: a2;
+
+//Fail
+let a4 := [1, 2, 3];
+let a5 := a3 :: [4, 5];
+
+//Fail
+let a6 := [1, 2, 3];
+a6[1] := 5;
+
+//Pass
+let mut a7 := [1, 2, 3];
+let b7 := a7[2];
+
+//Pass
+let mut a8 := [1, 2, 3];
+let b8 := a8 == [1, 2, 3];
+
+//Fail
+let mut a9 := [1, 2, 3];
+let b9 := "string" :: a9;
+
+//Pass
+let mut a10 := [true, false];
+let b10 := !a10[0];
+
+//Pass
+let mut a11 := [1, 2, 3];
+let b11 := a11[0] == 1;

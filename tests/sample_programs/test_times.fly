@@ -1,1 +1,39 @@
-This is a test file for times
+//Pass
+let x1 := 5;
+let x2 := 4;
+x1 * x2;
+
+//Pass
+let x3 := 5.5;
+let x4 := 2.0;
+x3 * x4;
+
+//Fail
+let x5 := 5;
+let x6 := 2.5;
+x5 * x6;
+
+//Fail
+let x7 := 5;
+let x8 := "Hello";
+x7 * x8;
+
+//Fail
+let x9 := true;
+let x10 := 2;
+x9 * x10;
+
+//Fail
+let x11 := (1, 2);
+let x12 := 4;
+x11 * x12;
+
+//Fail
+let x13 := [1, 2, 3];
+let x14 := 2;
+x13 * x14;
+
+//Fail
+let x15 := {1, 2};
+let x16 := 3;
+x15 * x16;
