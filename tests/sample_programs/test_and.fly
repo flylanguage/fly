@@ -1,0 +1,3 @@
+let x := false
+let y := true
+let z: bool = x && y

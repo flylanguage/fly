@@ -1,73 +1,76 @@
-open Scanner
+{
+    open Pparser (* replace with Parser *)
+}
 
 let print_token = function
-  | Parser.PLUS -> "PLUS" (* Basic arithmetic operations *)
-  | Parser.MINUS -> "MINUS"
-  | Parser.TIMES -> "TIMES"
-  | Parser.DIVIDE -> "DIVIDE"
-  | Parser.EXPONENT -> "EXPONENT"
-  | Parser.MOD -> "MOD"
+  | PLUS -> "PLUS" (* Basic arithmetic operations *)
+  | MINUS -> "MINUS"
+  | TIMES -> "TIMES"
+  | DIVIDE -> "DIVIDE"
+  | EXPONENT -> "EXPONENT"
+  | MOD -> "MOD"
 
-  | Parser.AND -> "AND" (* Logical operators *)
-  | Parser.OR -> "OR"
-  | Parser.NOT -> "NOT"
+  | AND -> "AND" (* Logical operators *)
+  | OR -> "OR"
+  | NOT -> "NOT"
 
-  | Parser.EQ -> "EQ" (* Equivalence operators *)
-  | Parser.LT -> "LT"
-  | Parser.LEQ -> "LEQ"
-  | Parser.NEQ -> "NEQ"
-  | Parser.GT -> "GT"
-  | Parser.GEQ -> "GEQ"
+  | EQ -> "EQ" (* Equivalence operators *)
+  | NEQ -> "NEQ"
+  | LT -> "LT"
+  | LTE -> "LTE"
+  | GT -> "GT"
+  | GTE -> "GTE"
 
-  | Parser.LPAREN -> "LPAREN" (* Brackets, braces, arrows *)
-  | Parser.RPAREN -> "RPAREN"
-  | Parser.LBRACK -> "LBRACK"
-  | Parser.RBRACK -> "RBRACK"
-  | Parser.LCURL -> "LCURL"
-  | Parser.RCURL -> "RCURL"
-  | Parser.LARROW -> "LARROW"
-  | Parser.RARROW -> "RARROW"
+  | LPAREN -> "LPAREN" (* Brackets, braces, arrows *)
+  | RPAREN -> "RPAREN"
+  | LBRACK -> "LBRACK"
+  | RBRACK -> "RBRACK"
+  | LCURL -> "LCURL"
+  | RCURL -> "RCURL"
+  | LARROW -> "LARROW"
+  | RARROW -> "RARROW"
 
-  | Parser.LET -> "LET" (* Assignment *)
-  | Parser.MUT -> "MUT"
-  | Parser.VARIABLE(s) -> Printf.sprintf "VARIABLE(%s)" s
-  | Parser.COLON -> "COLON"
-  | Parser.WALRUS -> "WALRUS"
-  | Parser.ASSIGN -> "ASSIGN"
-  | Parser.PLUSASSIGN -> "PLUSASSIGN"
-  | Parser.MINUSASSIGN -> "MINUSASSIGN"
-  | Parser.PREINCREMENT -> "PREINCREMENT"
-  | Parser.POSTINCREMENT -> "POSTINCREMENT"
-  | Parser.PREDECREMENT -> "PREDECREMENT"
-  | Parser.POSTDECREMENT -> "POSTDECREMENT"
-  | Parser.SEMI -> "SEMI"
+  | LET -> "LET" (* Assignment *)
+  | MUT -> "MUT"
+  | VARIABLE(s) -> Printf.sprintf "VARIABLE(%s)" s
+  | COLON -> "COLON"
+  | WALRUS -> "WALRUS"
+  | ASSIGN -> "ASSIGN"
+  | PLUSASSIGN -> "PLUSASSIGN"
+  | MINUSASSIGN -> "MINUSASSIGN"
+  | PREINCREMENT -> "PREINCREMENT"
+  | POSTINCREMENT -> "POSTINCREMENT"
+  | PREDECREMENT -> "PREDECREMENT"
+  | POSTDECREMENT -> "POSTDECREMENT"
+  | SEMI -> "SEMI"
 
-  | Parser.IF -> "IF" (* Control flow *)
-  | Parser.ELSE -> "ELSE"
-  | Parser.WHILE -> "WHILE"
-  | Parser.FOR -> "FOR"
-  | Parser.BREAK -> "BREAK"
-  | Parser.CONTINUE -> "CONTINUE"
-  | Parser.RETURN -> "RETURN"
+  | IF -> "IF" (* Control flow *)
+  | ELSE -> "ELSE"
+  | WHILE -> "WHILE"
+  | FOR -> "FOR"
+  | BREAK -> "BREAK"
+  | CONTINUE -> "CONTINUE"
+  | RETURN -> "RETURN"
 
-  | Parser.BOOLLIT(true) -> "BOOLLIT(true)" (* Primitive types / literals *)
-  | Parser.BOOLLIT(false) -> "BOOLLIT(false)"
-  | Parser.FLOATLIT(f) -> Printf.sprintf "FLOATLIT(%f)" f
-  | Parser.INTLIT(i) -> Printf.sprintf "INTLIT(%d)" i
-  | Parser.CHARLIT(s) -> Printf.sprintf "CHARLIT(%s)" s
-  | Parser.STRINGLIT(s) -> Printf.sprintf "STRINGLIT(%s)" s
+  | BOOLLIT(true) -> "BOOLLIT(true)" (* Primitive types / literals *)
+  | BOOLLIT(false) -> "BOOLLIT(false)"
+  | FLOATLIT(f) -> Printf.sprintf "FLOATLIT(%f)" f
+  | INTLIT(i) -> Printf.sprintf "INTLIT(%d)" i
+  | CHARLIT(s) -> Printf.sprintf "CHARLIT(%s)" s
+  | STRINGLIT(s) -> Printf.sprintf "STRINGLIT(%s)" s
 
-  | Parser.INT -> "INT"
-  | Parser.STR -> "STR"
-  | Parser.BOOL -> "BOOL"
-  | Parser.FLOAT -> "FLOAT"
-  | Parser.LIST -> "LIST"
-  | Parser.DICT -> "DICT"
-  | Parser.VOID -> "VOID"
+  | SINGLEQUOTE -> "'"
+  | DOUBLEQUOTE -> "\""
 
-  | Parser.DOT -> "DOT"
-  | Parser.CONS -> "CONS"
+  | INT -> "INT" (* type declaration? *)
+  | FLOAT -> "FLOAT"
+  | BOOL -> "BOOL"
+  | CHAR -> "CHAR"
+  | STR -> "STR"
 
-  | Parser.NEWLINE -> "NEWLINE"
-  | Parser.ARROW -> "ARROW"
-  | Parser.EOF -> "EOF"
+  | DOT -> "DOT"
+  | CONS -> "CONS"
+
+  | NEWLINE -> "NEWLINE"
+  | ARROW -> "ARROW"
+  | EOF -> "EOF"
