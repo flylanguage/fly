@@ -27,8 +27,8 @@ let print_token = function
   | RBRACK -> "RBRACK"
   | LCURL -> "LCURL"
   | RCURL -> "RCURL"
-  | LARROW -> "LARROW"
-  | RARROW -> "RARROW"
+  | LARROW -> "LARROW" (* this is < *)
+  | RARROW -> "RARROW" (* this is > *)
 
   | LET -> "LET" (* Assignment *)
   | MUT -> "MUT"
@@ -67,10 +67,14 @@ let print_token = function
   | BOOL -> "BOOL"
   | CHAR -> "CHAR"
   | STR -> "STR"
+  | TYPE -> "TYPE"
+  | TYPE_NAME(s) -> Printf.sprintf "TYPE_NAME(%s)" s
+  | FIELD_NAME(s) -> Printf.sprintf "FIELD_NAME(%s)" s
+  | COMMA -> "COMMA"
 
   | DOT -> "DOT"
   | CONS -> "CONS"
-  | ARROW -> "ARROW"
+  | ARROW -> "ARROW" (* this is -> *)
 
   | COMMENT -> "COMMENT"
   | NEWLINE -> "NEWLINE"
