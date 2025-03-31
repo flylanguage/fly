@@ -7,7 +7,7 @@ let print_token = function
   | TIMES -> "TIMES"
   | DIVIDE -> "DIVIDE"
   | EXPONENT -> "EXPONENT"
-  | MOD -> "MOD"
+  | MODULO -> "MODULO"
 
   | AND -> "AND" (* Logical operators *)
   | OR -> "OR"
@@ -22,25 +22,25 @@ let print_token = function
 
   | LPAREN -> "LPAREN" (* Brackets, braces, arrows *)
   | RPAREN -> "RPAREN"
-  | LBRACK -> "LBRACK"
-  | RBRACK -> "RBRACK"
-  | LCURL -> "LCURL"
-  | RCURL -> "RCURL"
+  | LBRACKET -> "LBRACKET"
+  | RBRACKET -> "RBRACKET"
+  | LBRACE -> "LBRACE"
+  | RBRACE -> "RBRACE"
   | LARROW -> "LARROW" (* this is < *)
   | RARROW -> "RARROW" (* this is > *)
 
   | LET -> "LET" (* Assignment *)
   | MUT -> "MUT"
-  | VARIABLE(s) -> Printf.sprintf "VARIABLE(%s)" s
+  | ID(s) -> Printf.sprintf "ID(%s)" s
   | COLON -> "COLON"
   | WALRUS -> "WALRUS"
   | ASSIGN -> "ASSIGN"
   | PLUSASSIGN -> "PLUSASSIGN"
   | MINUSASSIGN -> "MINUSASSIGN"
-  | PREINCREMENT -> "PREINCREMENT"
-  | POSTINCREMENT -> "POSTINCREMENT"
-  | PREDECREMENT -> "PREDECREMENT"
-  | POSTDECREMENT -> "POSTDECREMENT"
+  | PREINCR -> "PREINCR"
+  | POSTINCR -> "POSTINCRE"
+  | PREDECR -> "PREDECR"
+  | POSTDECR -> "POSTDECR"
   | SEMI -> "SEMI"
 
   | IF -> "IF" (* Control flow *)
@@ -49,10 +49,14 @@ let print_token = function
   | FOR -> "FOR"
   | BREAK -> "BREAK"
   | CONTINUE -> "CONTINUE"
+  | MATCH -> "MATCH"
+
+  | FUN -> "FUN"
+  | ARROW -> "ARROW" (* this is -> *)
   | RETURN -> "RETURN"
 
-  | BOOLLIT(true) -> "BOOLLIT(true)" (* Primitive types / literals *)
-  | BOOLLIT(false) -> "BOOLLIT(false)"
+  | BLIT(true) -> "BOOLLIT(true)" (* Primitive types / literals *)
+  | BLIT(false) -> "BOOLLIT(false)"
   | FLOATLIT(f) -> Printf.sprintf "FLOATLIT(%f)" f
   | INTLIT(i) -> Printf.sprintf "INTLIT(%d)" i
   | CHARLIT(s) -> Printf.sprintf "CHARLIT(%s)" s
@@ -65,16 +69,24 @@ let print_token = function
   | FLOAT -> "FLOAT"
   | BOOL -> "BOOL"
   | CHAR -> "CHAR"
-  | STR -> "STR"
+  | STRING -> "STRING"
   | TYPE -> "TYPE"
   | TYPE_NAME(s) -> Printf.sprintf "TYPE_NAME(%s)" s
   | FIELD_NAME(s) -> Printf.sprintf "FIELD_NAME(%s)" s
   | COMMA -> "COMMA"
 
+  | INTERFACE -> "INTERFACE"
+  | SELF -> "SELF"
+  | ENUM -> "ENUM"
+  | BIND -> "BIND"
+  | AS -> "AS"
+
   | DOT -> "DOT"
   | CONS -> "CONS"
-  | ARROW -> "ARROW" (* this is -> *)
 
   | COMMENT -> "COMMENT"
   | NEWLINE -> "NEWLINE"
+
+  | IMPORT -> "IMPORT"
+  | EXPORT -> "EXPORT"
   | EOF -> "EOF"
