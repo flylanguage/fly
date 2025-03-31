@@ -27,6 +27,8 @@ This will create the compiler executable in `./_build/default/src/` as `fly.exe`
 You can also run the compiler using dune:
 
 ```bash
+./_build/default/src/fly.exe
+# or 
 dune exec src/fly.exe
 ```
 
