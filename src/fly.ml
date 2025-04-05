@@ -1,3 +1,7 @@
+open Printf
+
+(* open Scanner *)
+open Parser
 
 let get_token_list lexbuf = 
     let rec work acc = 
@@ -10,12 +14,13 @@ let pp_token = function
     | EQ -> "="
     | DIVIDE -> "/"
     | LITERAL(i) -> sprintf "%d" i
-    | VARIABLE(v) -> sprintf ":%s:" v
+    | ID(v) -> sprintf ":%s:" v
     | SEMI -> ";"
     | PLUS -> "+"
     | MINUS -> "-"
     | TIMES -> "*"
     | EOF -> "EOF"
+    | _ -> "??"
 
 
 let _ =

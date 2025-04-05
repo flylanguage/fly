@@ -34,3 +34,4 @@ open Ast
 %%
 
 program_rule:
+     { Program }
