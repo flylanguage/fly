@@ -23,7 +23,7 @@ jobs:
 
       - name: Install dune
         run: |
-          opam install dune
+          opam install dune && eval $(opam env)
 
       - name: Build project
         run: |
