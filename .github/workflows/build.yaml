@@ -23,11 +23,10 @@ jobs:
 
       - name: Install dune
         run: |
-          opam install dune && eval $(opam env)
+          opam install dune
 
       - name: Build project
         run: |
-          eval $(opam env)
+          eval $(opam env) # adds dune to path
           dune build
-          echo "success"
 
