@@ -1,8 +1,13 @@
-(executable 
-  (name fly)
-  (modules fly scanner parser ast)
-  (modules_without_implementation ast)
-)
+(executable
+ (name fly)
+ (modules fly scanner parser ast)
+ (modules_without_implementation ast))
+
+(executable
+ (name test_scanner)
+ (modules test_scanner scanner parser ast prints)
+ (modules_without_implementation ast))
 
 (ocamllex scanner)
+
 (ocamlyacc parser)
