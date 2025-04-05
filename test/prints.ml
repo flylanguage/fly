@@ -1,4 +1,4 @@
-open Parser
+open Fly_lib.Parser
 
 
 let print_token = function
@@ -16,9 +16,9 @@ let print_token = function
   | EQ -> "EQ" (* Equivalence operators *)
   | NEQ -> "NEQ"
   | LT -> "LT"
-  | LTE -> "LTE"
+  | LE -> "LTE"
   | GT -> "GT"
-  | GTE -> "GTE"
+  | GE -> "GTE"
 
   | LPAREN -> "LPAREN" (* Brackets, braces, arrows *)
   | RPAREN -> "RPAREN"
@@ -35,10 +35,8 @@ let print_token = function
   | ASSIGN -> "ASSIGN"
   | PLUS_ASSIGN -> "PLUSASSIGN"
   | MINUS_ASSIGN -> "MINUSASSIGN"
-  | PREINCR -> "PREINCR"
-  | POSTINCR -> "POSTINCRE"
-  | PREDECR -> "PREDECR"
-  | POSTDECR -> "POSTDECR"
+  | INCR -> "INCREMENT"
+  | DECR -> "DECREMENT"
   | SEMI -> "SEMI"
 
   | IF -> "IF" (* Control flow *)
@@ -46,22 +44,19 @@ let print_token = function
   | WHILE -> "WHILE"
   | FOR -> "FOR"
   | BREAK -> "BREAK"
-  | CONTINUE -> "CONTINUE"
+  | CONT -> "CONTINUE"
   | MATCH -> "MATCH"
 
   | FUN -> "FUN"
   | ARROW -> "ARROW" (* this is -> *)
   | RETURN -> "RETURN"
 
-  | BLIT(true) -> "BOOLLIT(true)" (* Primitive types / literals *)
-  | BLIT(false) -> "BOOLLIT(false)"
-  | FLOATLIT(f) -> Printf.sprintf "FLOATLIT(%f)" f
-  | INTLIT(i) -> Printf.sprintf "INTLIT(%d)" i
-  | CHARLIT(s) -> Printf.sprintf "CHARLIT(%s)" s
-  | STRINGLIT(s) -> Printf.sprintf "STRINGLIT(%s)" s
-
-  | SINGLEQUOTE -> "'"
-  | DOUBLEQUOTE -> "\""
+  | BLIT(true) -> "BOOL(true)" (* Primitive types / literals *)
+  | BLIT(false) -> "BOOL(false)"
+  | FLIT(f) -> Printf.sprintf "FLOAT(%f)" f
+  | LITERAL(i) -> Printf.sprintf "INT(%d)" i
+  | CLIT(s) -> Printf.sprintf "CHAR(%s)" (String.make 1 s)
+  | SLIT(s) -> Printf.sprintf "STRING(%s)" s
 
   | INT -> "INT" (* type declaration? *)
   | FLOAT -> "FLOAT"
@@ -69,8 +64,6 @@ let print_token = function
   | CHAR -> "CHAR"
   | STRING -> "STRING"
   | TYPE -> "TYPE"
-  | TYPE_NAME(s) -> Printf.sprintf "TYPE_NAME(%s)" s
-  | FIELD_NAME(s) -> Printf.sprintf "FIELD_NAME(%s)" s
   | COMMA -> "COMMA"
 
   | INTERFACE -> "INTERFACE"
@@ -80,10 +73,11 @@ let print_token = function
   | AS -> "AS"
 
   | DOT -> "DOT"
-  | CONS -> "CONS"
 
-  | COMMENT -> "COMMENT"
-  | NEWLINE -> "NEWLINE"
+  | DCOLON -> "DCOLON"
+  | IN -> "IN"
+  | LIST -> "LIST"
+  | TUPLE -> "TUPLE"
 
   | IMPORT -> "IMPORT"
   | EXPORT -> "EXPORT"

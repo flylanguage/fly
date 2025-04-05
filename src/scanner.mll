@@ -6,9 +6,8 @@ let digit = ['0'-'9']
 let letter = ['a'-'z' 'A'-'Z']
 let ident = letter (letter | digit | '_')*
 let int = '-'? digit+
-(* TODO: float has to be declared in the parser.mll file as a literal *)
 let exp = ['e' 'E'] ['+' '-']? digit+
-let float = '-'? digit+ ('.' digit*)? (exponent)?
+let float = '-'? digit+ ('.' digit*)? (exp)?
 let whitespace = [' ' '\t' '\r' '\n']+
 let squote = '\''
 
@@ -19,8 +18,8 @@ let charlit = '\'' char_inner '\''
 let str_char = escape | [^ '\"' '\\']
 let stringlit = '\"' str_char* '\"'
 
-rule token = parse
-  | whitespace { token lexbuf }  (* Ignore whitespace *)
+rule tokenize = parse
+  | whitespace { tokenize lexbuf }  (* Ignore whitespace *)
   | "/*" { gcomment lexbuf }    (* General comments *)
   | "//" { lcomment lexbuf }    (* Line comments *)
   | '(' { LPAREN }
@@ -34,7 +33,7 @@ rule token = parse
   | "::" { DCOLON }
   | '.' { DOT }
   | ',' { COMMA }
-  | '->' {ARROW}
+  | "->" {ARROW}
   (* Operators *)
   | '+' { PLUS }
   | '-' { MINUS }
@@ -64,8 +63,6 @@ rule token = parse
   | "--" { DECR }
   (* TODO: decide if we want a negation operator such as ~ (see functionality
            in python's numpy library *)
-  (* The following type application should be handled by parser?*)
-  | "<" ident ">" { TYPEAPP }
   (* Keywords *)
   | "as" { AS }
   | "bind" { BIND }
@@ -92,7 +89,6 @@ rule token = parse
   | "return" { RETURN }
   | "self" { SELF }
   | "string" { STRING }
-  | "struct" { STRUCT }
   (* TODO: Should test be a keyword too?
   | "test" { TEST }
   *)
@@ -107,12 +103,10 @@ rule token = parse
 
   (* Literals *)
   | int as num { LITERAL(int_of_string num) }
-  (* Assuming FLOATLIT is defined in parser*)
-  | float as f { FLOATLIT(float_of_string f) }  
-  | int as i { LITERAL(int_of_string i)}
+  | float as f { FLIT(float_of_string f) }  
   (* Assuming CHARLIT and STRINGLIT are defined in parser*)
-  | charlit as c { CHARLIT(c.[1])}
-  | stringlit as s { STRINGLIT(String.sub s 1 (String.length s - 2)) }
+  | charlit as c { CLIT(c.[1])}
+  | stringlit as s { SLIT(String.sub s 1 (String.length s - 2)) }
 
   (* Identifiers *)
   | ident as id { ID(id) }
@@ -128,11 +122,11 @@ rule token = parse
 (* use and keyword so that you can mutually recurse ... shortcut so i don't
    have to manually declare functions as let rec ... *)
 and gcomment = parse
-  | "*/" { token lexbuf }
+  | "*/" { tokenize lexbuf }
   | eof { EOF }
   | _ { gcomment lexbuf }
 
 and lcomment = parse
-  | '\n' { token lexbuf }
+  | '\n' { tokenize lexbuf }
   | eof { EOF }
   | _ { lcomment lexbuf }

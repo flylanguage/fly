@@ -1,10 +1,22 @@
-open Scanner
-open Prints
+open OUnit2
+open Fly_lib
+open Print_lib.Prints
 
-let%expect_test "and1" =
-  let lexbuf = Lexing.from_string "a1 && b1;" in
-  let tokenseq = Scanner.tokenize lexbuf in
-  List.iter print_token tokenseq;
-  [%expect{|
-    ID(a1) AND ID(b1) SEMI
-  |}]
+let rec to_list lexbuf = 
+  let tk = Scanner.tokenize lexbuf in
+  match tk with
+  | Fly_lib.Parser.EOF -> []
+  | t -> t :: to_list lexbuf
+
+let tests = "test_suite_for_and" >::: [
+  "test_and1" >:: (fun _ ->
+    let lexbuf = Lexing.from_string "a1 && b1;" in
+    let actual = List.map print_token (to_list lexbuf) |> String.concat " " in
+    let expected = "ID(a1) AND ID(b1)" in
+    assert_equal 
+    expected
+    actual
+    ~printer:(fun s -> "\"" ^ s ^ "\""));
+]
+
+let _ = run_test_tt_main tests

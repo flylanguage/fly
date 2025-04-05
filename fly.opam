@@ -1,16 +1,23 @@
 opam-version: "2.0"
 name: "fly"
-version: "0.1"
-synopsis: "Fly - A custom language parser"
-description: """
-  A simple parser for the Fly programming language.
-"""
+version: "0.1.0"
+synopsis: ""
+description: """"""
 
-depends: [
-  "ocaml" {>= "3.17"}
-  "dune" {>= "2.8"}
+dependencies: [
+  "ocaml" {>= "3.17.0"}  (* Specify the version of OCaml you're using, adjust if needed *)
+  "dune" {>= "3.0"}      (* Specify the version of dune you're using *)
+  "ounit2" {>= "2.0"}   (* Add other dependencies like ounit2 if needed for testing *)
 ]
 
 build: [
-  ["dune" "build" "-p" "fly"]
+  ["dune" "build" "-p" name]
+]
+
+test: [
+  ["dune" "runtest"]
+]
+
+install: [
+  ["dune" "install"]
 ]
