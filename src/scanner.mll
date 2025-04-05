@@ -3,11 +3,19 @@
 let digit = ['0'-'9']
 let letter = ['a'-'z' 'A'-'Z']
 let ident = letter (letter | digit | '_')*
-let int = digit+
+let int = '-'? digit+
 (* TODO: float has to be declared in the parser.mll file as a literal *)
-let float = digit+ '.' digit*
+let exp = ['e' 'E'] ['+' '-']? digit+
+let float = '-'? digit+ ('.' digit*)? (exponent)?
 let whitespace = [' ' '\t' '\r' '\n']+
 let squote = '\''
+
+let escape = '\\' ['\\' '\'' '\"' 'n' 't' 'b' 'r']
+let char_inner = escape | [^ '\'' '\\']
+let charlit = '\'' char_inner '\''
+
+let str_char = escape | [^ '\"' '\\']
+let stringlit = '\"' str_char* '\"'
 
 rule token = parse
   | whitespace { token lexbuf }  (* Ignore whitespace *)
@@ -24,74 +32,89 @@ rule token = parse
   | "::" { DCOLON }
   | '.' { DOT }
   | ',' { COMMA }
+  | '->' {ARROW}
   (* Operators *)
   | '+' { PLUS }
-  | "++" int { PREINCR }
-  | int "++" { POSTINCR }
   | '-' { MINUS }
-  | "--" int { PREDECR }
-  | int "--" { POSTDECR }
   | '*' { TIMES }
   | "**" { EXPONENT }
   | '/' { DIVIDE }
   | '%' { MODULO }
   | "=" { ASSIGN }
+  | ":=" { WALRUS }
   | "+=" { PLUS_ASSIGN }
   | "-=" { MINUS_ASSIGN }
-  | ":=" { WALRUS }
   | "==" { EQ }
   | "!=" { NEQ }
+  | "<=" { LE }
+  | ">=" { GE }
   | '<' { LT }
   | '>' { GT }
-  (* TODO: decide if we want a negation operator such as ~ (see functionality
-           in python's numpy library *)
   | "&&" { AND }
   | "|" { OR }
+  | "!" { NOT }
+  (* TODO: Do we need to treat them separately?
+  | "++" int { PREINCR }
+  | int "++" { POSTINCR }
+  | "--" int { PREDECR }
+  | int "--" { POSTDECR }*)
+  | "++" { INCR }
+  | "--" { DECR }
+  (* TODO: decide if we want a negation operator such as ~ (see functionality
+           in python's numpy library *)
+  (* The following type application should be handled by parser?*)
   | "<" ident ">" { TYPEAPP }
   (* Keywords *)
-  | "if" { IF }
+  | "as" { AS }
+  | "bind" { BIND }
+  | "bool" { BOOL }
+  | "break" { BREAK }
+  | "char" { CHAR }
+  | "continue" { CONT }
   | "else" { ELSE }
+  | "enum" { ENUM }
+  | "export" { EXPORT }
+  | "false" { BLIT(false) }
+  | "float" { FLOAT }
+  | "for" { FOR }
+  | "fun" { FUN }
+  | "if" { IF }
+  | "import" { IMPORT }
+  | "in" { IN }
+  | "int" { INT }
+  | "let" { LET }
+  | "list" { LIST }
+
+  | "match" { MATCH }
+  | "mut" { MUT }
+  | "return" { RETURN }
+  | "self" { SELF }
+  | "string" { STRING }
+  | "struct" { STRUCT }
+  (* TODO: Should test be a keyword too?
+  | "test" { TEST }
+  *)
+  | "true" { BLIT(true) }
+  | "type" { TYPE }
+  | "tuple" { TUPLE }
   | "while" { WHILE }
   (* TODO: this was not included in the keywords of our manual but was in the
      parser.mly file
   | "interface" { INTERFACE }
   *)
-  | "struct" { STRUCT }
-  | "self" { SELF }
-  | "tuple" { TUPLE }
-  | "string" { STRING }
-  | "for" { FOR }
-  | "break" { BREAK }
-  | "continue" { CONT }
-  | "in" { IN }
-  | "int" { INT }
-  | "bool" { BOOL }
-  | "char" { CHAR }
-  | "float" { FLOAT }
-  | "string" { STRING }
-  | "list" { LIST }
-  | "tuple" { TUPLE }
-  | "fun" { FUN }
-  | "->" { ARROW }
-  | "return" { RETURN }
-  | "let" { LET }
-  | "mut" { MUT }
-  | "match" { MATCH }
-  | "type" { TYPE }
-  | "self" { SELF }
-  | "enum" { ENUM }
-  | "bind" { BIND }
-  | "as" { AS }
-  | "import" { IMPORT }
-  | "export" { EXPORT }
+
   (* Literals *)
-  | "true" { BLIT(true) }
-  | "false" { BLIT(false) }
   | int as num { LITERAL(int_of_string num) }
-  (* TODO: the FLOATLIT has yet to be declared in the parser file
-  | float as num { FLOATLIT(float_of_string num) }
-  *)
+  (* Assuming FLOATLIT is defined in parser*)
+  | float as f { FLOATLIT(float_of_string f) }  
+  | int as i { LITERAL(int_of_string i)}
+  (* Assuming CHARLIT and STRINGLIT are defined in parser*)
+  | charlit as c { CHARLIT(c.[1])}
+  | stringlit as s { STRINGLIT(String.sub s 1 (String.length s - 2)) }
+
+  (* Identifiers *)
   | ident as id { ID(id) }
+
   (* TODO: Character literals ... CLIT not currently defined in the parser.mly file
      not sure if this is needed ... '
   | squote _ squote as c { CLIT(c.[1]) }
@@ -104,10 +127,10 @@ rule token = parse
    have to manually declare functions as let rec ... *)
 and gcomment = parse
   | "*/" { token lexbuf }
-  | eof { token lexbuf }
+  | eof { EOF }
   | _ { gcomment lexbuf }
 
 and lcomment = parse
   | '\n' { token lexbuf }
-  | eof { token lexbuf }
+  | eof { EOF }
   | _ { lcomment lexbuf }
