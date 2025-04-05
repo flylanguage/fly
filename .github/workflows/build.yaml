@@ -29,4 +29,5 @@ jobs:
         run: |
           eval $(opam env)
           dune build
+          echo "success"
 
