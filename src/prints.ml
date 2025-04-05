@@ -26,8 +26,6 @@ let print_token = function
   | RBRACKET -> "RBRACKET"
   | LBRACE -> "LBRACE"
   | RBRACE -> "RBRACE"
-  | LARROW -> "LARROW" (* this is < *)
-  | RARROW -> "RARROW" (* this is > *)
 
   | LET -> "LET" (* Assignment *)
   | MUT -> "MUT"
@@ -35,8 +33,8 @@ let print_token = function
   | COLON -> "COLON"
   | WALRUS -> "WALRUS"
   | ASSIGN -> "ASSIGN"
-  | PLUSASSIGN -> "PLUSASSIGN"
-  | MINUSASSIGN -> "MINUSASSIGN"
+  | PLUS_ASSIGN -> "PLUSASSIGN"
+  | MINUS_ASSIGN -> "MINUSASSIGN"
   | PREINCR -> "PREINCR"
   | POSTINCR -> "POSTINCRE"
   | PREDECR -> "PREDECR"
