@@ -6,10 +6,10 @@ open Ast
 
 
 
-%token SEMI COLON DCOLON DOT COMMA LPAREN RPAREN LBRACE RBRACE
-%token LBRACKET RBRACKET PLUS MINUS DIVIDE MODULO TIMES PREINCR PREDECR POSTINCR POSTDECR
+%token SEMI COLON DCOLON DOT COMMA LPAREN RPAREN LBRACE RBRACE LANGLE RANGLE
+%token LBRACKET RBRACKET PLUS MINUS DIVIDE MODULO TIMES EXPONENT PREINCR PREDECR POSTINCR POSTDECR
 %token ASSIGN WALRUS
-%token EQ NEQ LT GT AND OR NOT
+%token EQ NEQ LT GT LEQ GEQ AND OR NOT
 %token IF ELSE WHILE FOR BREAK CONT IN
 %token INT BOOL CHAR FLOAT STRING LIST TUPLE
 %token FUN ARROW RETURN
@@ -20,8 +20,9 @@ open Ast
 %token <bool> BLIT
 %token <string> ID
 %token EOF
-/* add float? */
-/* add char literal ? */
+(* add float? *)
+(* we don't support char literal, do we? *)
+(* LRM mentions Addition Assignment and Subtraction Assignment -- add here? *)
 
 %start program_rule
 %type <Ast.program> program_rule
