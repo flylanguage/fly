@@ -27,5 +27,6 @@ jobs:
 
       - name: Build project
         run: |
+          eval $(opam env)
           dune build
 
