@@ -35,5 +35,3 @@ let b6 := false;
 let a7 := 5;
 let b7 := 10;
 (a7 < b7) && (b7 > 5);
-
-

@@ -8,7 +8,7 @@ let ident = letter (letter | digit | '_')*
 let int = '-'? digit+
 (* TODO: float has to be declared in the parser.mll file as a literal *)
 let exp = ['e' 'E'] ['+' '-']? digit+
-let float = '-'? digit+ ('.' digit*)? (exp)?
+let float = '-'? digit+ ('.' digit*)? (exponent)?
 let whitespace = [' ' '\t' '\r' '\n']+
 let squote = '\''
 
@@ -34,7 +34,7 @@ rule token = parse
   | "::" { DCOLON }
   | '.' { DOT }
   | ',' { COMMA }
-  | "->" {ARROW}
+  | '->' {ARROW}
   (* Operators *)
   | '+' { PLUS }
   | '-' { MINUS }

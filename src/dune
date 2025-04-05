@@ -1,12 +1,7 @@
-(executable 
+(library 
+  (public_name fly)
   (name fly)
   (modules fly scanner parser ast)
-  (modules_without_implementation ast)
-)
-
-(executable
-  (name test_scanner)
-  (modules test_scanner scanner parser ast prints)
   (modules_without_implementation ast)
 )
 
