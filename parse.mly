@@ -16,11 +16,12 @@ open Ast
 %token LET MUT MATCH INTERFACE
 %token TYPE SELF ENUM BIND AS
 %token IMPORT EXPORT
-%token <int> LITERAL
+%token <int> INTLITERAL
+(* %token <float> FLOATLIT *)
+(* %token <char> CHARLIT *)
 %token <bool> BLIT
 %token <string> ID
 %token EOF
-(* add float? *)
 (* we don't support char literal, do we? *)
 (* LRM mentions Addition Assignment and Subtraction Assignment -- add here? *)
 
