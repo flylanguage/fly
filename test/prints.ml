@@ -35,8 +35,8 @@ let print_token = function
   | ASSIGN -> "ASSIGN"
   | PLUS_ASSIGN -> "PLUS_ASSIGN"
   | MINUS_ASSIGN -> "MINUS_ASSIGN"
-  | INCR -> "INCREMENT"
-  | DECR -> "DECREMENT"
+  | INCR -> "INCR"
+  | DECR -> "DECR"
   | SEMI -> "SEMI"
 
   | IF -> "IF" (* Control flow *)

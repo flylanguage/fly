@@ -86,20 +86,12 @@
   (libraries fly_lib ounit2 print_lib))           
           
 (test
-  (name test_postdecrement)
+  (name test_incr)
+  (libraries fly_lib ounit2 print_lib))
+
+(test
+  (name test_decr)
   (libraries fly_lib ounit2 print_lib))  
-
-(test
-  (name test_postincrement)
-  (libraries fly_lib ounit2 print_lib))
-
-(test
-  (name test_predecrement)
-  (libraries fly_lib ounit2 print_lib))           
-
-(test
-  (name test_preincrement)
-  (libraries fly_lib ounit2 print_lib))
           
 (test
   (name test_set)
