@@ -16,9 +16,9 @@ let print_token = function
   | EQ -> "EQ" (* Equivalence operators *)
   | NEQ -> "NEQ"
   | LT -> "LT"
-  | LE -> "LTE"
+  | LE -> "LE"
   | GT -> "GT"
-  | GE -> "GTE"
+  | GE -> "GE"
 
   | LPAREN -> "LPAREN" (* Brackets, braces, arrows *)
   | RPAREN -> "RPAREN"
@@ -33,8 +33,8 @@ let print_token = function
   | COLON -> "COLON"
   | WALRUS -> "WALRUS"
   | ASSIGN -> "ASSIGN"
-  | PLUS_ASSIGN -> "PLUSASSIGN"
-  | MINUS_ASSIGN -> "MINUSASSIGN"
+  | PLUS_ASSIGN -> "PLUS_ASSIGN"
+  | MINUS_ASSIGN -> "MINUS_ASSIGN"
   | INCR -> "INCREMENT"
   | DECR -> "DECREMENT"
   | SEMI -> "SEMI"
@@ -51,12 +51,12 @@ let print_token = function
   | ARROW -> "ARROW" (* this is -> *)
   | RETURN -> "RETURN"
 
-  | BLIT(true) -> "BOOL(true)" (* Primitive types / literals *)
-  | BLIT(false) -> "BOOL(false)"
-  | FLIT(f) -> Printf.sprintf "FLOAT(%f)" f
-  | LITERAL(i) -> Printf.sprintf "INT(%d)" i
-  | CLIT(s) -> Printf.sprintf "CHAR(%s)" (String.make 1 s)
-  | SLIT(s) -> Printf.sprintf "STRING(%s)" s
+  | BLIT(true) -> "BLIT(true)" (* Primitive types / literals *)
+  | BLIT(false) -> "BLIT(false)"
+  | FLIT(f) -> Printf.sprintf "FLIT(%f)" f
+  | LITERAL(i) -> Printf.sprintf "LITERAL(%d)" i
+  | CLIT(s) -> Printf.sprintf "CLIT(%s)" (String.make 1 s)
+  | SLIT(s) -> Printf.sprintf "SLIT(%s)" s
 
   | INT -> "INT" (* type declaration? *)
   | FLOAT -> "FLOAT"

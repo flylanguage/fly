@@ -37,7 +37,7 @@
   (libraries fly_lib ounit2 print_lib))  
 
 (test
-  (name test_gte)
+  (name test_ge)
   (libraries fly_lib ounit2 print_lib))           
     
 (test
@@ -54,7 +54,7 @@
 
 
 (test
-  (name test_lte)
+  (name test_le)
   (libraries fly_lib ounit2 print_lib))
 
 (test
