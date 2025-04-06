@@ -60,6 +60,9 @@
 (test
   (name test_ifelse)
   (libraries fly_lib ounit2 print_lib))
+(test
+  (name test_match)
+  (libraries fly_lib ounit2 print_lib))
 
 (test
   (name test_minusassign)
