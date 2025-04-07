@@ -31,7 +31,7 @@ open Ast
 %right WALRUS
 %left OR
 %left AND
-%left EQ NEQ
+%left BEQ NEQ
 %left LT GT
 %left PLUS MINUS DIVIDE TIMES
 %left EXPONENT
