@@ -85,7 +85,7 @@ let tests = "testing_list" >::: [
         "test10" >:: (fun _ ->
         let lexbuf = Lexing.from_string "let a12: list<int> = [1, 2, 3];" in
         let actual = List.map print_token (to_list lexbuf) |> String.concat " " in
-        let expected = "LET ID(a11) COLON LIST LARROW INT RARROW ASSIGN LBRACKET LITERAL(1) COMMA LITERAL(2) COMMA LITERAL(3) RBRACKET SEMI" in
+        let expected = "LET ID(a12) COLON LIST LT INT GT ASSIGN LBRACKET LITERAL(1) COMMA LITERAL(2) COMMA LITERAL(3) RBRACKET SEMI" in
         assert_equal 
         expected actual
         ~printer:(fun s -> "\"" ^ s ^ "\""));
@@ -93,7 +93,7 @@ let tests = "testing_list" >::: [
         "test11" >:: (fun _ ->
         let lexbuf = Lexing.from_string "let a13: list<char> = ['a', 'b', 'c'];" in
         let actual = List.map print_token (to_list lexbuf) |> String.concat " " in
-        let expected = "LET ID(a13) COLON LIST LARROW CHAR RARROW ASSIGN LBRACKET CLIT(a) COMMA CLIT(b) COMMA CLIT(c) RBRACKET SEMI" in
+        let expected = "LET ID(a13) COLON LIST LT CHAR GT ASSIGN LBRACKET CLIT(a) COMMA CLIT(b) COMMA CLIT(c) RBRACKET SEMI" in
         assert_equal 
         expected actual
         ~printer:(fun s -> "\"" ^ s ^ "\""));
