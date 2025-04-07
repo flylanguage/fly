@@ -9,6 +9,7 @@ open Ast
 %token PLUS_ASSIGN MINUS_ASSIGN INCR DECR
 %token EQUAL WALRUS
 %token BEQ NEQ LT LEQ GT GEQ AND OR NOT
+
 %token IF ELSE WHILE FOR BREAK CONT IN
 %token INT BOOL CHAR FLOAT STRING LIST TUPLE UNIT TRUE FALSE
 %token FUN ARROW RETURN
@@ -17,6 +18,9 @@ open Ast
 %token IMPORT EXPORT
 %token <int> LITERAL
 %token <bool> BLIT
+%token <float> FLIT
+%token <char> CLIT
+%token <string> SLIT
 %token <string> ID
 %token EOF
 
