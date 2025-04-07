@@ -5,9 +5,10 @@ open Ast
 %}
 
 %token SEMI COLON DCOLON DOT COMMA LPAREN RPAREN LBRACE RBRACE
-%token LBRACKET RBRACKET PLUS MINUS DIVIDE MODULO TIMES PREINCR PREDECR POSTINCR POSTDECR
-%token ASSIGN WALRUS
-%token EQ NEQ LT GT AND OR NOT
+%token LBRACKET RBRACKET PLUS MINUS DIVIDE MODULO TIMES PREINCR PREDECR POSTINCR POSTDECR EXPONENT
+%token PLUS_ASSIGN MINUS_ASSIGN INCR DECR
+%token EQUAL WALRUS
+%token BEQ NEQ LT LEQ GT GEQ AND OR NOT
 %token IF ELSE WHILE FOR BREAK CONT IN
 %token INT BOOL CHAR FLOAT STRING LIST TUPLE UNIT TRUE FALSE
 %token FUN ARROW RETURN
@@ -29,6 +30,7 @@ open Ast
 %left EQ NEQ
 %left LT GT
 %left PLUS MINUS DIVIDE TIMES
+%left EXPONENT
 %left PREINCR PREDECR
 %right POSTINCR POSTDECR
 
@@ -44,15 +46,20 @@ typ:
   | FLOAT { Float }
   | STRING { String }
   | LIST LT typ GT { List($3) }
+  | TUPLE LT typ_list GT { Tuple($3) }
   | UNIT { Unit }
   | ID     { UserType($1) }
+
+typ_list:
+    typ { [$1] }
+  | typ_list COMMA typ { $3 :: $1 }
 
 vdecl:
   | LET ID COLON typ EQUAL expr SEMI { Decl($2, $4, $6) }  (* let x: int = 5; *)
   | LET ID WALRUS expr SEMI           { Decl($2, $4) }      (* let x := 5; *)
 
 fdecl:
-    FUN ID LPAREN formals_opt RPAREN ARROW typ LBRACE body_list RBRACE
+  FUN ID LPAREN formals_opt RPAREN ARROW typ LBRACE body_list RBRACE { Unit }
 
 formals_opt:
   (* empty *) { [] }
@@ -91,7 +98,7 @@ expr:
   | expr MINUS  expr { Binop($1, Sub,   $3) }
   | expr TIMES  expr { Binop($1, Mult,  $3) }
   | expr DIVIDE expr { Binop($1, Div,   $3) }
-  | expr EQ     expr { Binop($1, Equal, $3) }
+  | expr BEQ    expr { Binop($1, Equal, $3) }
   | expr NEQ    expr { Binop($1, Neq,   $3) }
   | expr LT     expr { Binop($1, Less,  $3) }
   | expr LEQ    expr { Binop($1, Leq,   $3) }
@@ -102,3 +109,11 @@ expr:
   | NOT expr         { Unop(Not, $2) }
   | ID LPAREN actuals_opt RPAREN { Call($1, $3) }
   | LPAREN expr RPAREN { $2 }
+
+actuals_opt:
+  (* empty *) { [] }
+  | actuals_list  { List.rev $1 }
+
+actuals_list:
+    expr                    { [$1] }
+  | actuals_list COMMA expr { $3 :: $1 }

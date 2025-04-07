@@ -8,7 +8,7 @@ let ident = letter (letter | digit | '_')*
 let int = '-'? digit+
 (* TODO: float has to be declared in the parser.mll file as a literal *)
 let exp = ['e' 'E'] ['+' '-']? digit+
-let float = '-'? digit+ ('.' digit*)? (exponent)?
+let float = '-'? digit+ ('.' digit*)? (digit)? (*TODO: need to define exponent *)
 let whitespace = [' ' '\t' '\r' '\n']+
 let squote = '\''
 
@@ -34,7 +34,7 @@ rule token = parse
   | "::" { DCOLON }
   | '.' { DOT }
   | ',' { COMMA }
-  | '->' {ARROW}
+  | "->" { ARROW }
   (* Operators *)
   | '+' { PLUS }
   | '-' { MINUS }
@@ -42,14 +42,14 @@ rule token = parse
   | "**" { EXPONENT }
   | '/' { DIVIDE }
   | '%' { MODULO }
-  | "=" { ASSIGN }
+  | "=" { EQUAL }
   | ":=" { WALRUS }
   | "+=" { PLUS_ASSIGN }
   | "-=" { MINUS_ASSIGN }
-  | "==" { EQ }
+  | "==" { BEQ }
   | "!=" { NEQ }
-  | "<=" { LE }
-  | ">=" { GE }
+  | "<=" { LEQ }
+  | ">=" { GEQ }
   | '<' { LT }
   | '>' { GT }
   | "&&" { AND }
@@ -64,8 +64,6 @@ rule token = parse
   | "--" { DECR }
   (* TODO: decide if we want a negation operator such as ~ (see functionality
            in python's numpy library *)
-  (* The following type application should be handled by parser?*)
-  | "<" ident ">" { TYPEAPP }
   (* Keywords *)
   | "as" { AS }
   | "bind" { BIND }
@@ -92,7 +90,7 @@ rule token = parse
   | "return" { RETURN }
   | "self" { SELF }
   | "string" { STRING }
-  | "struct" { STRUCT }
+  | "type" { TYPE }
   (* TODO: Should test be a keyword too?
   | "test" { TEST }
   *)
