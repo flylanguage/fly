@@ -62,6 +62,7 @@ rule token = parse
   | int "--" { POSTDECR }*)
   | "++" { INCR }
   | "--" { DECR }
+  | "_" { UNDERSCORE }
   (* TODO: decide if we want a negation operator such as ~ (see functionality
            in python's numpy library *)
   (* The following type application should be handled by parser?*)
@@ -108,7 +109,7 @@ rule token = parse
   (* Literals *)
   | int as num { LITERAL(int_of_string num) }
   (* Assuming FLOATLIT is defined in parser*)
-  | float as f { FLOATLIT(float_of_string f) }  
+  | float as f { FLOATLIT(float_of_string f) }
   | int as i { LITERAL(int_of_string i)}
   (* Assuming CHARLIT and STRINGLIT are defined in parser*)
   | charlit as c { CHARLIT(c.[1])}
