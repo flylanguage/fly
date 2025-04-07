@@ -32,3 +32,16 @@ You can also run the compiler using dune:
 dune exec src/fly.exe
 ```
 
+## Testing
+
+To test the compiler:
+
+```bash
+dune runtest #runs all test files
+```
+
+To test a specific feature of the compiler
+
+```bash
+dune exec test/scanner/test_and.exe # Tests if the scanner correctly parses the AND operator
+```
