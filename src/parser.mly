@@ -45,10 +45,42 @@ typ:
   | STRING { String }
   | LIST LT typ GT { List($3) }
   | UNIT { Unit }
+  | ID     { UserType($1) }
 
 vdecl:
-  | LET ID COLON TYPE EQUAL expr SEMI { Decl($2, $4, $6) }  (* let x: int = 5; *)
+  | LET ID COLON typ EQUAL expr SEMI { Decl($2, $4, $6) }  (* let x: int = 5; *)
   | LET ID WALRUS expr SEMI           { Decl($2, $4) }      (* let x := 5; *)
+
+fdecl:
+    FUN ID LPAREN formals_opt RPAREN ARROW typ LBRACE body_list RBRACE
+
+formals_opt:
+  (* empty *) { [] }
+  | formal_list   { List.rev $1 } (*Why List.rev? *)
+
+formal_list:
+    ID COLON typ                   { [($1,$3)] }
+  | formal_list COMMA ID COLON typ { ($3,$5) :: $1 }
+
+body_list:
+  (* empty *) { [] }
+  | stmt body_list { $1 :: $2 }
+  | vdecl body_list { $1 :: $2 }
+  | fdecl body_list { $1 :: $2 }
+
+stmt:
+    expr SEMI { Expr $1 }
+  | RETURN SEMI { Return Unit}
+  | RETURN expr SEMI { Return $2 }
+  | LBRACE body_list RBRACE { Block($2) }
+  | if_stmt { $1 }
+  | WHILE expr LBRACE body_list RBRACE { While($2, $4) }
+  (* Save FOR for later *)
+
+if_stmt:
+  | IF expr LBRACE body_list RBRACE                              { If($2, Block($4), Block([])) }
+  | IF expr LBRACE body_list RBRACE ELSE LBRACE body_list RBRACE { If($2, Block($4), Block($8)) }
+  | IF expr LBRACE body_list RBRACE ELSE if_stmt                 { If($2, Block($4), $7) }
 
 expr:
     LITERAL          { Literal($1) }
