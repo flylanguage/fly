@@ -33,7 +33,7 @@ rule tokenize = parse
   | "::" { DCOLON }
   | '.' { DOT }
   | ',' { COMMA }
-  | "->" {ARROW}
+  | "->" { ARROW }
   (* Operators *)
   | '+' { PLUS }
   | '-' { MINUS }
@@ -41,24 +41,19 @@ rule tokenize = parse
   | "**" { EXPONENT }
   | '/' { DIVIDE }
   | '%' { MODULO }
-  | "=" { ASSIGN }
+  | '=' { EQUAL }
   | ":=" { WALRUS }
   | "+=" { PLUS_ASSIGN }
   | "-=" { MINUS_ASSIGN }
-  | "==" { EQ }
+  | "==" { BEQ }
   | "!=" { NEQ }
-  | "<=" { LE }
-  | ">=" { GE }
+  | "<=" { LEQ }
+  | ">=" { GEQ }
   | '<' { LT }
   | '>' { GT }
   | "&&" { AND }
-  | "|" { OR }
-  | "!" { NOT }
-  (* TODO: Do we need to treat them separately?
-  | "++" int { PREINCR }
-  | int "++" { POSTINCR }
-  | "--" int { PREDECR }
-  | int "--" { POSTDECR }*)
+  | '|' { OR }
+  | '!' { NOT }
   | "++" { INCR }
   | "--" { DECR }
   (* TODO: decide if we want a negation operator such as ~ (see functionality
@@ -73,7 +68,6 @@ rule tokenize = parse
   | "else" { ELSE }
   | "enum" { ENUM }
   | "export" { EXPORT }
-  | "false" { BLIT(false) }
   | "float" { FLOAT }
   | "for" { FOR }
   | "fun" { FUN }
@@ -89,10 +83,6 @@ rule tokenize = parse
   | "return" { RETURN }
   | "self" { SELF }
   | "string" { STRING }
-  (* TODO: Should test be a keyword too?
-  | "test" { TEST }
-  *)
-  | "true" { BLIT(true) }
   | "type" { TYPE }
   | "tuple" { TUPLE }
   | "while" { WHILE }
@@ -102,6 +92,9 @@ rule tokenize = parse
   *)
 
   (* Literals *)
+  | "()" { UNIT }
+  | "false" { BLIT(false) }
+  | "true" { BLIT(true) }
   | int as num { LITERAL(int_of_string num) }
   | float as f { FLIT(float_of_string f) }  
   (* Assuming CHARLIT and STRINGLIT are defined in parser*)
@@ -111,10 +104,6 @@ rule tokenize = parse
   (* Identifiers *)
   | ident as id { ID(id) }
 
-  (* TODO: Character literals ... CLIT not currently defined in the parser.mly file
-     not sure if this is needed ... '
-  | squote _ squote as c { CLIT(c.[1]) }
-  *)
   (* EOF *)
   | eof { EOF }
   (* Unrecognized character *)

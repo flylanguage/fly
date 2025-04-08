@@ -1,7 +1,5 @@
 (* open Printf
 
-
-
 let get_token_list lexbuf =
   let rec work acc =
     match Scanner.tokenize lexbuf with
