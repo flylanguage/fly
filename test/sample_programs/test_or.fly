@@ -1,0 +1,47 @@
+//Pass
+let a1 := true;
+let b1 := false;
+let result1 := a1 | b1;
+
+//Pass
+let a2 := false;
+let b2 := false;
+let result2 := a2 | b2;
+
+//Pass
+let a3 := true;
+if (a3 | false) {
+	let result3 := "executed";
+}
+
+//Pass
+let b3 := false;
+if (b3 | false) {
+	let result4 := "executed";
+}
+
+//Pass
+let a4 := true;
+let b4 := false;
+let result5 := (a4 | b4) | false;
+
+//Pass
+let a5 := 5;
+let result6 := a5 | true;
+
+//Pass
+let b5 := false;
+while (b5 | true) {
+	let result7 := "looping";
+	break;
+}
+
+//Pass
+let b6 := true;
+let result9 := b6 | b6;
+
+//Pass
+let a7 := false;
+let b7 := true;
+let result10 := (a7 | b7) | false;
+

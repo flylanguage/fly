@@ -1,0 +1,17 @@
+type Person {
+	name: string,
+	age: int
+}
+
+let p1: Person = Person {name: "John", age: 12};
+
+bind new<Person>(name: string, age: int) -> Person {
+	return Person {name: name, age: age};
+}
+
+bind info<Person>(self) -> string {
+	return self.name + " " + self.age;
+}
+
+let p2 := Person::new("John", 12);
+let info: string = p.info(); // self references the object itself

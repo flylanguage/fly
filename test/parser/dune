@@ -1,0 +1,15 @@
+(test
+  (name test_postdecrement)
+  (libraries fly_lib ounit2 print_lib))  
+
+(test
+  (name test_postincrement)
+  (libraries fly_lib ounit2 print_lib))
+
+(test
+  (name test_predecrement)
+  (libraries fly_lib ounit2 print_lib))           
+
+(test
+  (name test_preincrement)
+  (libraries fly_lib ounit2 print_lib))

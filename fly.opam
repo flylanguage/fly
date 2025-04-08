@@ -1,0 +1,28 @@
+opam-version: "2.0"
+name: "fly"
+version: "0.1.0"
+synopsis: "The fly programming language"
+description: "The fly programming language"
+maintainer: "John Doe"
+authors: [
+  "kristoferfannar"
+  "AlexZhu2"
+  "AlenaResiko"
+  "lsig"
+  "starlordgazer2"
+  "xytuang"
+]
+homepage: "https://github.com/flylanguage/fly"
+bug-reports: "https://github.com/flylanguage/fly"
+license: "MIT"
+
+depends: [
+  "ocaml" {>= "5.2.0"}
+  "dune" {>= "3.17.0"}
+  "ounit2"
+]
+
+build: [
+  ["dune" "build" "-p" name]
+  ["dune" "runtest"]
+]

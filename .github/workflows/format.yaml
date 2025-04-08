@@ -1,4 +1,4 @@
-name: Dune Build
+name: OCamlformat
 
 on:
   push:
@@ -15,18 +15,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-     
+
       - name: Setup OCaml
         uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: 5
 
-      - name: Install dune
+      - name: Install OCamlformat
         run: |
-          opam install . --deps-only --yes
+          opam install ocamlformat
 
-      - name: Build project
+      - name: OCamlformat
         run: |
-          eval $(opam env) # adds dune to path
-          dune build
-
+          eval $(opam env)
+          ocamlformat --check src/*.ml src/*.mli

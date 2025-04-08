@@ -1,0 +1,9 @@
+
+let x := 10;
+
+if (x > 5) {
+}
+else if (x > 4) {
+}
+else {
+}

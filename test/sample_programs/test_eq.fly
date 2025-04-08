@@ -1,0 +1,63 @@
+//Pass
+let a1 := 5;
+let b1 := 5;
+if (a1 == b1) {
+} else {
+}
+
+//Pass
+let c1 := 3.14;
+let d1 := 3.14;
+if (c1 == d1) {
+} else {
+}
+
+//Pass
+let e1 := "Hello";
+let f1 := "Hello";
+if (e1 == f1) {
+} else {
+}
+
+//Pass
+let g1 := true;
+let h1 := true;
+if (g1 == h1) {
+} else {
+}
+
+//Pass
+let a2 := 5;
+let b2 := 10;
+if (a2 == b2) {
+} else {
+}
+
+//Pass
+let c2 := 3.14;
+let d2 := 2.71;
+if (c2 == d2) {
+} else {
+}
+
+//Pass
+let e2 := "Hello";
+let f2 := "World";
+if (e2 == f2) {
+} else {
+}
+
+//Pass
+let g2 := true;
+let h2 := false;
+if (g2 == h2) {
+} else {
+}
+
+//Fail
+let a3 := 5;
+let b3 := "5";
+if (a3 == b3) {
+} else {
+}
+

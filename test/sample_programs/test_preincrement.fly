@@ -1,0 +1,33 @@
+//Pass
+let mut x1 := 5;
+++x1;
+
+//Fail
+let mut x2 := 5.5;
+++x2;
+
+//Fail
+let mut x3 := true;
+++x3;
+
+//Fail
+let mut x4 := "Hello";
+++x4;
+
+//Fail
+let mut x5 := [1, 2, 3];
+++x5;
+
+//Fail
+let mut x6 := {1, 2, 3};
+++x6;
+
+//Fail
+let mut x7 := 'a';
+++x7;
+
+//Fail
+let mut x8 := (1, 2);
+++x8;
+
+

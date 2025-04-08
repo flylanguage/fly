@@ -1,0 +1,45 @@
+//Pass, result1 now false
+let a1 := true;
+let result1 := !a1;
+
+//Pass, result2 now true
+let b1 := false;
+let result2 := !b1;
+
+//Pass, if block should not execute
+let a2 := true;
+if (!a2) {
+	let result3 := "should not execute";
+}
+
+//Pass, if block should execute
+let b2 := false;
+if (!b2) {
+	let result4 := "executed";
+}
+
+//Pass, result5 now true
+let a3 := true;
+let b3 := false;
+let result5 := !(a3 && b3);
+
+//Fail
+let a4 := 5;
+let result6 := !a4;
+
+//Pass, enter loop and break
+let b4 := false;
+while (!b4) {
+	let result7 := "looping";
+	break;
+}
+
+//Pass, result8 now true
+let b5 := true;
+let result8 := !!b5;
+
+//Pass, result10 now false
+let a6 := true;
+let b6 := false;
+let result10 := !(a6 != b6);
+
