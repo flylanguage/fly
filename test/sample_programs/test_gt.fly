@@ -1,0 +1,70 @@
+//Pass
+let a1 := 5;
+let b1 := 3;
+let result1 := a1 > b1;
+
+//Pass
+let a2 := 5.5;
+let b2 := 3.3;
+let result2 := a2 > b2;
+
+//Fail
+let a3 := 5;
+let b3 := 3.7;
+let result3 := a3 > b3;
+
+//Fail
+let a4 := "hello";
+let b4 := "world";
+let result4 := a4 > b4;
+
+//Fail
+let a5 := true;
+let b5 := false;
+let result5 := a5 > b5; 
+
+//Fail
+let a6 := (1, 2);
+let b6 := 3;
+let result6 := a6 > b6;
+
+//Fail
+let a7 := [1, 2, 3];
+let b7 := 2;
+let result7 := a7 > b7;
+
+//Fail
+let a8 := {1, 2, 3};
+let b8 := 2;
+let result8 := a8 > b8;
+
+//Pass
+let a9 := 4;
+let b9 := 4;
+let result9 := a9 > b9;
+
+//Pass
+let a10 := 4.4;
+let b10 := 4.4;
+let result10 := a10 > b10;
+
+//Pass
+let a11 := -2;
+let b11 := -5;
+let result11 := a11 > b11;
+
+//Pass
+let a12 := -2.5;
+let b12 := -3.3;
+let result12 := a12 > b12;
+
+//Pass
+let a13 := 2;
+let b13 := -2;
+let result13 := a13 > b13;
+
+//Pass
+let a14 := 3.5;
+let b14 := -1.1;
+let result14 := a14 > b14;
+

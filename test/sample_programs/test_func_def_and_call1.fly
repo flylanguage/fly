@@ -1,0 +1,7 @@
+fun countdown(timer: int) {
+	while (timer > 0) {
+		timer -= 1;
+	}
+}
+
+countdown(10);

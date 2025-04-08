@@ -1,0 +1,38 @@
+enum Color {
+	Red,
+	Green,
+	Blue
+}
+
+let a1 := Color.Red;
+let b1 := Color.Green;
+let c1 := Color.Blue;
+
+if (a1 == Color.Red) {
+} else {
+}
+
+let a2 := Color.Yellow;
+
+if (b1 == Color.Green) {
+} else {
+}
+
+match (c1) {
+  Color.Red => { 
+  }
+  Color.Green => { 
+  }
+  Color.Blue => { 
+  }
+  _ => {
+  }
+}
+
+let a3 := 5;
+a3 := Color.Red;
+
+let a4 := Color.Red + Color.Green;
+
+let a5 := !Color.Red;
+

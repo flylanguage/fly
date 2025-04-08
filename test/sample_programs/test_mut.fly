@@ -1,0 +1,11 @@
+let x := 5;
+
+x -= 4; //fail
+
+let mut y := 4;
+y += 8;
+
+let mut lst := [1, 2, 3];
+lst[0] -= 1;  // Should pass: list is mutable, can modify element
+
+

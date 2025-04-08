@@ -1,4 +1,5 @@
-open Printf
+(* open Printf
+
 
 open Parser 
 
@@ -27,4 +28,4 @@ let _ =
 
   (* Debug Tokens *)
   let token_list = get_token_list lexbuf in
-  List.map pp_token token_list |> List.iter (printf "%s\n")
+  List.map pp_token token_list |> List.iter (printf "%s\n") *)
