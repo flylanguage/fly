@@ -10,7 +10,7 @@ open Ast
 %token BEQ NEQ LT LEQ GT GEQ AND OR NOT
 
 %token IF ELSE WHILE FOR BREAK CONT IN
-%token INT BOOL CHAR FLOAT STRING LIST TUPLE UNIT TRUE FALSE
+%token INT BOOL CHAR FLOAT STRING LIST TUPLE UNIT 
 %token FUN ARROW RETURN
 %token LET MUT MATCH INTERFACE
 %token TYPE SELF ENUM BIND AS
@@ -93,8 +93,7 @@ if_stmt:
 
 expr:
     LITERAL          { Literal($1) }
-  | TRUE             { BoolLit(true) }
-  | FALSE            { BoolLit(false) }
+  | BLIT             { BoolLit($1) }
   | ID               { Id($1) }
   | expr PLUS   expr { Binop($1, Add,   $3) }
   | expr MINUS  expr { Binop($1, Sub,   $3) }

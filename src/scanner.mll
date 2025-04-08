@@ -68,7 +68,6 @@ rule tokenize = parse
   | "else" { ELSE }
   | "enum" { ENUM }
   | "export" { EXPORT }
-  | "false" { BLIT(false) }
   | "float" { FLOAT }
   | "for" { FOR }
   | "fun" { FUN }
@@ -85,7 +84,6 @@ rule tokenize = parse
   | "self" { SELF }
   | "string" { STRING }
   | "type" { TYPE }
-  | "true" { BLIT(true) }
   | "tuple" { TUPLE }
   | "while" { WHILE }
   (* TODO: this was not included in the keywords of our manual but was in the
@@ -94,6 +92,9 @@ rule tokenize = parse
   *)
 
   (* Literals *)
+  | "()" { UNIT }
+  | "false" { BLIT(false) }
+  | "true" { BLIT(true) }
   | int as num { LITERAL(int_of_string num) }
   | float as f { FLIT(float_of_string f) }  
   (* Assuming CHARLIT and STRINGLIT are defined in parser*)
