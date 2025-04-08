@@ -23,7 +23,7 @@ jobs:
 
       - name: Install dune
         run: |
-          opam install dune
+          opam install . --deps-only --yes
 
       - name: Build project
         run: |

@@ -1,21 +1,30 @@
 opam-version: "2.0"
 name: "fly"
 version: "0.1.0"
-synopsis: ""
-description: """"""
+synopsis: "The fly programming language"
+description: "The fly programming language"
+maintainer: "John Doe"
+authors: [
+  "kristoferfannar"
+  "AlexZhu2"
+  "AlenaResiko"
+  "lsig"
+  "starlordgazer2"
+  "xytuang"
+]
+homepage: "https://github.com/flylanguage/fly"
+bug-reports: "https://github.com/flylanguage/fly"
+license: "MIT"
 
-dependencies: [
-  "ocaml" {>= "3.17.0"}  (* Specify the version of OCaml you're using, adjust if needed *)
-  "dune" {>= "3.0"}      (* Specify the version of dune you're using *)
-  "ounit2" {>= "2.0"}   (* Add other dependencies like ounit2 if needed for testing *)
+depends: [
+  "ocaml" {>= "5.2.0"}
+  "dune"
+  "ounit2" {with-test}
 ]
 
 build: [
   ["dune" "build" "-p" name]
-]
-
-test: [
-  ["dune" "runtest"]
+  ["dune" "runtest"] {with-test}
 ]
 
 install: [
