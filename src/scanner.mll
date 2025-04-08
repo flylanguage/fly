@@ -41,7 +41,7 @@ rule tokenize = parse
   | "**" { EXPONENT }
   | '/' { DIVIDE }
   | '%' { MODULO }
-  | "=" { EQUAL }
+  | '=' { EQUAL }
   | ":=" { WALRUS }
   | "+=" { PLUS_ASSIGN }
   | "-=" { MINUS_ASSIGN }
@@ -52,13 +52,8 @@ rule tokenize = parse
   | '<' { LT }
   | '>' { GT }
   | "&&" { AND }
-  | "|" { OR }
-  | "!" { NOT }
-  (* TODO: Do we need to treat them separately?
-  | "++" int { PREINCR }
-  | int "++" { POSTINCR }
-  | "--" int { PREDECR }
-  | int "--" { POSTDECR }*)
+  | '|' { OR }
+  | '!' { NOT }
   | "++" { INCR }
   | "--" { DECR }
   (* TODO: decide if we want a negation operator such as ~ (see functionality
@@ -90,11 +85,7 @@ rule tokenize = parse
   | "self" { SELF }
   | "string" { STRING }
   | "type" { TYPE }
-  (* TODO: Should test be a keyword too?
-  | "test" { TEST }
-  *)
   | "true" { BLIT(true) }
-  | "type" { TYPE }
   | "tuple" { TUPLE }
   | "while" { WHILE }
   (* TODO: this was not included in the keywords of our manual but was in the
@@ -112,10 +103,6 @@ rule tokenize = parse
   (* Identifiers *)
   | ident as id { ID(id) }
 
-  (* TODO: Character literals ... CLIT not currently defined in the parser.mly file
-     not sure if this is needed ... '
-  | squote _ squote as c { CLIT(c.[1]) }
-  *)
   (* EOF *)
   | eof { EOF }
   (* Unrecognized character *)
