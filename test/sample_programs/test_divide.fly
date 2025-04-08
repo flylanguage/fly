@@ -1,0 +1,40 @@
+//Pass
+let a1 := 10;
+let b1 := 2;
+a1 / b1;
+
+//Pass
+let a2 := 5.5;
+let b2 := 2.0;
+a2 / b2;
+
+//Pass
+let a3 := 7;
+let b3 := 3;
+a3 / b3;
+
+//Fail
+let a4 := 10;
+let b4 := 0;
+a4 / b4;
+
+//Pass
+let a5 := 10;
+let b5 := 2.5;
+a5 / b5;
+
+//Pass
+let a6 := 7.5;
+let b6 := 2;
+a6 / b6;
+
+//Fail
+let a7 := (5, 3);
+let b7 := 2;
+a7 / b7;
+
+//Fail
+let a8 := 10;
+let b8 := 2;
+let c8 := 2;
+a8/(b8 - c8);

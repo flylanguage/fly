@@ -1,0 +1,84 @@
+//Pass
+let a1 := 5;
+let b1 := 10;
+let result1 := a1 < b1;
+
+//Pass
+let a2 := 3.5;
+let b2 := 4.2;
+let result2 := a2 < b2;
+
+//Pass
+let a3 := 5;
+let b3 := 5;
+let result3 := a3 < b3;
+
+//Pass
+let a4 := 5.5;
+let b4 := 5.5;
+let result4 := a4 < b4;
+
+//Pass
+let a5 := 10;
+let b5 := 5;
+let result5 := a5 < b5;
+
+//Fail
+let a6 := "hello";
+let b6 := "world";
+let result6 := a6 < b6;
+
+//Fail
+let a7 := true;
+let b7 := false;
+let result7 := a7 < b7;
+
+//Fail
+let a8 := (1, 2);
+let b8 := (2, 3);
+let result8 := a8 < b8;
+
+//Fail
+let a9 := [1, 2, 3];
+let b9 := [4, 5, 6];
+let result9 := a9 < b9;
+
+//Fail
+let a10 := {1, 2, 3};
+let b10 := {4, 5, 6};
+let result10 := a10 < b10;
+
+//Fail
+let a11 := 5;
+let b11 := "string";
+let result11 := a11 < b11;
+
+//Fail
+let a12 := "hello";
+let b12 := 5;
+let result12 := a12 < b12;
+
+//Fail
+let a13 := (1, 2);
+let b13 := 5;
+let result13 := a13 < b13;
+
+//Fail
+let a14 := [1, 2, 3];
+let b14 := 5;
+let result14 := a14 < b14;
+
+//Fail
+let a15 := {1, 2, 3};
+let b15 := 5;
+let result15 := a15 < b15;
+
+//Fail
+let a16 := true;
+let b16 := 5;
+let result16 := a16 < b16;
+
+//Fail
+let a17 := false;
+let b17 := "world";
+let result17 := a17 < b17;
