@@ -10,7 +10,7 @@ let get_token_list lexbuf =
     in List.rev (work [])
 
 let pp_token = function
-    | EQ -> "="
+    | EQUAL -> "="
     | DIVIDE -> "/"
     | LITERAL(i) -> sprintf "%d" i
     | ID(v) -> sprintf ":%s:" v
