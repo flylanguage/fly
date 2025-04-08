@@ -1,3 +1,1 @@
-
-type program = 
-    Program
+type program = Program
