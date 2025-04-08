@@ -1,7 +1,6 @@
 open Printf
 
-(* open Scanner *)
-open Parser
+open Parser 
 
 let get_token_list lexbuf =
   let rec work acc =
