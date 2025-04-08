@@ -18,15 +18,11 @@ license: "MIT"
 
 depends: [
   "ocaml" {>= "5.2.0"}
-  "dune"
-  "ounit2" {with-test}
+  "dune" {>= "3.17.0"}
+  "ounit2"
 ]
 
 build: [
   ["dune" "build" "-p" name]
-  ["dune" "runtest"] {with-test}
-]
-
-install: [
-  ["dune" "install"]
+  ["dune" "runtest"]
 ]
