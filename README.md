@@ -10,7 +10,7 @@ Download dune with [`opam`](https://opam.ocaml.org/) (below).
 If you don't have opam, get opam.
 
 ```bash
-opam install dune
+opam install . —deps-only —yes
 
 dune --version # should be >= 3.17
 ```
