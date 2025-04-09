@@ -13,7 +13,7 @@ let print_token = function
   | OR -> "OR"
   | NOT -> "NOT"
 
-  | EQ -> "EQ" (* Equivalence operators *)
+  | BEQ -> "EQ" (* Equivalence operators *)
   | NEQ -> "NEQ"
   | LT -> "LT"
   | LE -> "LE"
