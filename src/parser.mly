@@ -64,7 +64,11 @@ fdecl:
   FUN ID LPAREN formals_opt RPAREN ARROW typ LBRACE body_list RBRACE { Unit }
 
 funbind:
-  BIND ID LT ID GT LPAREN SELF RPAREN ARROW typ LBRACE body_list RBRACE { Unit } (* differentiate when ID is 'new'? *)
+  BIND ID LT typ GT LPAREN formals_list RPAREN ARROW typ LBRACE body_list RBRACE { Unit }
+
+lambda_args:
+  ID { [$1] }
+  | lambda_args ARROW ID { $3 :: $1 }
 
 matchcases:
   MATCH ID LBRACE case_list RBRACE { Unit }
@@ -75,7 +79,7 @@ case_list:
 
 formals_opt:
   (* empty *) { [] }
-  | formal_list   { List.rev $1 } (*Why List.rev? *)
+  | formal_list   { List.rev $1 } (*Why List.rev? *) (* add self? *)
 
 formal_list:
     ID COLON typ                   { [($1,$3)] }
@@ -94,6 +98,8 @@ stmt:
   | LBRACE body_list RBRACE { Block($2) }
   | if_stmt { $1 }
   | WHILE expr LBRACE body_list RBRACE { While($2, $4) }
+  | BREAK { Break }
+  | CONT { Continue }
   (* Save FOR for later *)
 
 if_stmt:
