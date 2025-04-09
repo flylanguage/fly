@@ -13,7 +13,7 @@ open Ast
 %token INT BOOL CHAR FLOAT STRING LIST TUPLE UNIT 
 %token FUN ARROW RETURN
 %token LET MUT MATCH INTERFACE
-%token TYPE SELF ENUM BIND AS
+%token TYPE SELF ENUM BIND NEW AS
 %token IMPORT EXPORT
 %token <int> LITERAL
 %token <bool> BLIT
@@ -64,7 +64,14 @@ fdecl:
   FUN ID LPAREN formals_opt RPAREN ARROW typ LBRACE body_list RBRACE { Unit }
 
 funbind:
-  BIND ID LT ID GT LPAREN SELF RPAREN ARROW typ LBRACE body_list RBRACE { Unit }
+  BIND ID LT ID GT LPAREN SELF RPAREN ARROW typ LBRACE body_list RBRACE { Unit } (* differentiate when ID is 'new'? *)
+
+matchcases:
+  MATCH ID LBRACE case_list RBRACE { Unit }
+
+case_list:
+  pattern ARROW stmt { MatchMap($1, $2) }
+  | case_list COMMA pattern ARROW expr { MatchMapMerge($1, MatchMap($3, $5)) }
 
 formals_opt:
   (* empty *) { [] }
