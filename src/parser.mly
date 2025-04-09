@@ -63,6 +63,9 @@ vdecl:
 fdecl:
   FUN ID LPAREN formals_opt RPAREN ARROW typ LBRACE body_list RBRACE { Unit }
 
+funbind:
+  BIND ID LT ID GT LPAREN SELF RPAREN ARROW typ LBRACE body_list RBRACE { Unit }
+
 formals_opt:
   (* empty *) { [] }
   | formal_list   { List.rev $1 } (*Why List.rev? *)
