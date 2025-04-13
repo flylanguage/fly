@@ -6,7 +6,7 @@ open Ast
 
 %token SEMI COLON DCOLON DOT COMMA LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET
 %token PLUS MINUS DIVIDE MODULO TIMES INCR DECR EXPONENT
-%token EQUAL WALRUS PLUS_ASSIGN MINUS_ASSIGN
+%token ASSIGN WALRUS PLUS_ASSIGN MINUS_ASSIGN
 %token BEQ NEQ LT LEQ GT GEQ AND OR NOT
 
 %token IF ELSE WHILE FOR BREAK CONT IN
@@ -26,7 +26,7 @@ open Ast
 %start program_rule
 %type <Ast.program> program_rule
 
-%right EQUAL WALRUS PLUS_ASSIGN MINUS_ASSIGN
+%right ASSIGN WALRUS PLUS_ASSIGN MINUS_ASSIGN
 %left OR
 %left AND
 %left BEQ NEQ
@@ -57,7 +57,7 @@ typ_list:
   | typ_list COMMA typ { $3 :: $1 }
 
 vdecl:
-  | LET ID COLON typ EQUAL expr SEMI { Decl($2, $4, $6) }  (* let x: int = 5; *)
+  | LET ID COLON typ ASSIGN expr SEMI { Decl($2, $4, $6) }  (* let x: int = 5; *)
   | LET ID WALRUS expr SEMI           { Decl($2, $4) }      (* let x := 5; *)
 
 fdecl:

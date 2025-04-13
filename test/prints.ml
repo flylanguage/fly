@@ -13,12 +13,12 @@ let print_token = function
   | OR -> "OR"
   | NOT -> "NOT"
 
-  | EQ -> "EQ" (* Equivalence operators *)
+  | BEQ -> "BEQ" (* Equivalence operators *)
   | NEQ -> "NEQ"
   | LT -> "LT"
-  | LE -> "LE"
+  | LEQ -> "LEQ"
   | GT -> "GT"
-  | GE -> "GE"
+  | GEQ -> "GEQ"
 
   | LPAREN -> "LPAREN" (* Brackets, braces, arrows *)
   | RPAREN -> "RPAREN"
@@ -57,6 +57,7 @@ let print_token = function
   | LITERAL(i) -> Printf.sprintf "LITERAL(%d)" i
   | CLIT(s) -> Printf.sprintf "CLIT(%s)" (String.make 1 s)
   | SLIT(s) -> Printf.sprintf "SLIT(%s)" s
+  | UNIT -> "UNIT"
 
   | INT -> "INT" (* type declaration? *)
   | FLOAT -> "FLOAT"

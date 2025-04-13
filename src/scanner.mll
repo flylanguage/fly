@@ -41,7 +41,7 @@ rule tokenize = parse
   | "**" { EXPONENT }
   | '/' { DIVIDE }
   | '%' { MODULO }
-  | '=' { EQUAL }
+  | '=' { ASSIGN }
   | ":=" { WALRUS }
   | "+=" { PLUS_ASSIGN }
   | "-=" { MINUS_ASSIGN }
