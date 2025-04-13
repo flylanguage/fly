@@ -13,7 +13,7 @@ open Ast
 %token INT BOOL CHAR FLOAT STRING LIST TUPLE UNIT 
 %token FUN ARROW RETURN
 %token LET MUT MATCH INTERFACE
-%token TYPE SELF ENUM BIND AS
+%token TYPE SELF ENUM BIND NEW AS
 %token IMPORT EXPORT
 %token <int> LITERAL
 %token <bool> BLIT
@@ -33,8 +33,8 @@ open Ast
 %left LT GT
 %left PLUS MINUS 
 %left DIVIDE TIMES
-%left EXPONENT
-%left INCR DECR 
+%right EXPONENT
+%left INCR DECR
 
 %%
 
@@ -56,6 +56,10 @@ typ_list:
     typ { [$1] }
   | typ_list COMMA typ { $3 :: $1 }
 
+lambda_args:
+  ID { [$1] }
+  | lambda_args ARROW ID { $3 :: $1 }
+
 vdecl:
   | LET ID COLON typ EQUAL expr SEMI { Decl($2, $4, $6) }  (* let x: int = 5; *)
   | LET ID WALRUS expr SEMI           { Decl($2, $4) }      (* let x := 5; *)
@@ -63,9 +67,27 @@ vdecl:
 fdecl:
   FUN ID LPAREN formals_opt RPAREN ARROW typ LBRACE body_list RBRACE { Unit }
 
+funbind:
+  BIND ID LT typ GT LPAREN formals_list RPAREN ARROW typ LBRACE body_list RBRACE { Unit }
+
+match_expr:
+  MATCH expr LBRACE case_list RBRACE { Unit }
+
+match_case:
+  (* empty *)
+  | pattern ARROW expr { MatchMap($1, $2) }
+
+pattern:
+  (* what can our pattern be? h::t/value/regex? *)
+  expr { $1 }
+
+match_cases:
+  match_case
+  | case_list COMMA match_case{ Map.union($1, $3) }
+
 formals_opt:
   (* empty *) { [] }
-  | formal_list   { List.rev $1 } (*Why List.rev? *)
+  | formal_list   { List.rev $1 } (*Why List.rev? *) (* add self? *)
 
 formal_list:
     ID COLON typ                   { [($1,$3)] }
@@ -84,6 +106,8 @@ stmt:
   | LBRACE body_list RBRACE { Block($2) }
   | if_stmt { $1 }
   | WHILE expr LBRACE body_list RBRACE { While($2, $4) }
+  | BREAK { Break }
+  | CONT { Continue }
   (* Save FOR for later *)
 
 if_stmt:
@@ -109,6 +133,7 @@ expr:
   | expr OR     expr { Binop($1, Or,    $3) }
   | NOT expr         { Unop(Not, $2) }
   | ID LPAREN actuals_opt RPAREN { Call($1, $3) }
+  | typ LBRACKET kv_list RBRACKET { UserTypeInstance($3) }
   | LPAREN expr RPAREN { $2 }
 
 actuals_opt:
@@ -118,3 +143,11 @@ actuals_opt:
 actuals_list:
     expr                    { [$1] }
   | actuals_list COMMA expr { $3 :: $1 }
+
+kv_opt:
+  (* empty *) { [] }
+  | kv_list  { List.rev $1 }
+
+kv_list: (* key-value list for type instantiation *)
+    ID COLON expr { [($1, $2)] } (* or use map? *)
+  | kv_list COMMA ID COLON expr { [($3, $5)] :: $1 }
