@@ -149,7 +149,7 @@ expr:
   | ID DOT ID                          { UDTAccess($1, $3) } (* access member variable of user defined type *)
 
   | LPAREN expr RPAREN                 { $2 }
-  | MATCH expr LBRACE case_list RBRACE { Match($2, $4) } (* match is an expression and should evaluate to something *)
+  | MATCH LPAREN expr RPAREN LBRACE case_list RBRACE { Match($3, $6) } (* match is an expression and should evaluate to something *)
 
 case_list:
   case_item                    {[$1]} (* Base case *)
@@ -169,15 +169,16 @@ pattern:
   | UNDERSCORE       { Wildcard } (* Wildcard for match *)
 
 list_elements:
-  {[]}
-  | expr                      {[$1]}
+  expr                      {[$1]}
   | expr COMMA list_elements  {$1 :: $3}
 
 list:
   LBRACKET list_elements RBRACKET      { ListElements($2) }
 
 tuple:
-  LPAREN list_elements RPAREN          { TupleElements($2) }
+  LPAREN COMMA RPAREN                               { TupleElements([]) }
+  | LPAREN expr COMMA RPAREN                        { TupleElements([$2]) }
+  | LPAREN expr COMMA list_elements RPAREN          { TupleElements($2 :: $4) }
 
 udt_instance:
   ID LBRACE udt_contents RBRACE         { UDTInstance($1, $3) }
@@ -199,13 +200,13 @@ control_flow:
   | RETURN expr SEMI { ReturnVal $2 }
 
 if_stmt:
-  IF expr LBRACE block_list RBRACE                            { IfEnd($2, $4) }
-  | IF expr LBRACE block_list RBRACE elif_stmt                { IfNonEnd($2, $4, $6) }
+  IF LPAREN expr RPAREN LBRACE block_list RBRACE                            { IfEnd($3, $6) }
+  | IF LPAREN expr RPAREN LBRACE block_list RBRACE elif_stmt                { IfNonEnd($3, $6, $8) }
 
 elif_stmt:
-  ELSE IF expr LBRACE block_list RBRACE elif_stmt             { ElifNonEnd($3, $5, $7) }
-  | ELSE IF expr LBRACE block_list RBRACE                     { ElifEnd($3, $5) }
-  | ELSE LBRACE block_list RBRACE                             { ElseEnd($3) }
+  ELSE IF LPAREN expr RPAREN LBRACE block_list RBRACE elif_stmt             { ElifNonEnd($4, $7, $9) }
+  | ELSE IF LPAREN expr RPAREN LBRACE block_list RBRACE                     { ElifEnd($4, $7) }
+  | ELSE LBRACE block_list RBRACE                                           { ElseEnd($3) }
 
 while_loop:
-  WHILE expr LBRACE block_list RBRACE     { While($2, $4) }
+  WHILE LPAREN expr RPAREN LBRACE block_list RBRACE     { While($3, $6) }
