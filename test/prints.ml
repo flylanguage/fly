@@ -1,4 +1,5 @@
 open Fly_lib.Parser
+open Fly_lib.Ast
 
 
 let print_token = function
@@ -84,51 +85,145 @@ let print_token = function
   | IMPORT -> "IMPORT"
   | EXPORT -> "EXPORT"
   | EOF -> "EOF"
-(* 
-let string_of_op = function
-    Add -> "+"
+
+(* Print functions for AST *)
+(* let string_of_op = function
+  | Iden -> "="
+  | Add -> "+"
   | Sub -> "-"
-  | Equal -> "=="
+  | Div -> "//"
+  | Mult -> "*"
+  | FDiv -> "/"
+  | Exp -> "**"
+  | Eq -> "=="
   | Neq -> "!="
   | Less -> "<"
+  | More -> ">"
   | And -> "&&"
   | Or -> "||"
+  | Xor -> "^"
+  | Mod -> "%"
+  | LShift -> "<<"
+  | RShift -> ">>"
+  | BitAnd -> "&"
+  | BitOr -> "|"
+  | BitXor -> "^"
+  | Geq -> ">="
+  | Leq -> "<="
 
-let rec string_of_expr = function
-    Literal(l) -> string_of_int l
-  | BoolLit(true) -> "true"
-  | BoolLit(false) -> "false"
-  | Id(s) -> s
-  | Binop(e1, o, e2) ->
-    string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
-  | Assign(v, e) -> v ^ " = " ^ string_of_expr e
-  | Call(f, el) ->
-      f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
+let string_of_assign_op = function
+  | IdentityAssign -> "="
+  | PlusAssign -> "+="
+  | MinusAssign -> "-="
 
-let rec string_of_stmt = function
-    Block(stmts) ->
-    "{\n" ^ String.concat "" (List.map string_of_stmt stmts) ^ "}\n"
-  | Expr(expr) -> string_of_expr expr ^ ";\n"
-  | Return(expr) -> "return " ^ string_of_expr expr ^ ";\n"
-  | If(e, s1, s2) ->  "if (" ^ string_of_expr e ^ ")\n" ^
-                      string_of_stmt s1 ^ "else\n" ^ string_of_stmt s2
-  | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt s
+let rec string_of_var = function
+  | Var v -> v
+  (**| VarDot(v1, v2) -> string_of_var v1 ^ "." ^ string_of_var v2*)
+  | VarIndex (v, e) -> string_of_var v ^ "[" ^ string_of_expr e ^ "]"
 
-let string_of_typ = function
-    Int -> "int"
-  | Bool -> "bool"
+and string_of_expr = function
+  Literal l -> string_of_int l
+  | BoolLit true -> "True"
+  | BoolLit false -> "False"
+  | FloatLit f -> string_of_float f
+  | StringLit s -> s
+  | Binop (e1, o, e2) ->
+      string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
+  | VarExpr v -> string_of_var v
+  | List list -> "[" ^ String.concat ", " (List.map string_of_expr list) ^ "]"
+  | Dict d ->
+      let expr_expr_printer = function
+        | e1, e2 -> string_of_expr e1 ^ " : " ^ string_of_expr e2
+      in
+      "{" ^ String.concat ", " (List.map expr_expr_printer d) ^ "}"
+  | FuncCall (v, e) ->
+      string_of_var v ^ "("
+      ^ String.concat ", " (List.map string_of_expr e)
+      ^ ")"
+  | ListCompUnconditional (e1, v, e2) ->
+      "[" ^ string_of_expr e1 ^ " for " ^ string_of_var v ^ " in "
+      ^ string_of_expr e2 ^ "]"
+  | ListCompConditional (e1, v, e2, e3) ->
+      "[" ^ string_of_expr e1 ^ " for " ^ string_of_var v ^ " in "
+      ^ string_of_expr e2 ^ " if " ^ string_of_expr e3 ^ "]"
+  | IndexingStringLit (s, e) -> s ^ "[" ^ string_of_expr e ^ "]"
+  | IndexingExprList (e1, e2) ->
+      string_of_expr e1 ^ "[" ^ string_of_expr e2 ^ "]"
+  | DictCompConditional (e1, e2, v1, v2, e3, e4) ->
+      "{" ^ string_of_expr e1 ^ " : " ^ string_of_expr e2 ^ " for ("
+      ^ string_of_var v1 ^ ", " ^ string_of_var v2 ^ ") in " ^ string_of_expr e3
+      ^ "if" ^ string_of_expr e4 ^ "}"
+  | DictCompUnconditional (e1, e2, v1, v2, e3) ->
+      "{" ^ string_of_expr e1 ^ " : " ^ string_of_expr e2 ^ " for ("
+      ^ string_of_var v1 ^ ", " ^ string_of_var v2 ^ ") in " ^ string_of_expr e3
+      ^ "}"
+  | _ -> raise (Failure "Unable to run string_of_expr on this expression.")
 
-let string_of_vdecl (t, id) = string_of_typ t ^ " " ^ id ^ ";\n"
+let rec string_of_typevar = function
+  TypeVariable v -> v
+  | List t -> "list[" ^ string_of_typevar t ^ "]"
 
-let string_of_fdecl fdecl =
-  string_of_typ fdecl.rtyp ^ " " ^
-  fdecl.fname ^ "(" ^ String.concat ", " (List.map snd fdecl.formals) ^
-  ")\n{\n" ^
-  String.concat "" (List.map string_of_vdecl fdecl.locals) ^
-  String.concat "" (List.map string_of_stmt fdecl.body) ^
-  "}\n"
 
-  let string_of_program (vars, funcs) =
-  "\n\nParsed program: \n\n" ^
-  String.concat "" (List.map string_of_vdecl vars) ^ "\n" ^
-  String.concat "\n" (List.map string_of_fdecl funcs) *)
+let string_of_arg = function
+  | v, t -> string_of_var v ^ " : " ^ string_of_typevar t
+
+let string_of_func_sig = function
+  | v, args, ret_type ->
+      "def " ^ string_of_var v ^ "("
+      ^ String.concat ", " (List.map string_of_arg args)
+      ^ ") -> " ^ string_of_typevar ret_type
+
+let rec string_of_block = function
+  | BlockAssign (v, spec_assign, expr) ->
+      string_of_var v ^ " "
+      ^ string_of_special_assignment spec_assign
+      ^ " " ^ string_of_expr expr ^ "\n"
+  | VarDec (t, v, expr) ->
+      string_of_var v ^ ": " ^ string_of_typevar t ^ " = " ^ string_of_expr expr
+      ^ "\n"
+  | While (e, block_list) ->
+      "while " ^ string_of_expr e ^ ":\n"
+      ^ String.concat "" (List.map string_of_block block_list)
+      ^ "\n"
+  | For (v, e, block_list) ->
+      "for " ^ string_of_var v ^ " in " ^ string_of_expr e ^ ":\n"
+      ^ String.concat "" (List.map string_of_block block_list)
+      ^ "\n"
+  | FuncBlockCall (v, e) ->
+      string_of_var v ^ "("
+      ^ String.concat ", " (List.map string_of_expr e)
+      ^ ")" ^ "\n"
+  | ReturnVal e -> "return " ^ string_of_expr e ^ "\n"
+  | ReturnVoid -> "return" ^ "\n"
+  | FunctionSignature signature -> string_of_func_sig signature ^ "\n"
+  | FunctionDefinition (signature, block_list) ->
+      string_of_func_sig signature
+      ^ "\n"
+      ^ String.concat "" (List.map string_of_block block_list)
+      ^ "\n"
+  | Break -> "break\n"
+  | Continue -> "continue\n"
+  | Pass -> "pass\n"
+  | IfEnd (e, bl) ->
+      "if " ^ string_of_expr e ^ ":\n"
+      ^ String.concat "\n" (List.map string_of_block bl)
+      ^ "\n"
+  | IfNonEnd (e, bl, nbl) ->
+      "if " ^ string_of_expr e ^ ":\n"
+      ^ String.concat "\n" (List.map string_of_block bl)
+      ^ string_of_block nbl
+  | ElifEnd (e, bl) ->
+      "elif " ^ string_of_expr e ^ ":\n"
+      ^ String.concat "\n" (List.map string_of_block bl)
+      ^ "\n"
+  | ElifNonEnd (e, bl, nbl) ->
+      "elif " ^ string_of_expr e ^ ":\n"
+      ^ String.concat "\n" (List.map string_of_block bl)
+      ^ string_of_block nbl
+  | ElseEnd bl ->
+      "else:\n" ^ String.concat "\n" (List.map string_of_block bl) ^ "\n"
+
+let string_of_program fdecl =
+  "\n\nParsed program: \n\n"
+  ^ String.concat "" (List.map string_of_block fdecl.body)
+  ^ "\n" *)

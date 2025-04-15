@@ -9,8 +9,6 @@ type expr =
   | CharLit of char
   | StringLit of string
   | Unit
-  | List of typ
-  | Tuple of typ list (* this is probably definitely wrong? *)
   | TupleElements of expr list
   | Id of string
   | Binop of expr * op * expr
