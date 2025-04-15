@@ -29,7 +29,7 @@ let tests = "testing_enums" >::: [
         "test3" >:: (fun _ ->
         let lexbuf = Lexing.from_string "if (a1 == Color.Red) {\n} else {\n}\n" in
         let actual = List.map print_token (to_list lexbuf) |> String.concat " " in
-        let expected = "IF LPAREN ID(a1) EQ ID(Color) DOT ID(Red) RPAREN LBRACE RBRACE ELSE LBRACE RBRACE" in
+        let expected = "IF LPAREN ID(a1) BEQ ID(Color) DOT ID(Red) RPAREN LBRACE RBRACE ELSE LBRACE RBRACE" in
         assert_equal 
         expected actual
         ~printer:(fun s -> "\"" ^ s ^ "\""));
@@ -45,15 +45,15 @@ let tests = "testing_enums" >::: [
         "test5" >:: (fun _ ->
         let lexbuf = Lexing.from_string "if (b1 == Color.Green) {\n} else {\n}\n" in
         let actual = List.map print_token (to_list lexbuf) |> String.concat " " in
-        let expected = "IF LPAREN ID(b1) EQ ID(Color) DOT ID(Green) RPAREN LBRACE RBRACE ELSE LBRACE RBRACE" in
+        let expected = "IF LPAREN ID(b1) BEQ ID(Color) DOT ID(Green) RPAREN LBRACE RBRACE ELSE LBRACE RBRACE" in
         assert_equal 
         expected actual
         ~printer:(fun s -> "\"" ^ s ^ "\""));
 
         "test6" >:: (fun _ ->
-        let lexbuf = Lexing.from_string "match (c1) {\n  Color.Red => { \n  }\n  Color.Green => { \n  }\n  Color.Blue => { \n  }\n  _ => {\n  }\n}\n" in
+        let lexbuf = Lexing.from_string "match (c1) {\n  Color.Red -> { \n  }\n  Color.Green -> { \n  }\n  Color.Blue -> { \n  }\n  _ -> {\n  }\n}\n" in
         let actual = List.map print_token (to_list lexbuf) |> String.concat " " in
-        let expected = "IF LPAREN ID(b1) EQ ID(Color) DOT ID(Green) RPAREN LBRACE RBRACE ELSE LBRACE RBRACE" in
+        let expected = "MATCH LPAREN ID(c1) RPAREN LBRACE ID(Color) DOT ID(Red) ARROW LBRACE RBRACE ID(Color) DOT ID(Green) ARROW LBRACE RBRACE ID(Color) DOT ID(Blue) ARROW LBRACE RBRACE UNDERSCORE ARROW LBRACE RBRACE RBRACE" in
         assert_equal 
         expected actual
         ~printer:(fun s -> "\"" ^ s ^ "\""));

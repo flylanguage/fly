@@ -13,7 +13,7 @@ let tests = "testing_loops" >::: [
         "test1" >:: (fun _ ->
         let lexbuf = Lexing.from_string "let test_lst: list<int> = [-5, 0, 5, 9, 100];\n" in
         let actual = List.map print_token (to_list lexbuf) |> String.concat " " in
-        let expected = "LET ID(test_lst) COLON LIST LT INT GT ASSIGN LBRACKET LITERAL(-5) COMMA LITERAL(0) COMMA LITERAL(5) COMMA LITERAL(9) COMMA LITERAL(100) RBRACKET SEMI" in
+        let expected = "LET ID(test_lst) COLON LIST LT INT GT EQUAL LBRACKET LITERAL(-5) COMMA LITERAL(0) COMMA LITERAL(5) COMMA LITERAL(9) COMMA LITERAL(100) RBRACKET SEMI" in
         assert_equal 
         expected actual
         ~printer:(fun s -> "\"" ^ s ^ "\""));
@@ -37,7 +37,7 @@ let tests = "testing_loops" >::: [
         "test4" >:: (fun _ ->
         let lexbuf = Lexing.from_string "let mut i: int = 0;\n" in
         let actual = List.map print_token (to_list lexbuf) |> String.concat " " in
-        let expected = "LET MUT ID(i) COLON INT ASSIGN LITERAL(0) SEMI" in
+        let expected = "LET MUT ID(i) COLON INT EQUAL LITERAL(0) SEMI" in
         assert_equal 
         expected actual
         ~printer:(fun s -> "\"" ^ s ^ "\""));

@@ -1,5 +1,4 @@
-type op = Add | Sub | Mult | Div | Mod | Exp | Preincr | Postincr | Predecr | Postdecr | 
-          Equal | Neq | Less | Leq | Greater | Geq | And | Or | Not
+type op = Add | Sub | Mult | Div | Mod | Exp | Preincr | Postincr | Predecr | Postdecr | Equal | Neq | Less | Leq | Greater | Geq | And | Or | Not
 
 type typ = Int | Bool | Char | Float | String | List of typ | Tuple of typ list | Unit | UserType of string
 
@@ -21,6 +20,7 @@ type expr =
   | Call of string * expr list (* string for function name and list of exprs for arguments to pass to the function *)
   | UDTInstance of string * kv_list (* typ to indicate the exact user defined type and kv_list for member variables *)
   | UDTAccess of string * string
+  | UDTStaticAccess of string * string
   | IndexingList of string * expr
   | ListElements of expr list
   | Match of expr * (expr * expr) list

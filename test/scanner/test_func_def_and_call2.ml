@@ -29,7 +29,7 @@ let tests = "testing_func_def_and_call2" >::: [
         "test3" >:: (fun _ ->
         let lexbuf = Lexing.from_string "let lst: list<int> = [0,1,2,3,4]; //map creates a new list so we don't need mut here.\n" in
         let actual = List.map print_token (to_list lexbuf) |> String.concat " " in
-        let expected = "LET ID(lst) COLON LIST LT INT GT ASSIGN LBRACKET LITERAL(0) COMMA LITERAL(1) COMMA LITERAL(2) COMMA LITERAL(3) COMMA LITERAL(4) RBRACKET SEMI" in
+        let expected = "LET ID(lst) COLON LIST LT INT GT EQUAL LBRACKET LITERAL(0) COMMA LITERAL(1) COMMA LITERAL(2) COMMA LITERAL(3) COMMA LITERAL(4) RBRACKET SEMI" in
         assert_equal 
         expected actual
         ~printer:(fun s -> "\"" ^ s ^ "\""));

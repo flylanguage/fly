@@ -147,7 +147,7 @@ expr:
 
   | udt_instance                       { $1 } (* Instantiating a user defined type *)
   | ID DOT ID                          { UDTAccess($1, $3) } (* access member variable of user defined type *)
-
+  | ID DCOLON ID                       { UDTStaticAccess($1, $3) } (* access static method on user defined type *)
   | LPAREN expr RPAREN                 { $2 }
   | MATCH LPAREN expr RPAREN LBRACE case_list RBRACE { Match($3, $6) } (* match is an expression and should evaluate to something *)
 
@@ -160,13 +160,13 @@ case_item:
 
 (* Only literals allowed here. TBH, this really needs discussion *)
 pattern:
-    LITERAL          { Literal($1)  }
-  | BLIT             { BoolLit($1)  }
-  | FLIT             { FloatLit($1) }
-  | CLIT             { CharLit($1)  }
-  | SLIT             { StringLit($1)}
-  | ID               { Id($1) }
-  | UNDERSCORE       { Wildcard } (* Wildcard for match *)
+    LITERAL                     { Literal($1)  }
+  | BLIT                        { BoolLit($1)  }
+  | FLIT                        { FloatLit($1) }
+  | CLIT                        { CharLit($1)  }
+  | SLIT                        { StringLit($1)}
+  | ID                          { Id($1) }
+  | UNDERSCORE                  { Wildcard } (* Wildcard for match *)
 
 list_elements:
   expr                      {[$1]}
