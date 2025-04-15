@@ -1,7 +1,6 @@
 open Fly_lib.Parser
 (* open Fly_lib.Ast *)
 
-
 let print_token = function
   | PLUS -> "PLUS" (* Basic arithmetic operations *)
   | MINUS -> "MINUS"
@@ -9,28 +8,24 @@ let print_token = function
   | DIVIDE -> "DIVIDE"
   | EXPONENT -> "EXPONENT"
   | MODULO -> "MODULO"
-
   | AND -> "AND" (* Logical operators *)
   | OR -> "OR"
   | NOT -> "NOT"
-
   | BEQ -> "BEQ" (* Equivalence operators *)
   | NEQ -> "NEQ"
   | LT -> "LT"
   | LEQ -> "LEQ"
   | GT -> "GT"
   | GEQ -> "GEQ"
-
   | LPAREN -> "LPAREN" (* Brackets, braces, arrows *)
   | RPAREN -> "RPAREN"
   | LBRACKET -> "LBRACKET"
   | RBRACKET -> "RBRACKET"
   | LBRACE -> "LBRACE"
   | RBRACE -> "RBRACE"
-
   | LET -> "LET" (* Assignment *)
   | MUT -> "MUT"
-  | ID(s) -> Printf.sprintf "ID(%s)" s
+  | ID s -> Printf.sprintf "ID(%s)" s
   | COLON -> "COLON"
   | WALRUS -> "WALRUS"
   | EQUAL -> "EQUAL"
@@ -39,7 +34,6 @@ let print_token = function
   | INCR -> "INCR"
   | DECR -> "DECR"
   | SEMI -> "SEMI"
-
   | IF -> "IF" (* Control flow *)
   | ELSE -> "ELSE"
   | WHILE -> "WHILE"
@@ -48,19 +42,16 @@ let print_token = function
   | CONT -> "CONTINUE"
   | MATCH -> "MATCH"
   | UNDERSCORE -> "UNDERSCORE"
-
   | FUN -> "FUN"
   | ARROW -> "ARROW" (* this is -> *)
   | RETURN -> "RETURN"
-
-  | BLIT(true) -> "BLIT(true)" (* Primitive types / literals *)
-  | BLIT(false) -> "BLIT(false)"
-  | FLIT(f) -> Printf.sprintf "FLIT(%f)" f
-  | LITERAL(i) -> Printf.sprintf "LITERAL(%d)" i
-  | CLIT(s) -> Printf.sprintf "CLIT(%s)" (String.make 1 s)
-  | SLIT(s) -> Printf.sprintf "SLIT(%s)" s
+  | BLIT true -> "BLIT(true)" (* Primitive types / literals *)
+  | BLIT false -> "BLIT(false)"
+  | FLIT f -> Printf.sprintf "FLIT(%f)" f
+  | LITERAL i -> Printf.sprintf "LITERAL(%d)" i
+  | CLIT s -> Printf.sprintf "CLIT(%s)" (String.make 1 s)
+  | SLIT s -> Printf.sprintf "SLIT(%s)" s
   | UNIT -> "UNIT"
-
   | INT -> "INT" (* type declaration? *)
   | FLOAT -> "FLOAT"
   | BOOL -> "BOOL"
@@ -68,23 +59,20 @@ let print_token = function
   | STRING -> "STRING"
   | TYPE -> "TYPE"
   | COMMA -> "COMMA"
-
   | INTERFACE -> "INTERFACE"
   | SELF -> "SELF"
   | ENUM -> "ENUM"
   | BIND -> "BIND"
   | AS -> "AS"
-
   | DOT -> "DOT"
-
   | DCOLON -> "DCOLON"
   | IN -> "IN"
   | LIST -> "LIST"
   | TUPLE -> "TUPLE"
-
   | IMPORT -> "IMPORT"
   | EXPORT -> "EXPORT"
   | EOF -> "EOF"
+;;
 
 (* Print functions for AST *)
 (* let string_of_op = function
