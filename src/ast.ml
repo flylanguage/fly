@@ -15,7 +15,8 @@ type expr =
   | TupleElements of expr list
   | Id of string
   | Binop of expr * op * expr
-  | Unop of expr * op (* this is for the not, postincr, preincr, postdecr, preincr *)
+  | Unop of expr * op (* this is for not *)
+  | UnopSideEffect of string * op (* this is for postincr, postdecr, preincr, postdecr *)
   | Assign of string * expr
   | Call of string * expr list (* string for function name and list of exprs for arguments to pass to the function *)
   | UDTInstance of string * kv_list (* typ to indicate the exact user defined type and kv_list for member variables *)

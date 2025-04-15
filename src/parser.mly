@@ -1,5 +1,4 @@
 /* Ocamlyacc parser for Fly */
-
 %{
 open Ast
 %}
@@ -26,15 +25,16 @@ open Ast
 %start program_rule
 %type <Ast.program> program_rule
 
-%right EQUAL WALRUS PLUS_ASSIGN MINUS_ASSIGN
+%right EQUAL PLUS_ASSIGN MINUS_ASSIGN WALRUS
+%right DCOLON
 %left OR
 %left AND
-%left BEQ NEQ
-%left LT GT
-%left PLUS MINUS 
-%left DIVIDE TIMES
+%nonassoc NOT
+%nonassoc BEQ NEQ LT LEQ GT GEQ
+%left PLUS MINUS
+%left TIMES DIVIDE MODULO
 %right EXPONENT
-%left INCR DECR
+
 
 %%
 
@@ -46,7 +46,7 @@ block_list:
  | block block_list { $1 :: $2 }
 
 block:
-    declaration         { $1 }
+  declaration         { $1 }
   | assignment          { $1 }
   | func_def            { $1 }
   | func_call           { $1 }
@@ -54,15 +54,15 @@ block:
   | control_flow        { $1 }
 
 declaration:
-  | LET MUT ID COLON typ EQUAL expr SEMI  { MutDeclTyped($3, $5, $7) }  (* let x: int = 5; *)
+  LET MUT ID COLON typ EQUAL expr SEMI  { MutDeclTyped($3, $5, $7) }  (* let x: int = 5; *)
   | LET MUT ID WALRUS expr SEMI           { MutDeclInfer($3, $5) }      (* let x := 5; *)
   | LET ID COLON typ EQUAL expr SEMI      { DeclTyped($2, $4, $6) }  (* let x: int = 5; *)
   | LET ID WALRUS expr SEMI               { DeclInfer($2, $4) }      (* let x := 5; *)
 
 assignment:
-  ID EQUAL expr                        { Assign($1, IdentityAssign, $3) }
-  | ID PLUS_ASSIGN expr                { Assign($1, PlusAssign, $3 ) }
-  | ID MINUS_ASSIGN expr               { Assign($1, MinusAssign, $3 ) }
+  ID EQUAL expr SEMI                       { Assign($1, IdentityAssign, $3) }
+  | ID PLUS_ASSIGN expr SEMI             { Assign($1, PlusAssign, $3 ) }
+  | ID MINUS_ASSIGN expr SEMI             { Assign($1, MinusAssign, $3 ) }
 
 func_def:
   FUN ID LPAREN formals_opt RPAREN ARROW typ LBRACE block_list RBRACE
@@ -117,8 +117,6 @@ expr:
   | FLIT                               { FloatLit($1) }
   | CLIT                               { CharLit($1)  }
   | SLIT                               { StringLit($1)}
-  | SLIT                               { StringLit($1)}
-  | UNIT                               { Unit }
   | ID                                 { Id($1) }
 
   | expr PLUS   expr                   { Binop($1, Add,   $3) } (* arithmetic expressions *)
@@ -127,10 +125,10 @@ expr:
   | expr DIVIDE expr                   { Binop($1, Div,   $3) }
   | expr MODULO expr                   { Binop($1, Mod, $3)}
   | expr EXPONENT expr                 { Binop($1, Exp, $3)}
-  | expr INCR                          { Unop($1, Postincr)   }
-  | expr DECR                          { Unop($1, Postdecr)   }
-  | INCR expr                          { Unop($2, Preincr)    }
-  | DECR expr                          { Unop($2, Predecr)    }
+  | ID INCR                            { UnopSideEffect($1, Postincr)   }
+  | ID DECR                            { UnopSideEffect($1, Postdecr)   }
+  | INCR ID                            { UnopSideEffect($2, Preincr)    }
+  | DECR ID                            { UnopSideEffect($2, Predecr)    }
 
   | expr BEQ    expr                   { Binop($1, Equal, $3) } (* logical expressions *)
   | expr NEQ    expr                   { Binop($1, Neq,   $3) }
@@ -167,7 +165,6 @@ pattern:
   | FLIT             { FloatLit($1) }
   | CLIT             { CharLit($1)  }
   | SLIT             { StringLit($1)}
-  | SLIT             { StringLit($1)}
   | ID               { Id($1) }
   | UNDERSCORE       { Wildcard } (* Wildcard for match *)
 
@@ -180,7 +177,7 @@ list:
   LBRACKET list_elements RBRACKET      { ListElements($2) }
 
 tuple:
-  LPAREN list_elements RBRACKET        { TupleElements($2) }
+  LPAREN list_elements RPAREN          { TupleElements($2) }
 
 udt_instance:
   ID LBRACE udt_contents RBRACE         { UDTInstance($1, $3) }
@@ -192,10 +189,6 @@ udt_contents:
 udt_element:
   ID COLON expr                        { ($1, $3) }
 
-
-
-
-  (* Save FOR for later *)
 
 control_flow:
   if_stmt       { $1 }

@@ -1,0 +1,587 @@
+
+** Conflict (shift/reduce) in state 90.
+** Tokens involved: INCR DECR
+** The following explanations concentrate on token INCR.
+** This state is reached from program_rule after reading:
+
+WHILE NOT expr
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program_rule 
+block_list EOF 
+block block_list 
+control_flow 
+while_loop 
+WHILE expr LBRACE block_list RBRACE 
+      (?)
+
+** In state 90, looking ahead at INCR, shifting is permitted
+** because of the following sub-derivation:
+
+NOT expr 
+    expr . INCR 
+
+** In state 90, looking ahead at INCR, reducing production
+** expr -> NOT expr
+** is permitted because of the following sub-derivation:
+
+expr INCR // lookahead token appears
+NOT expr . 
+
+** Conflict (shift/reduce) in state 71.
+** Token involved: RPAREN
+** This state is reached from program_rule after reading:
+
+WHILE LPAREN expr
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program_rule 
+block_list EOF 
+block block_list 
+control_flow 
+while_loop 
+WHILE expr LBRACE block_list RBRACE 
+      (?)
+
+** In state 71, looking ahead at RPAREN, shifting is permitted
+** because of the following sub-derivation:
+
+LPAREN expr . RPAREN 
+
+** In state 71, looking ahead at RPAREN, reducing production
+** list_elements -> expr
+** is permitted because of the following sub-derivation:
+
+tuple 
+LPAREN list_elements RPAREN // lookahead token appears
+       expr . 
+
+** Conflict (shift/reduce) in state 63.
+** Tokens involved: TIMES PLUS OR NEQ MODULO MINUS LT LEQ INCR GT GEQ EXPONENT DIVIDE DECR BEQ AND
+** The following explanations concentrate on token TIMES.
+** This state is reached from program_rule after reading:
+
+WHILE INCR expr
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program_rule 
+block_list EOF 
+block block_list 
+control_flow 
+while_loop 
+WHILE expr LBRACE block_list RBRACE 
+      (?)
+
+** In state 63, looking ahead at TIMES, shifting is permitted
+** because of the following sub-derivation:
+
+INCR expr 
+     expr . TIMES expr 
+
+** In state 63, looking ahead at TIMES, reducing production
+** expr -> INCR expr
+** is permitted because of the following sub-derivation:
+
+expr TIMES expr // lookahead token appears
+INCR expr . 
+
+** Conflict (shift/reduce) in state 49.
+** Tokens involved: INCR DECR
+** The following explanations concentrate on token INCR.
+** This state is reached from program_rule after reading:
+
+WHILE expr AND expr
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program_rule 
+block_list EOF 
+block block_list 
+control_flow 
+while_loop 
+WHILE expr LBRACE block_list RBRACE 
+      (?)
+
+** In state 49, looking ahead at INCR, shifting is permitted
+** because of the following sub-derivation:
+
+expr AND expr 
+         expr . INCR 
+
+** In state 49, looking ahead at INCR, reducing production
+** expr -> expr AND expr
+** is permitted because of the following sub-derivation:
+
+expr INCR // lookahead token appears
+expr AND expr . 
+
+** Conflict (shift/reduce) in state 47.
+** Tokens involved: INCR DECR
+** The following explanations concentrate on token INCR.
+** This state is reached from program_rule after reading:
+
+WHILE expr BEQ expr
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program_rule 
+block_list EOF 
+block block_list 
+control_flow 
+while_loop 
+WHILE expr LBRACE block_list RBRACE 
+      (?)
+
+** In state 47, looking ahead at INCR, shifting is permitted
+** because of the following sub-derivation:
+
+expr BEQ expr 
+         expr . INCR 
+
+** In state 47, looking ahead at INCR, reducing production
+** expr -> expr BEQ expr
+** is permitted because of the following sub-derivation:
+
+expr INCR // lookahead token appears
+expr BEQ expr . 
+
+** Conflict (shift/reduce) in state 45.
+** Tokens involved: INCR DECR
+** The following explanations concentrate on token INCR.
+** This state is reached from program_rule after reading:
+
+WHILE expr GEQ expr
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program_rule 
+block_list EOF 
+block block_list 
+control_flow 
+while_loop 
+WHILE expr LBRACE block_list RBRACE 
+      (?)
+
+** In state 45, looking ahead at INCR, shifting is permitted
+** because of the following sub-derivation:
+
+expr GEQ expr 
+         expr . INCR 
+
+** In state 45, looking ahead at INCR, reducing production
+** expr -> expr GEQ expr
+** is permitted because of the following sub-derivation:
+
+expr INCR // lookahead token appears
+expr GEQ expr . 
+
+** Conflict (shift/reduce) in state 43.
+** Tokens involved: INCR DECR
+** The following explanations concentrate on token INCR.
+** This state is reached from program_rule after reading:
+
+WHILE expr GT expr
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program_rule 
+block_list EOF 
+block block_list 
+control_flow 
+while_loop 
+WHILE expr LBRACE block_list RBRACE 
+      (?)
+
+** In state 43, looking ahead at INCR, shifting is permitted
+** because of the following sub-derivation:
+
+expr GT expr 
+        expr . INCR 
+
+** In state 43, looking ahead at INCR, reducing production
+** expr -> expr GT expr
+** is permitted because of the following sub-derivation:
+
+expr INCR // lookahead token appears
+expr GT expr . 
+
+** Conflict (shift/reduce) in state 41.
+** Tokens involved: INCR DECR
+** The following explanations concentrate on token INCR.
+** This state is reached from program_rule after reading:
+
+WHILE expr LEQ expr
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program_rule 
+block_list EOF 
+block block_list 
+control_flow 
+while_loop 
+WHILE expr LBRACE block_list RBRACE 
+      (?)
+
+** In state 41, looking ahead at INCR, shifting is permitted
+** because of the following sub-derivation:
+
+expr LEQ expr 
+         expr . INCR 
+
+** In state 41, looking ahead at INCR, reducing production
+** expr -> expr LEQ expr
+** is permitted because of the following sub-derivation:
+
+expr INCR // lookahead token appears
+expr LEQ expr . 
+
+** Conflict (shift/reduce) in state 39.
+** Tokens involved: INCR DECR
+** The following explanations concentrate on token INCR.
+** This state is reached from program_rule after reading:
+
+WHILE expr LT expr
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program_rule 
+block_list EOF 
+block block_list 
+control_flow 
+while_loop 
+WHILE expr LBRACE block_list RBRACE 
+      (?)
+
+** In state 39, looking ahead at INCR, shifting is permitted
+** because of the following sub-derivation:
+
+expr LT expr 
+        expr . INCR 
+
+** In state 39, looking ahead at INCR, reducing production
+** expr -> expr LT expr
+** is permitted because of the following sub-derivation:
+
+expr INCR // lookahead token appears
+expr LT expr . 
+
+** Conflict (shift/reduce) in state 37.
+** Tokens involved: INCR DECR
+** The following explanations concentrate on token INCR.
+** This state is reached from program_rule after reading:
+
+WHILE expr MINUS expr
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program_rule 
+block_list EOF 
+block block_list 
+control_flow 
+while_loop 
+WHILE expr LBRACE block_list RBRACE 
+      (?)
+
+** In state 37, looking ahead at INCR, reducing production
+** expr -> expr MINUS expr
+** is permitted because of the following sub-derivation:
+
+expr INCR // lookahead token appears
+expr MINUS expr . 
+
+** In state 37, looking ahead at INCR, shifting is permitted
+** because of the following sub-derivation:
+
+expr MINUS expr 
+           expr . INCR 
+
+** Conflict (shift/reduce) in state 35.
+** Tokens involved: INCR DECR
+** The following explanations concentrate on token INCR.
+** This state is reached from program_rule after reading:
+
+WHILE expr NEQ expr
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program_rule 
+block_list EOF 
+block block_list 
+control_flow 
+while_loop 
+WHILE expr LBRACE block_list RBRACE 
+      (?)
+
+** In state 35, looking ahead at INCR, shifting is permitted
+** because of the following sub-derivation:
+
+expr NEQ expr 
+         expr . INCR 
+
+** In state 35, looking ahead at INCR, reducing production
+** expr -> expr NEQ expr
+** is permitted because of the following sub-derivation:
+
+expr INCR // lookahead token appears
+expr NEQ expr . 
+
+** Conflict (shift/reduce) in state 33.
+** Tokens involved: INCR DECR
+** The following explanations concentrate on token INCR.
+** This state is reached from program_rule after reading:
+
+WHILE expr OR expr
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program_rule 
+block_list EOF 
+block block_list 
+control_flow 
+while_loop 
+WHILE expr LBRACE block_list RBRACE 
+      (?)
+
+** In state 33, looking ahead at INCR, shifting is permitted
+** because of the following sub-derivation:
+
+expr OR expr 
+        expr . INCR 
+
+** In state 33, looking ahead at INCR, reducing production
+** expr -> expr OR expr
+** is permitted because of the following sub-derivation:
+
+expr INCR // lookahead token appears
+expr OR expr . 
+
+** Conflict (shift/reduce) in state 31.
+** Tokens involved: INCR DECR
+** The following explanations concentrate on token INCR.
+** This state is reached from program_rule after reading:
+
+WHILE expr DIVIDE expr
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program_rule 
+block_list EOF 
+block block_list 
+control_flow 
+while_loop 
+WHILE expr LBRACE block_list RBRACE 
+      (?)
+
+** In state 31, looking ahead at INCR, reducing production
+** expr -> expr DIVIDE expr
+** is permitted because of the following sub-derivation:
+
+expr INCR // lookahead token appears
+expr DIVIDE expr . 
+
+** In state 31, looking ahead at INCR, shifting is permitted
+** because of the following sub-derivation:
+
+expr DIVIDE expr 
+            expr . INCR 
+
+** Conflict (shift/reduce) in state 29.
+** Tokens involved: INCR DECR
+** The following explanations concentrate on token INCR.
+** This state is reached from program_rule after reading:
+
+WHILE expr MODULO expr
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program_rule 
+block_list EOF 
+block block_list 
+control_flow 
+while_loop 
+WHILE expr LBRACE block_list RBRACE 
+      (?)
+
+** In state 29, looking ahead at INCR, reducing production
+** expr -> expr MODULO expr
+** is permitted because of the following sub-derivation:
+
+expr INCR // lookahead token appears
+expr MODULO expr . 
+
+** In state 29, looking ahead at INCR, shifting is permitted
+** because of the following sub-derivation:
+
+expr MODULO expr 
+            expr . INCR 
+
+** Conflict (shift/reduce) in state 27.
+** Tokens involved: INCR DECR
+** The following explanations concentrate on token INCR.
+** This state is reached from program_rule after reading:
+
+WHILE expr PLUS expr
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program_rule 
+block_list EOF 
+block block_list 
+control_flow 
+while_loop 
+WHILE expr LBRACE block_list RBRACE 
+      (?)
+
+** In state 27, looking ahead at INCR, reducing production
+** expr -> expr PLUS expr
+** is permitted because of the following sub-derivation:
+
+expr INCR // lookahead token appears
+expr PLUS expr . 
+
+** In state 27, looking ahead at INCR, shifting is permitted
+** because of the following sub-derivation:
+
+expr PLUS expr 
+          expr . INCR 
+
+** Conflict (shift/reduce) in state 24.
+** Tokens involved: INCR DECR
+** The following explanations concentrate on token INCR.
+** This state is reached from program_rule after reading:
+
+WHILE expr EXPONENT expr
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program_rule 
+block_list EOF 
+block block_list 
+control_flow 
+while_loop 
+WHILE expr LBRACE block_list RBRACE 
+      (?)
+
+** In state 24, looking ahead at INCR, reducing production
+** expr -> expr EXPONENT expr
+** is permitted because of the following sub-derivation:
+
+expr INCR // lookahead token appears
+expr EXPONENT expr . 
+
+** In state 24, looking ahead at INCR, shifting is permitted
+** because of the following sub-derivation:
+
+expr EXPONENT expr 
+              expr . INCR 
+
+** Conflict (shift/reduce) in state 21.
+** Tokens involved: INCR DECR
+** The following explanations concentrate on token INCR.
+** This state is reached from program_rule after reading:
+
+WHILE expr TIMES expr
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program_rule 
+block_list EOF 
+block block_list 
+control_flow 
+while_loop 
+WHILE expr LBRACE block_list RBRACE 
+      (?)
+
+** In state 21, looking ahead at INCR, reducing production
+** expr -> expr TIMES expr
+** is permitted because of the following sub-derivation:
+
+expr INCR // lookahead token appears
+expr TIMES expr . 
+
+** In state 21, looking ahead at INCR, shifting is permitted
+** because of the following sub-derivation:
+
+expr TIMES expr 
+           expr . INCR 
+
+** Conflict (shift/reduce) in state 19.
+** Tokens involved: TIMES PLUS OR NEQ MODULO MINUS LT LEQ INCR GT GEQ EXPONENT DIVIDE DECR BEQ AND
+** The following explanations concentrate on token TIMES.
+** This state is reached from program_rule after reading:
+
+WHILE DECR expr
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program_rule 
+block_list EOF 
+block block_list 
+control_flow 
+while_loop 
+WHILE expr LBRACE block_list RBRACE 
+      (?)
+
+** In state 19, looking ahead at TIMES, shifting is permitted
+** because of the following sub-derivation:
+
+DECR expr 
+     expr . TIMES expr 
+
+** In state 19, looking ahead at TIMES, reducing production
+** expr -> DECR expr
+** is permitted because of the following sub-derivation:
+
+expr TIMES expr // lookahead token appears
+DECR expr . 
+
+** Conflict (shift/reduce) in state 10.
+** Token involved: LBRACE
+** This state is reached from program_rule after reading:
+
+WHILE ID
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program_rule 
+block_list EOF 
+block block_list 
+control_flow 
+while_loop 
+(?)
+
+** In state 10, looking ahead at LBRACE, reducing production
+** expr -> ID
+** is permitted because of the following sub-derivation:
+
+WHILE expr LBRACE block_list RBRACE // lookahead token appears
+      ID . 
+
+** In state 10, looking ahead at LBRACE, shifting is permitted
+** because of the following sub-derivation:
+
+WHILE expr LBRACE block_list RBRACE 
+      udt_instance 
+      ID . LBRACE udt_contents RBRACE 
