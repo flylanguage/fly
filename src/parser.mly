@@ -12,8 +12,8 @@ open Ast
 %token IF ELSE WHILE FOR BREAK CONT IN
 %token INT BOOL CHAR FLOAT STRING LIST TUPLE UNIT 
 %token FUN ARROW RETURN
-%token LET MUT MATCH INTERFACE
-%token TYPE SELF ENUM BIND NEW AS
+%token LET MUT MATCH UNDERSCORE INTERFACE
+%token TYPE SELF ENUM BIND AS
 %token IMPORT EXPORT
 %token <int> LITERAL
 %token <bool> BLIT
@@ -39,7 +39,61 @@ open Ast
 %%
 
 program_rule:
-     { Program }
+  block_list EOF { { body = $1} } (* mirror PyN *)
+
+block_list:
+ {[]}
+ | block block_list { $1 :: $2 }
+
+block:
+    declaration         { $1 }
+  | assignment          { $1 }
+  | func_def            { $1 }
+  | func_call           { $1 }
+  | udt_def             { $1 }
+  | control_flow        { $1 }
+
+declaration:
+  | LET MUT ID COLON typ EQUAL expr SEMI  { MutDeclTyped($3, $5, $7) }  (* let x: int = 5; *)
+  | LET MUT ID WALRUS expr SEMI           { MutDeclInfer($3, $5) }      (* let x := 5; *)
+  | LET ID COLON typ EQUAL expr SEMI      { DeclTyped($2, $4, $6) }  (* let x: int = 5; *)
+  | LET ID WALRUS expr SEMI               { DeclInfer($2, $4) }      (* let x := 5; *)
+
+assignment:
+  ID EQUAL expr                        { Assign($1, IdentityAssign, $3) }
+  | ID PLUS_ASSIGN expr                { Assign($1, PlusAssign, $3 ) }
+  | ID MINUS_ASSIGN expr               { Assign($1, MinusAssign, $3 ) }
+
+func_def:
+  FUN ID LPAREN formals_opt RPAREN ARROW typ LBRACE block_list RBRACE
+  {
+    FunctionDefintion($7, $2, $4, $9)
+  }
+  (* first argument to bound function must be self *)
+| BIND ID LT typ GT LPAREN SELF formals_opt RPAREN ARROW typ LBRACE block_list RBRACE
+  {
+    BoundFunctionDefintion($11, $2, ("self", $4) :: $8, $13, $4)
+  }
+
+formals_opt:
+  (* empty *) { [] }
+| formal_list { List.rev $1 }
+
+
+formal_list:
+    ID COLON typ                   { [($1,$3)] }
+  | formal_list COMMA ID COLON typ { ($3,$5) :: $1 }
+
+
+func_call:
+  ID LPAREN list_elements RPAREN       { Call($1, $3) } (* Function call *)
+
+udt_def:
+  TYPE ID LBRACE udt_members RBRACE       { UDTDef($2, $4) }
+
+udt_members:
+  ID COLON typ                        {[($1, $3)]}
+  | ID COLON typ COMMA udt_members    {($1, $3) :: $5}
 
 typ:
     INT { Int }
@@ -49,105 +103,116 @@ typ:
   | STRING { String }
   | LIST LT typ GT { List($3) }
   | TUPLE LT typ_list GT { Tuple($3) }
-  | UNIT { Unit }
   | ID     { UserType($1) }
+  | UNIT { Unit }
 
 typ_list:
-    typ { [$1] }
-  | typ_list COMMA typ { $3 :: $1 }
+  typ                  {[$1]}
+  | typ COMMA typ_list {$1 :: $3}
 
-lambda_args:
-  ID { [$1] }
-  | lambda_args ARROW ID { $3 :: $1 }
-
-vdecl:
-  | LET ID COLON typ EQUAL expr SEMI { Decl($2, $4, $6) }  (* let x: int = 5; *)
-  | LET ID WALRUS expr SEMI           { Decl($2, $4) }      (* let x := 5; *)
-
-fdecl:
-  FUN ID LPAREN formals_opt RPAREN ARROW typ LBRACE body_list RBRACE { Unit }
-
-funbind:
-  BIND ID LT typ GT LPAREN formals_list RPAREN ARROW typ LBRACE body_list RBRACE { Unit }
-
-match_expr:
-  MATCH expr LBRACE case_list RBRACE { Unit }
-
-match_case:
-  (* empty *)
-  | pattern ARROW expr { MatchMap($1, $2) }
-
-pattern:
-  (* what can our pattern be? h::t/value/regex? *)
-  expr { $1 }
-
-match_cases:
-  match_case
-  | case_list COMMA match_case{ Map.union($1, $3) }
-
-formals_opt:
-  (* empty *) { [] }
-  | formal_list   { List.rev $1 } (*Why List.rev? *) (* add self? *)
-
-formal_list:
-    ID COLON typ                   { [($1,$3)] }
-  | formal_list COMMA ID COLON typ { ($3,$5) :: $1 }
-
-body_list:
-  (* empty *) { [] }
-  | stmt body_list { $1 :: $2 }
-  | vdecl body_list { $1 :: $2 }
-  | fdecl body_list { $1 :: $2 }
-
-stmt:
-    expr SEMI { Expr $1 }
-  | RETURN SEMI { Return Unit}
-  | RETURN expr SEMI { Return $2 }
-  | LBRACE body_list RBRACE { Block($2) }
-  | if_stmt { $1 }
-  | WHILE expr LBRACE body_list RBRACE { While($2, $4) }
-  | BREAK { Break }
-  | CONT { Continue }
-  (* Save FOR for later *)
-
-if_stmt:
-  | IF expr LBRACE body_list RBRACE                              { If($2, Block($4), Block([])) }
-  | IF expr LBRACE body_list RBRACE ELSE LBRACE body_list RBRACE { If($2, Block($4), Block($8)) }
-  | IF expr LBRACE body_list RBRACE ELSE if_stmt                 { If($2, Block($4), $7) }
 
 expr:
-    LITERAL          { Literal($1) }
-  | BLIT             { BoolLit($1) }
+    LITERAL                            { Literal($1)  } (* base types *)
+  | BLIT                               { BoolLit($1)  }
+  | FLIT                               { FloatLit($1) }
+  | CLIT                               { CharLit($1)  }
+  | SLIT                               { StringLit($1)}
+  | SLIT                               { StringLit($1)}
+  | UNIT                               { Unit }
+  | ID                                 { Id($1) }
+
+  | expr PLUS   expr                   { Binop($1, Add,   $3) } (* arithmetic expressions *)
+  | expr MINUS  expr                   { Binop($1, Sub,   $3) }
+  | expr TIMES  expr                   { Binop($1, Mult,  $3) }
+  | expr DIVIDE expr                   { Binop($1, Div,   $3) }
+  | expr MODULO expr                   { Binop($1, Mod, $3)}
+  | expr EXPONENT expr                 { Binop($1, Exp, $3)}
+  | expr INCR                          { Unop($1, Postincr)   }
+  | expr DECR                          { Unop($1, Postdecr)   }
+  | INCR expr                          { Unop($2, Preincr)    }
+  | DECR expr                          { Unop($2, Predecr)    }
+
+  | expr BEQ    expr                   { Binop($1, Equal, $3) } (* logical expressions *)
+  | expr NEQ    expr                   { Binop($1, Neq,   $3) }
+  | expr LT     expr                   { Binop($1, Less,  $3) }
+  | expr LEQ    expr                   { Binop($1, Leq,   $3) }
+  | expr GT     expr                   { Binop($1, Greater, $3) }
+  | expr GEQ    expr                   { Binop($1, Geq,   $3) }
+  | expr AND    expr                   { Binop($1, And,   $3) }
+  | expr OR     expr                   { Binop($1, Or,    $3) }
+  | NOT expr                           { Unop($2, Not)        }
+
+  | list                               { $1 } (* list literal declaration *)
+  | ID LBRACKET expr RBRACKET          { IndexingList($1, $3) }  (* indexing into list *)
+
+  | tuple                              { $1 } (* tuple literal declaration. need to handle indexing into tuple *)
+
+  | udt_instance                       { $1 } (* Instantiating a user defined type *)
+  | ID DOT ID                          { UDTAccess($1, $3) } (* access member variable of user defined type *)
+
+  | LPAREN expr RPAREN                 { $2 }
+  | MATCH expr LBRACE case_list RBRACE { Match($2, $4) } (* match is an expression and should evaluate to something *)
+
+case_list:
+  case_item                    {[$1]} (* Base case *)
+  | case_item COMMA case_list { $1 :: $3 }
+
+case_item:
+  pattern ARROW expr { ($1, $3) }
+
+(* Only literals allowed here. TBH, this really needs discussion *)
+pattern:
+    LITERAL          { Literal($1)  }
+  | BLIT             { BoolLit($1)  }
+  | FLIT             { FloatLit($1) }
+  | CLIT             { CharLit($1)  }
+  | SLIT             { StringLit($1)}
+  | SLIT             { StringLit($1)}
   | ID               { Id($1) }
-  | expr PLUS   expr { Binop($1, Add,   $3) }
-  | expr MINUS  expr { Binop($1, Sub,   $3) }
-  | expr TIMES  expr { Binop($1, Mult,  $3) }
-  | expr DIVIDE expr { Binop($1, Div,   $3) }
-  | expr BEQ    expr { Binop($1, Equal, $3) }
-  | expr NEQ    expr { Binop($1, Neq,   $3) }
-  | expr LT     expr { Binop($1, Less,  $3) }
-  | expr LEQ    expr { Binop($1, Leq,   $3) }
-  | expr GT     expr { Binop($1, Greater, $3) }
-  | expr GEQ    expr { Binop($1, Geq,   $3) }
-  | expr AND    expr { Binop($1, And,   $3) }
-  | expr OR     expr { Binop($1, Or,    $3) }
-  | NOT expr         { Unop(Not, $2) }
-  | ID LPAREN actuals_opt RPAREN { Call($1, $3) }
-  | typ LBRACKET kv_list RBRACKET { UserTypeInstance($3) }
-  | LPAREN expr RPAREN { $2 }
+  | UNDERSCORE       { Wildcard } (* Wildcard for match *)
 
-actuals_opt:
-  (* empty *) { [] }
-  | actuals_list  { List.rev $1 }
+list_elements:
+  {[]}
+  | expr                      {[$1]}
+  | expr COMMA list_elements  {$1 :: $3}
 
-actuals_list:
-    expr                    { [$1] }
-  | actuals_list COMMA expr { $3 :: $1 }
+list:
+  LBRACKET list_elements RBRACKET      { ListElements($2) }
 
-kv_opt:
-  (* empty *) { [] }
-  | kv_list  { List.rev $1 }
+tuple:
+  LPAREN list_elements RBRACKET        { TupleElements($2) }
 
-kv_list: (* key-value list for type instantiation *)
-    ID COLON expr { [($1, $2)] } (* or use map? *)
-  | kv_list COMMA ID COLON expr { [($3, $5)] :: $1 }
+udt_instance:
+  ID LBRACE udt_contents RBRACE         { UDTInstance($1, $3) }
+
+udt_contents:
+  | udt_element                        { [$1] }
+  | udt_element COMMA udt_contents     { $1 :: $3}
+
+udt_element:
+  ID COLON expr                        { ($1, $3) }
+
+
+
+
+  (* Save FOR for later *)
+
+control_flow:
+  if_stmt       { $1 }
+  | while_loop  { $1 }
+  | BREAK       { Break }
+  | CONT        { Continue }
+  | RETURN SEMI { ReturnUnit}
+  | RETURN expr SEMI { ReturnVal $2 }
+
+if_stmt:
+  IF expr LBRACE block_list RBRACE                            { IfEnd($2, $4) }
+  | IF expr LBRACE block_list RBRACE elif_stmt                { IfNonEnd($2, $4, $6) }
+
+elif_stmt:
+  ELSE IF expr LBRACE block_list RBRACE elif_stmt             { ElifNonEnd($3, $5, $7) }
+  | ELSE IF expr LBRACE block_list RBRACE                     { ElifEnd($3, $5) }
+  | ELSE LBRACE block_list RBRACE                             { ElseEnd($3) }
+
+while_loop:
+  WHILE expr LBRACE block_list RBRACE     { While($2, $4) }

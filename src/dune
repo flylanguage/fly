@@ -1,7 +1,6 @@
 (library
  (name fly_lib)
- (modules ast scanner parser)
- (modules_without_implementation ast))
+ (modules ast scanner parser))
 
 (executable
  (name fly)

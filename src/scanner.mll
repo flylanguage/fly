@@ -79,6 +79,7 @@ rule tokenize = parse
   | "list" { LIST }
 
   | "match" { MATCH }
+  | "_" { UNDERSCORE }
   | "mut" { MUT }
   | "return" { RETURN }
   | "self" { SELF }

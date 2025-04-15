@@ -13,12 +13,12 @@ let print_token = function
   | OR -> "OR"
   | NOT -> "NOT"
 
-  | EQ -> "EQ" (* Equivalence operators *)
+  | BEQ -> "BEQ" (* Equivalence operators *)
   | NEQ -> "NEQ"
   | LT -> "LT"
-  | LE -> "LE"
+  | LEQ -> "LEQ"
   | GT -> "GT"
-  | GE -> "GE"
+  | GEQ -> "GEQ"
 
   | LPAREN -> "LPAREN" (* Brackets, braces, arrows *)
   | RPAREN -> "RPAREN"
@@ -32,7 +32,7 @@ let print_token = function
   | ID(s) -> Printf.sprintf "ID(%s)" s
   | COLON -> "COLON"
   | WALRUS -> "WALRUS"
-  | ASSIGN -> "ASSIGN"
+  | EQUAL -> "EQUAL"
   | PLUS_ASSIGN -> "PLUS_ASSIGN"
   | MINUS_ASSIGN -> "MINUS_ASSIGN"
   | INCR -> "INCR"
@@ -46,6 +46,7 @@ let print_token = function
   | BREAK -> "BREAK"
   | CONT -> "CONTINUE"
   | MATCH -> "MATCH"
+  | UNDERSCORE -> "UNDERSCORE"
 
   | FUN -> "FUN"
   | ARROW -> "ARROW" (* this is -> *)
@@ -57,6 +58,7 @@ let print_token = function
   | LITERAL(i) -> Printf.sprintf "LITERAL(%d)" i
   | CLIT(s) -> Printf.sprintf "CLIT(%s)" (String.make 1 s)
   | SLIT(s) -> Printf.sprintf "SLIT(%s)" s
+  | UNIT -> "UNIT"
 
   | INT -> "INT" (* type declaration? *)
   | FLOAT -> "FLOAT"
@@ -82,7 +84,7 @@ let print_token = function
   | IMPORT -> "IMPORT"
   | EXPORT -> "EXPORT"
   | EOF -> "EOF"
-
+(* 
 let string_of_op = function
     Add -> "+"
   | Sub -> "-"
@@ -129,4 +131,4 @@ let string_of_fdecl fdecl =
   let string_of_program (vars, funcs) =
   "\n\nParsed program: \n\n" ^
   String.concat "" (List.map string_of_vdecl vars) ^ "\n" ^
-  String.concat "\n" (List.map string_of_fdecl funcs)
+  String.concat "\n" (List.map string_of_fdecl funcs) *)
