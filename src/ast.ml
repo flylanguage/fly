@@ -19,6 +19,11 @@ type op =
   | Or
   | Not
 
+type assign_op =
+  | IdentityAssign
+  | PlusAssign
+  | MinusAssign
+
 type typ =
   | Int
   | Bool
@@ -42,7 +47,7 @@ type expr =
   | Binop of expr * op * expr
   | Unop of expr * op (* this is for not *)
   | UnopSideEffect of string * op (* this is for postincr, postdecr, preincr, postdecr *)
-  | Assign of string * expr
+  | Assign of string * assign_op * expr
   | Call of string * expr list
     (* string for function name and list of exprs for arguments to pass to the function *)
   | UDTInstance of string * kv_list
@@ -56,19 +61,16 @@ type expr =
 
 and kv_list = (string * expr) list (* for user defined types *)
 
-type assignOp =
-  | IdentityAssign
-  | PlusAssign
-  | MinusAssign
+
 
 type block =
   | MutDeclTyped of string * typ * expr
   | MutDeclInfer of string * expr
   | DeclTyped of string * typ * expr
   | DeclInfer of string * expr
-  | Assign of string * assignOp * expr
-  | FunctionDefintion of typ * string * (string * typ) list * block list
-  | BoundFunctionDefintion of typ * string * (string * typ) list * block list * typ
+  | Assign of string * assign_op * expr
+  | FunctionDefinition of typ * string * (string * typ) list * block list (* rtyp, func_name, func_args, func_body *)
+  | BoundFunctionDefinition of typ * string * (string * typ) list * block list * typ (* rtyp, func_name, func_args, func_body, bound_type *)
   | Call of string * expr list
   | UDTDef of string * (string * typ) list
   | IfEnd of expr * block list

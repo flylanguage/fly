@@ -65,14 +65,30 @@ assignment:
   | ID MINUS_ASSIGN expr SEMI             { Assign($1, MinusAssign, $3 ) }
 
 func_def:
-  FUN ID LPAREN formals_opt RPAREN ARROW typ LBRACE block_list RBRACE
+  FUN ID UNIT ARROW typ LBRACE block_list RBRACE
   {
-    FunctionDefintion($7, $2, $4, $9)
+    FunctionDefinition($5, $2, [], $7)
+  }
+| FUN ID UNIT LBRACE block_list RBRACE (* Unspecified return type defaults to Unit. The semantic checker will check if this holds. All other return types must be specified *)
+  {
+    FunctionDefinition(Unit, $2, [], $5)
+  }
+| FUN ID LPAREN formals_opt RPAREN ARROW typ LBRACE block_list RBRACE
+  {
+    FunctionDefinition($7, $2, $4, $9)
+  }
+| FUN ID LPAREN formals_opt RPAREN LBRACE block_list RBRACE
+  {
+    FunctionDefinition(Unit, $2, $4, $7)
   }
   (* first argument to bound function must be self *)
 | BIND ID LT typ GT LPAREN SELF formals_opt RPAREN ARROW typ LBRACE block_list RBRACE
   {
-    BoundFunctionDefintion($11, $2, ("self", $4) :: $8, $13, $4)
+    BoundFunctionDefinition($11, $2, ("self", $4) :: $8, $13, $4)
+  }
+| BIND ID LT typ GT LPAREN SELF formals_opt RPAREN LBRACE block_list RBRACE (* Unit return type bound function*)
+  {
+    BoundFunctionDefinition(Unit, $2, ("self", $4) :: $8, $11, $4)
   }
 
 formals_opt:
@@ -197,7 +213,7 @@ control_flow:
   | BREAK       { Break }
   | CONT        { Continue }
   | RETURN SEMI { ReturnUnit}
-  | RETURN expr SEMI { ReturnVal $2 }
+  | RETURN expr SEMI { ReturnVal($2) }
 
 if_stmt:
   IF LPAREN expr RPAREN LBRACE block_list RBRACE                            { IfEnd($3, $6) }
