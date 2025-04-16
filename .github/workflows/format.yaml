@@ -28,4 +28,4 @@ jobs:
       - name: OCamlformat
         run: |
           eval $(opam env)
-          ocamlformat --check src/*.ml src/*.mli
+          ocamlformat --check src/*.ml
