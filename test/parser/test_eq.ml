@@ -54,7 +54,6 @@ let tests =
             "let g1 := true;\nlet h1 := true;\nif (g1 == h1) {\n} else {\n}\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
-
        ; ("test5"
           >:: fun _ ->
           let lexbuf =
