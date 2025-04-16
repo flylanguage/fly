@@ -13,7 +13,7 @@ open Ast
 %token INT BOOL CHAR FLOAT STRING LIST TUPLE UNIT 
 %token FUN ARROW RETURN
 %token LET MUT MATCH INTERFACE
-%token TYPE SELF ENUM BIND NEW AS
+%token TYPE SELF ENUM BIND AS
 %token IMPORT EXPORT
 %token <int> LITERAL
 %token <bool> BLIT
@@ -39,7 +39,7 @@ open Ast
 %%
 
 program_rule:
-     { Program }
+     EOF { Program }
 
 typ:
     INT { Int }
@@ -48,21 +48,21 @@ typ:
   | FLOAT { Float }
   | STRING { String }
   | LIST LT typ GT { List($3) }
-  | TUPLE LT typ_list GT { Tuple($3) }
+  /* | TUPLE LT typ_list GT { Tuple($3) } */
   | UNIT { Unit }
-  | ID     { UserType($1) }
+  /* | ID     { UserType($1) } */
 
-typ_list:
-    typ { [$1] }
-  | typ_list COMMA typ { $3 :: $1 }
+/* typ_list: */
+/*     typ { [$1] } */
+/*   | typ_list COMMA typ { $3 :: $1 } */
 
 lambda_args:
   ID { [$1] }
   | lambda_args ARROW ID { $3 :: $1 }
 
 vdecl:
-  | LET ID COLON typ ASSIGN expr SEMI { Decl($2, $4, $6) }  (* let x: int = 5; *)
-  | LET ID WALRUS expr SEMI           { Decl($2, $4) }      (* let x := 5; *)
+    LET ID COLON typ ASSIGN expr SEMI { Decl($2, $4, $6) }  (* let x: int = 5; *)
+  /* | LET ID WALRUS expr SEMI           { Decl($2, $4) }      (* let x := 5; *) */
 
 fdecl:
   FUN ID LPAREN formals_opt RPAREN ARROW typ LBRACE body_list RBRACE { Unit }
@@ -71,27 +71,28 @@ funbind:
   BIND ID LT typ GT LPAREN formals_list RPAREN ARROW typ LBRACE body_list RBRACE { Unit }
 
 match_expr:
-  MATCH expr LBRACE case_list RBRACE { Unit }
+  MATCH expr LBRACE match_cases RBRACE { Match($2, $4) }
 
 match_case:
   (* empty *)
-  | pattern ARROW expr { MatchMap($1, $2) }
+  | pattern ARROW expr { MatchMap($1, $3) }
 
 pattern:
   (* what can our pattern be? h::t/value/regex? *)
   expr { $1 }
 
 match_cases:
-  match_case
-  | case_list COMMA match_case{ Map.union($1, $3) }
+    match_case { [$1] }
+  (* | match_case COMMA match_cases { Map.union($1, $3) } *)
+  | match_case COMMA match_cases { $1 :: $3 }
 
 formals_opt:
   (* empty *) { [] }
-  | formal_list   { List.rev $1 } (*Why List.rev? *) (* add self? *)
+  | formals_list   { List.rev $1 } (*Why List.rev? *) (* add self? *)
 
-formal_list:
+formals_list:
     ID COLON typ                   { [($1,$3)] }
-  | formal_list COMMA ID COLON typ { ($3,$5) :: $1 }
+  | formals_list COMMA ID COLON typ { ($3,$5) :: $1 }
 
 body_list:
   (* empty *) { [] }
@@ -149,5 +150,5 @@ kv_opt:
   | kv_list  { List.rev $1 }
 
 kv_list: (* key-value list for type instantiation *)
-    ID COLON expr { [($1, $2)] } (* or use map? *)
+    ID COLON expr { [($1, $3)] } (* or use map? *)
   | kv_list COMMA ID COLON expr { [($3, $5)] :: $1 }
