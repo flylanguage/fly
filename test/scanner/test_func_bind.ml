@@ -72,7 +72,7 @@ let tests =
           let expected =
             "LET ID(p2) WALRUS ID(Person) DCOLON ID(new) LPAREN SLIT(John) COMMA \
              LITERAL(12) RPAREN SEMI LET ID(info) COLON STRING EQUAL ID(p) DOT ID(info) \
-             LPAREN RPAREN SEMI"
+             UNIT SEMI"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ]
