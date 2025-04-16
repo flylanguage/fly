@@ -2,20 +2,13 @@ open OUnit2
 open Fly_lib
 open Print_lib.Prints
 
-let rec to_list lexbuf =
-  let tk = Scanner.tokenize lexbuf in
-  match tk with
-  | Fly_lib.Parser.EOF -> []
-  | t -> t :: to_list lexbuf
-;;
-
 let tests =
   "testing_enums"
   >::: [ ("test1"
           >:: fun _ ->
           let lexbuf = Lexing.from_string "enum Color {\n\tRed,\n\tGreen,\n\tBlue\n}\n" in
-          let program = Parser.program Scanner.tokenize lexbuf in
-          let actual = print_endline (string_of_program program) in
+          let program = Parser.program_rule Scanner.tokenize lexbuf in
+          let actual = string_of_program program in
           let expected =
             "enum Color {\n\tRed,\n\tGreen,\n\tBlue\n}\n"
           in
@@ -26,8 +19,8 @@ let tests =
             Lexing.from_string
               "let a1 := Color.Red;\nlet b1 := Color.Green;\nlet c1 := Color.Blue;\n"
           in
-          let program = Parser.program Scanner.tokenize lexbuf in
-          let actual = print_endline (string_of_program program) in
+          let program = Parser.program_rule Scanner.tokenize lexbuf in
+          let actual = string_of_program program in
           let expected =
             "let a1 := Color.Red;\nlet b1 := Color.Green;\nlet c1 := Color.Blue;\n"
           in
@@ -36,8 +29,8 @@ let tests =
        ; ("test3"
           >:: fun _ ->
           let lexbuf = Lexing.from_string "if (a1 == Color.Red) {\n} else {\n}\n" in
-          let program = Parser.program Scanner.tokenize lexbuf in
-          let actual = print_endline (string_of_program program) in
+          let program = Parser.program_rule Scanner.tokenize lexbuf in
+          let actual = string_of_program program in
           let expected =
             "if (a1 == Color.Red) {\n} else {\n}\n"
           in
@@ -46,8 +39,8 @@ let tests =
        ; ("test4"
           >:: fun _ ->
           let lexbuf = Lexing.from_string "let a2 := Color.Yellow;\n" in
-          let program = Parser.program Scanner.tokenize lexbuf in
-          let actual = print_endline (string_of_program program) in
+          let program = Parser.program_rule Scanner.tokenize lexbuf in
+          let actual = string_of_program program in
           let expected = 
                "let a2 := Color.Yellow;\n"
           in
@@ -56,8 +49,8 @@ let tests =
        ; ("test5"
           >:: fun _ ->
           let lexbuf = Lexing.from_string "if (b1 == Color.Green) {\n} else {\n}\n" in
-          let program = Parser.program Scanner.tokenize lexbuf in
-          let actual = print_endline (string_of_program program) in
+          let program = Parser.program_rule Scanner.tokenize lexbuf in
+          let actual = string_of_program program in
           let expected =
             "if (b1 == Color.Green) {\n} else {\n}\n"
           in
@@ -77,8 +70,8 @@ let tests =
               \  }\n\
                }\n"
           in
-          let program = Parser.program Scanner.tokenize lexbuf in
-          let actual = print_endline (string_of_program program) in
+          let program = Parser.program_rule Scanner.tokenize lexbuf in
+          let actual = string_of_program program in
           let expected =
             "MATCH LPAREN ID(c1) RPAREN LBRACE ID(Color) DOT ID(Red) ARROW LBRACE RBRACE \
              ID(Color) DOT ID(Green) ARROW LBRACE RBRACE ID(Color) DOT ID(Blue) ARROW \
@@ -89,8 +82,8 @@ let tests =
        ; ("test7"
           >:: fun _ ->
           let lexbuf = Lexing.from_string "let a3 := 5;\na3 := Color.Red;\n" in
-          let program = Parser.program Scanner.tokenize lexbuf in
-          let actual = print_endline (string_of_program program) in
+          let program = Parser.program_rule Scanner.tokenize lexbuf in
+          let actual = string_of_program program in
           let expected =
             "let a3 := 5;\na3 := Color.Red;\n"
           in
@@ -99,8 +92,8 @@ let tests =
        ; ("test8"
           >:: fun _ ->
           let lexbuf = Lexing.from_string "let a4 := Color.Red + Color.Green;\n" in
-          let program = Parser.program Scanner.tokenize lexbuf in
-          let actual = print_endline (string_of_program program) in
+          let program = Parser.program_rule Scanner.tokenize lexbuf in
+          let actual = string_of_program program in
           let expected =
             "let a4 := Color.Red + Color.Green;\n"
           in
@@ -109,8 +102,8 @@ let tests =
        ; ("test9"
           >:: fun _ ->
           let lexbuf = Lexing.from_string "let a5 := !Color.Red;\n" in
-          let program = Parser.program Scanner.tokenize lexbuf in
-          let actual = print_endline (string_of_program program) in
+          let program = Parser.program_rule Scanner.tokenize lexbuf in
+          let actual = string_of_program program in
           let expected = 
             "let a5 := !Color.Red;\n"
           in
