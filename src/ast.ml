@@ -19,6 +19,17 @@ type op =
   | Or
   | Not
 
+type pattern = 
+  | PLiteral of int
+  | PBoolLit of bool
+  | PFloatLit of float
+  | PCharLit of char
+  | PStringLit of string
+  | PId of string
+  | PWildcard
+  | PEmptyList
+  | PCons of pattern * pattern
+
 type assign_op =
   | IdentityAssign
   | PlusAssign
@@ -57,7 +68,7 @@ type expr =
   | EnumAccess of string * string
   | IndexingList of string * expr
   | ListElements of expr list
-  | Match of expr * (expr * expr) list
+  | Match of expr * (pattern * expr) list
   | Wildcard
 
 and kv_list = (string * expr) list (* for user defined types *)

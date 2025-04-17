@@ -178,13 +178,16 @@ case_item:
 
 (* Only literals allowed here. TBH, this really needs discussion *)
 pattern:
-    LITERAL                     { Literal($1)  }
-  | BLIT                        { BoolLit($1)  }
-  | FLIT                        { FloatLit($1) }
-  | CLIT                        { CharLit($1)  }
-  | SLIT                        { StringLit($1)}
-  | ID                          { Id($1) }
-  | UNDERSCORE                  { Wildcard } (* Wildcard for match *)
+    LITERAL                     { PLiteral($1)  }
+  | BLIT                        { PBoolLit($1)  }
+  | FLIT                        { PFloatLit($1) }
+  | CLIT                        { PCharLit($1)  }
+  | SLIT                        { PStringLit($1)}
+  | ID                          { PId($1) }
+  | UNDERSCORE                  { PWildcard }
+  | LBRACKET RBRACKET           { PEmptyList }
+  | pattern DCOLON pattern      { PCons($1, $3) }
+
 
 list_elements:
   expr                      {[$1]}
