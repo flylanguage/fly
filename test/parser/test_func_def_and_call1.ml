@@ -2,13 +2,6 @@ open OUnit2
 open Fly_lib
 open Print_lib.Prints
 
-let rec to_list lexbuf =
-  let tk = Scanner.tokenize lexbuf in
-  match tk with
-  | Fly_lib.Parser.EOF -> []
-  | t -> t :: to_list lexbuf
-;;
-
 let tests =
   "testing_func_def_and_call1"
   >::: [ ("test1"
@@ -21,18 +14,17 @@ let tests =
                \t}\n\
                }\n"
           in
-          let actual = Parser.program Scanner.tokenize lexbuf in print_endline (string_of_program program) in
+          let program = Parser.program_rule Scanner.tokenize lexbuf in 
+          let actual = string_of_program program in
           let expected =
-            "FUN ID(countdown) LPAREN ID(timer) COLON INT RPAREN LBRACE WHILE LPAREN \
-             ID(timer) GT LITERAL(0) RPAREN LBRACE ID(timer) MINUS_ASSIGN LITERAL(1) \
-             SEMI RBRACE RBRACE"
+            "fun countdown(timer: int, ) -> (){\nwhile (timer > 0) {\ntimer-=1;\n\n}\n}\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
-
        ; ("test2"
           >:: fun _ ->
           let lexbuf = Lexing.from_string "countdown(10);\n" in
-          let actual = Parser.program Scanner.tokenize lexbuf in print_endline (string_of_program program) in
+          let program = Parser.program_rule Scanner.tokenize lexbuf in 
+          let actual = string_of_program program in
           let expected = "countdown(10);" in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 

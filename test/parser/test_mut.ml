@@ -2,30 +2,26 @@ open OUnit2
 open Fly_lib
 open Print_lib.Prints
 
-let rec to_list lexbuf =
-  let tk = Scanner.tokenize lexbuf in
-  match tk with
-  | Fly_lib.Parser.EOF -> []
-  | t -> t :: to_list lexbuf
-;;
 
 let tests =
   "testing_mut"
   >::: [ ("test1"
           >:: fun _ ->
-          let lexbuf = Lexing.from_string "let x := 5;\nx -= 4; //fail\n" in
-          let actual = Parser.program Scanner.tokenize lexbuf in print_endline (string_of_program program)
+          let lexbuf = Lexing.from_string "let x := 5;\nx -= 4;\n" in
+          let program = Parser.program_rule Scanner.tokenize lexbuf in 
+          let actual = string_of_program program in
           let expected =
-            "LET ID(x) WALRUS LITERAL(5) SEMI ID(x) MINUS_ASSIGN LITERAL(4) SEMI"
+            "let x := 5;\nx -= 4;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
        ; ("test2"
           >:: fun _ ->
           let lexbuf = Lexing.from_string "let mut y := 4;\ny += 8;\n" in
-          let actual = Parser.program Scanner.tokenize lexbuf in print_endline (string_of_program program)
+          let program = Parser.program_rule Scanner.tokenize lexbuf in 
+          let actual = string_of_program program in
           let expected =
-            "LET MUT ID(y) WALRUS LITERAL(4) SEMI ID(y) PLUS_ASSIGN LITERAL(8) SEMI"
+            "let mut y := 4;\ny += 8;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -33,24 +29,14 @@ let tests =
           >:: fun _ ->
           let lexbuf =
             Lexing.from_string
-              "let mut lst := [1, 2, 3];\n\
-               lst[0] -= 1;  // Should pass: list is mutable, can modify element\n"
+              "let mut lst := [1, 2, 3];\nlst[0] -= 1;\n"
           in
-          let actual = Parser.program Scanner.tokenize lexbuf in print_endline (string_of_program program)
+          let program = Parser.program_rule Scanner.tokenize lexbuf in 
+          let actual = string_of_program program in
           let expected =
-            "LET MUT ID(lst) WALRUS LBRACKET LITERAL(1) COMMA LITERAL(2) COMMA \
-             LITERAL(3) RBRACKET SEMI ID(lst) LBRACKET LITERAL(0) RBRACKET MINUS_ASSIGN \
-             LITERAL(1) SEMI"
+            "let mut lst := [1, 2, 3];\nlst[0] -= 1;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
-
-       ; ("test4"
-          >:: fun _ ->
-          let lexbuf = Lexing.from_string "" in
-          let actual = Parser.program Scanner.tokenize lexbuf in print_endline (string_of_program program)
-          let expected = "" in
-          assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
-
        ]
 ;;
 

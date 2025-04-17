@@ -2,12 +2,6 @@ open OUnit2
 open Fly_lib
 open Print_lib.Prints
 
-let rec to_list lexbuf =
-  let tk = Scanner.tokenize lexbuf in
-  match tk with
-  | Fly_lib.Parser.EOF -> []
-  | t -> t :: to_list lexbuf
-;;
 
 let tests =
   "testing_match"
@@ -15,16 +9,12 @@ let tests =
           >:: fun _ ->
           let lexbuf =
             Lexing.from_string
-              "let a1: int = 5;\n\
-              \ match (a1) \n\
-               {5 -> let res := \"ok\"\n\
-              \ _ -> let res := \"not ok\"};"
+              "let a1: int = 5;\nmatch (a1) {\n5 -> let res := \"ok\";\n_ -> let res := \"not ok\";}"
           in
-          let actual = Parser.program Scanner.tokenize lexbuf in print_endline (string_of_program program)
+          let program = Parser.program_rule Scanner.tokenize lexbuf in 
+          let actual = string_of_program program in
           let expected =
-            "LET ID(a1) COLON INT EQUAL LITERAL(5) SEMI MATCH LPAREN ID(a1) RPAREN \
-             LBRACE LITERAL(5) ARROW LET ID(res) WALRUS SLIT(ok) UNDERSCORE ARROW LET \
-             ID(res) WALRUS SLIT(not ok) RBRACE SEMI"
+            "let a1: int = 5;\nmatch a1 {\n5 -> let res := \"ok\";\n_ -> let res := \"not ok\";\n\n}\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 

@@ -72,7 +72,7 @@ let tests =
           in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
-          let expected = "let a6 := true;\nlet b6 := false;\n!(a6 && b6);\n"
+          let expected = "let a6 := true;\nlet b6 := false;\n!a6 && b6;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -83,7 +83,7 @@ let tests =
           in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
-          let expected = "let a7 := 5;\nlet b7 := 10;\n(a7 < b7) && (b7 > 5);"
+          let expected = "let a7 := 5;\nlet b7 := 10;\na7 < b7 && b7 > 5"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 

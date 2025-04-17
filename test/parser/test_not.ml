@@ -2,30 +2,26 @@ open OUnit2
 open Fly_lib
 open Print_lib.Prints
 
-let rec to_list lexbuf =
-  let tk = Scanner.tokenize lexbuf in
-  match tk with
-  | Fly_lib.Parser.EOF -> []
-  | t -> t :: to_list lexbuf
-;;
 
 let tests =
   "testing_not"
   >::: [ ("test1"
           >:: fun _ ->
           let lexbuf = Lexing.from_string "let a1 := true;\nlet result1 := !a1;\n" in
-          let actual = Parser.program Scanner.tokenize lexbuf in print_endline (string_of_program program)
+          let program = Parser.program_rule Scanner.tokenize lexbuf in 
+          let actual = string_of_program program in
           let expected =
-            "LET ID(a1) WALRUS BLIT(true) SEMI LET ID(result1) WALRUS NOT ID(a1) SEMI"
+            "let a1 := true;\nlet result1 := !a1;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
        ; ("test2"
           >:: fun _ ->
           let lexbuf = Lexing.from_string "let b1 := false;\nlet result2 := !b1;\n" in
-          let actual = Parser.program Scanner.tokenize lexbuf in print_endline (string_of_program program)
+          let program = Parser.program_rule Scanner.tokenize lexbuf in 
+          let actual = string_of_program program in
           let expected =
-            "LET ID(b1) WALRUS BLIT(false) SEMI LET ID(result2) WALRUS NOT ID(b1) SEMI"
+            "let b1 := false;\nlet result2 := !b1;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -33,12 +29,12 @@ let tests =
           >:: fun _ ->
           let lexbuf =
             Lexing.from_string
-              "let a2 := true;\nif (!a2) {\n\tlet result3 := \"should not execute\";\n}\n"
+              "let a2 := true;\nif (!a2) {\n\tlet result3 := \"should not execute\";\n\n}\n"
           in
-          let actual = Parser.program Scanner.tokenize lexbuf in print_endline (string_of_program program)
+          let program = Parser.program_rule Scanner.tokenize lexbuf in 
+          let actual = string_of_program program in
           let expected =
-            "LET ID(a2) WALRUS BLIT(true) SEMI IF LPAREN NOT ID(a2) RPAREN LBRACE LET \
-             ID(result3) WALRUS SLIT(should not execute) SEMI RBRACE"
+            "let a2 := true;\nif (!a2) {\nlet result3 := \"should not execute\";\n\n}"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -48,10 +44,10 @@ let tests =
             Lexing.from_string
               "let b2 := false;\nif (!b2) {\n\tlet result4 := \"executed\";\n}\n"
           in
-          let actual = Parser.program Scanner.tokenize lexbuf in print_endline (string_of_program program)
+          let program = Parser.program_rule Scanner.tokenize lexbuf in 
+          let actual = string_of_program program in
           let expected =
-            "LET ID(b2) WALRUS BLIT(false) SEMI IF LPAREN NOT ID(b2) RPAREN LBRACE LET \
-             ID(result4) WALRUS SLIT(executed) SEMI RBRACE"
+            "let b2 := false;\nif (!b2) {\nlet result4 := \"executed\";\n\n}"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -61,19 +57,20 @@ let tests =
             Lexing.from_string
               "let a3 := true;\nlet b3 := false;\nlet result5 := !(a3 && b3);\n"
           in
-          let actual = Parser.program Scanner.tokenize lexbuf in print_endline (string_of_program program)
+          let program = Parser.program_rule Scanner.tokenize lexbuf in 
+          let actual = string_of_program program in
           let expected =
-            "LET ID(a3) WALRUS BLIT(true) SEMI LET ID(b3) WALRUS BLIT(false) SEMI LET \
-             ID(result5) WALRUS NOT LPAREN ID(a3) AND ID(b3) RPAREN SEMI"
+            "let a3 := true;\nlet b3 := false;\nlet result5 := !a3 && b3;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
        ; ("test6"
           >:: fun _ ->
           let lexbuf = Lexing.from_string "let a4 := 5;\nlet result6 := !a4;\n" in
-          let actual = Parser.program Scanner.tokenize lexbuf in print_endline (string_of_program program)
+          let program = Parser.program_rule Scanner.tokenize lexbuf in 
+          let actual = string_of_program program in
           let expected =
-            "LET ID(a4) WALRUS LITERAL(5) SEMI LET ID(result6) WALRUS NOT ID(a4) SEMI"
+            "let a4 := 5;\nlet result6 := !a4;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -87,19 +84,24 @@ let tests =
                \tbreak;\n\
                }\n"
           in
-          let actual = Parser.program Scanner.tokenize lexbuf in print_endline (string_of_program program)
+          let program = Parser.program_rule Scanner.tokenize lexbuf in 
+          let actual = string_of_program program in
           let expected =
-            "LET ID(b4) WALRUS BLIT(false) SEMI WHILE LPAREN NOT ID(b4) RPAREN LBRACE \
-             LET ID(result7) WALRUS SLIT(looping) SEMI BREAK SEMI RBRACE"
+            "let b4 := false;\n\
+               while (!b4) {\n\
+               let result7 := \"looping\";\n\
+               break;\n\
+               }\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
        ; ("test8"
           >:: fun _ ->
           let lexbuf = Lexing.from_string "let b5 := true;\nlet result8 := !!b5;\n" in
-          let actual = Parser.program Scanner.tokenize lexbuf in print_endline (string_of_program program)
+          let program = Parser.program_rule Scanner.tokenize lexbuf in 
+          let actual = string_of_program program in
           let expected =
-            "LET ID(b5) WALRUS BLIT(true) SEMI LET ID(result8) WALRUS NOT NOT ID(b5) SEMI"
+            "let b5 := true;\nlet result8 := !!b5;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -109,10 +111,10 @@ let tests =
             Lexing.from_string
               "let a6 := true;\nlet b6 := false;\nlet result10 := !(a6 != b6);\n"
           in
-          let actual = Parser.program Scanner.tokenize lexbuf in print_endline (string_of_program program)
+          let program = Parser.program_rule Scanner.tokenize lexbuf in 
+          let actual = string_of_program program in
           let expected =
-            "LET ID(a6) WALRUS BLIT(true) SEMI LET ID(b6) WALRUS BLIT(false) SEMI LET \
-             ID(result10) WALRUS NOT LPAREN ID(a6) NEQ ID(b6) RPAREN SEMI"
+            "let a6 := true;\nlet b6 := false;\nlet result10 := !a6 != b6;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 

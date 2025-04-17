@@ -97,17 +97,17 @@ let string_of_op = function
   | Not -> "!"
 
 let string_of_assign_op = function
-  IdentityAssign -> "="
-  | PlusAssign -> "+="
-  | MinusAssign -> "-="
+  IdentityAssign -> " = "
+  | PlusAssign -> " += "
+  | MinusAssign -> " -= "
 
 let rec string_of_expr = function
   Literal l -> string_of_int l
-  | BoolLit true -> "True"
-  | BoolLit false -> "False"
+  | BoolLit true -> "true"
+  | BoolLit false -> "false"
   | FloatLit f -> string_of_float f
-  | CharLit c -> Char.escaped c
-  | StringLit s -> s
+  | CharLit c -> Printf.sprintf "\'%s\'" (String.make 1 c)
+  | StringLit s -> Printf.sprintf "\"%s\"" s
   | Id id -> id
   | Unit -> "()"
   | Binop (e1, o, e2) ->
@@ -158,19 +158,19 @@ let rec string_of_func_args = function
   | hd :: tl -> (fst hd) ^ ": " ^ string_of_type (snd hd) ^ ", " ^ string_of_func_args tl
 
 let rec string_of_block = function
-  MutDeclTyped (id, typ, e) -> "let mut " ^ id ^ ": " ^ string_of_type typ ^ " = " ^ string_of_expr e
-  | MutDeclInfer (id, e) ->  "let mut " ^ id ^ " := " ^ string_of_expr e
-  | DeclTyped (id, typ, e) -> "let " ^ id ^ ": " ^ string_of_type typ ^ " = " ^ string_of_expr e
-  | DeclInfer (id, e) -> "let " ^ id ^ " := " ^ string_of_expr e
-  | Assign (id, assign_op, e) -> id ^ string_of_assign_op assign_op ^ string_of_expr e 
+  MutDeclTyped (id, typ, e) -> "let mut " ^ id ^ ": " ^ string_of_type typ ^ " = " ^ string_of_expr e ^ ";\n"
+  | MutDeclInfer (id, e) ->  "let mut " ^ id ^ " := " ^ string_of_expr e ^ ";\n"
+  | DeclTyped (id, typ, e) -> "let " ^ id ^ ": " ^ string_of_type typ ^ " = " ^ string_of_expr e ^ ";\n"
+  | DeclInfer (id, e) -> "let " ^ id ^ " := " ^ string_of_expr e ^ ";\n"
+  | Assign (id, assign_op, e) -> id ^ string_of_assign_op assign_op ^ string_of_expr e ^ ";\n"
   | FunctionDefinition  (rtyp, func_name, func_args, func_body) ->
     "fun " ^ func_name  ^ "(" ^  string_of_func_args func_args ^ ") -> " ^ string_of_type rtyp ^ "{\n"
     ^ String.concat "" (List.map string_of_block func_body)
-    ^ "\n}"
+    ^ "\n}\n"
   | BoundFunctionDefinition (rtyp, func_name, func_args, func_body, bound_type) -> 
     "bind " ^ func_name  ^ "<" ^ string_of_type bound_type ^ ">" ^ "(" ^  string_of_func_args func_args ^ ") -> " ^ string_of_type rtyp ^ "{\n"
     ^ String.concat "" (List.map string_of_block func_body)
-    ^ "\n}"
+    ^ "\n}\n"
   | Call (func_name, func_args) ->
     func_name ^ "("
     ^ String.concat ", " (List.map string_of_expr func_args)
@@ -205,12 +205,9 @@ let rec string_of_block = function
     ^ "\n}"
   | Break -> "break"
   | Continue -> "continue"
-  | ReturnUnit -> "return"
-  | ReturnVal (e) -> "return " ^ string_of_expr e
+  | ReturnUnit -> "return;\n"
+  | ReturnVal (e) -> "return " ^ string_of_expr e ^ ";\n"
 
 
 
-let string_of_program fdecl =
-  "\n\nParsed program: \n\n"
-  ^ String.concat "" (List.map string_of_block fdecl.body)
-  ^ "\n"
+let string_of_program fdecl = String.concat "" (List.map string_of_block fdecl.body)

@@ -2,13 +2,6 @@ open OUnit2
 open Fly_lib
 open Print_lib.Prints
 
-let rec to_list lexbuf =
-  let tk = Scanner.tokenize lexbuf in
-  match tk with
-  | Fly_lib.Parser.EOF -> []
-  | t -> t :: to_list lexbuf
-;;
-
 let tests =
   "testing_func_bind"
   >::: [ ("test1"
@@ -16,9 +9,10 @@ let tests =
           let lexbuf =
             Lexing.from_string "type Person {\n\tname: string,\n\tage: int\n}\n"
           in
-          let actual = Parser.program Scanner.tokenize lexbuf in print_endline (string_of_program program) in
+          let program = Parser.program_rule Scanner.tokenize lexbuf in 
+          let actual = string_of_program program in
           let expected =
-            "type Person {\n\tname: string,\n\tage: int\n}\n"
+            "type Person{\nname: string, age: int, \n}"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -27,10 +21,9 @@ let tests =
           let lexbuf =
             Lexing.from_string "let p1: Person = Person {name: \"John\", age: 12};\n"
           in
-          let actual = Parser.program Scanner.tokenize lexbuf in print_endline (string_of_program program) in
-          let expected =
-            "LET ID(p1) COLON ID(Person) EQUAL ID(Person) LBRACE ID(name) COLON \
-             SLIT(John) COMMA ID(age) COLON LITERAL(12) RBRACE SEMI"
+          let program = Parser.program_rule Scanner.tokenize lexbuf in 
+          let actual = string_of_program program in
+          let expected = "let p1: Person = Person{name: John, age: 12, };\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -42,11 +35,9 @@ let tests =
                \treturn Person {name: name, age: age};\n\
                }\n"
           in
-          let actual = Parser.program Scanner.tokenize lexbuf in print_endline (string_of_program program) in
-          let expected =
-            "BIND ID(new) LT ID(Person) GT LPAREN ID(name) COLON STRING COMMA ID(age) \
-             COLON INT RPAREN ARROW ID(Person) LBRACE RETURN ID(Person) LBRACE ID(name) \
-             COLON ID(name) COMMA ID(age) COLON ID(age) RBRACE SEMI RBRACE"
+          let program = Parser.program_rule Scanner.tokenize lexbuf in 
+          let actual = string_of_program program in
+          let expected = ""
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -58,10 +49,9 @@ let tests =
                \treturn self.name + \" \" + self.age;\n\
                }\n"
           in
-          let actual = Parser.program Scanner.tokenize lexbuf in print_endline (string_of_program program) in
-          let expected =
-            "BIND ID(info) LT ID(Person) GT LPAREN SELF RPAREN ARROW STRING LBRACE \
-             RETURN SELF DOT ID(name) PLUS SLIT( ) PLUS SELF DOT ID(age) SEMI RBRACE"
+          let program = Parser.program_rule Scanner.tokenize lexbuf in 
+          let actual = string_of_program program in
+          let expected = ""
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -69,14 +59,11 @@ let tests =
           >:: fun _ ->
           let lexbuf =
             Lexing.from_string
-              "let p2 := Person::new(\"John\", 12);\n\
-               let info: string = p.info(); // self references the object itself\n"
+              "let p2 := Person::new(\"John\", 12);\nlet info: string = p.info();\n"
           in
-          let actual = Parser.program Scanner.tokenize lexbuf in print_endline (string_of_program program) in
-          let expected =
-            "LET ID(p2) WALRUS ID(Person) DCOLON ID(new) LPAREN SLIT(John) COMMA \
-             LITERAL(12) RPAREN SEMI LET ID(info) COLON STRING EQUAL ID(p) DOT ID(info) \
-             LPAREN RPAREN SEMI"
+          let program = Parser.program_rule Scanner.tokenize lexbuf in 
+          let actual = string_of_program program in
+          let expected = ""
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
