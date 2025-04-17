@@ -70,11 +70,11 @@ assignment:
 func_def:
   FUN ID LPAREN RPAREN ARROW typ LBRACE block_list RBRACE
   {
-    FunctionDefinition($5, $2, [], $7)
+    FunctionDefinition($6, $2, [], $8)
   }
 | FUN ID LPAREN RPAREN LBRACE block_list RBRACE (* Unspecified return type defaults to Unit. The semantic checker will check if this holds. All other return types must be specified *)
   {
-    FunctionDefinition(Unit, $2, [], $5)
+    FunctionDefinition(Unit, $2, [], $6)
   }
 | FUN ID LPAREN formals_opt RPAREN ARROW typ LBRACE block_list RBRACE
   {
