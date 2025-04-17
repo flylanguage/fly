@@ -52,6 +52,7 @@ block:
   | func_call           { $1 }
   | udt_def             { $1 }
   | control_flow        { $1 }
+  | enum_def            { $1 }
 
 declaration:
   LET MUT ID COLON typ EQUAL expr SEMI  { MutDeclTyped($3, $5, $7) }  (* let x: int = 5; *)
@@ -103,6 +104,7 @@ formal_list:
 
 func_call:
   ID LPAREN list_elements RPAREN       { Call($1, $3) } (* Function call *)
+  | ID UNIT { CALL ($1, $2)} (* Function call with no args*)
 
 udt_def:
   TYPE ID LBRACE udt_members RBRACE       { UDTDef($2, $4) }
@@ -163,7 +165,7 @@ expr:
 
   | udt_instance                       { $1 } (* Instantiating a user defined type *)
   | ID DOT ID                          { UDTAccess($1, $3) } (* access member variable of user defined type *)
-  | ID DCOLON ID                       { UDTStaticAccess($1, $3) } (* access static method on user defined type *)
+  | ID DCOLON ID LPAREN list_elements RPAREN    { UDTStaticAccess($1, $3, $5) } (* access static method on user defined type *)
   | LPAREN expr RPAREN                 { $2 }
   | MATCH LPAREN expr RPAREN LBRACE case_list RBRACE { Match($3, $6) } (* match is an expression and should evaluate to something *)
 
@@ -214,6 +216,17 @@ control_flow:
   | CONT        { Continue }
   | RETURN SEMI { ReturnUnit}
   | RETURN expr SEMI { ReturnVal($2) }
+
+enum_def:
+  ENUM ID LBRACE enum_variants RBRACE { EnumDeclaration($2, $4) }
+
+enum_variants:
+  enum_variant    {[$1]}
+  | enum_variant COMMA enum_variants { $1::$3 }
+
+enum_variant:
+  ID              {EnumVariantDefault($1)}
+  | ID EQUAL LITERAL {EnumVariantExplicit($1, $3)}
 
 if_stmt:
   IF LPAREN expr RPAREN LBRACE block_list RBRACE                            { IfEnd($3, $6) }

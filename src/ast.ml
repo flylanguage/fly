@@ -54,6 +54,7 @@ type expr =
     (* typ to indicate the exact user defined type and kv_list for member variables *)
   | UDTAccess of string * string
   | UDTStaticAccess of string * string
+  | EnumAccess of string * string
   | IndexingList of string * expr
   | ListElements of expr list
   | Match of expr * (expr * expr) list
@@ -61,6 +62,9 @@ type expr =
 
 and kv_list = (string * expr) list (* for user defined types *)
 
+type enum_variant =
+  | EnumVariantDefault of string
+  | EnumVariantExplicit of string * int
 
 
 type block =
@@ -72,6 +76,7 @@ type block =
   | FunctionDefinition of typ * string * (string * typ) list * block list (* rtyp, func_name, func_args, func_body *)
   | BoundFunctionDefinition of typ * string * (string * typ) list * block list * typ (* rtyp, func_name, func_args, func_body, bound_type *)
   | Call of string * expr list
+  | EnumDeclaration of string * enum_variant list
   | UDTDef of string * (string * typ) list
   | IfEnd of expr * block list
   | IfNonEnd of expr * block list * block
