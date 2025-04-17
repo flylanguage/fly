@@ -82,7 +82,7 @@ type enum_variant =
 
 
 type block =
-  | MutDeclTyped of string * typ * expr
+  MutDeclTyped of string * typ * expr
   | MutDeclInfer of string * expr
   | DeclTyped of string * typ * expr
   | DeclInfer of string * expr

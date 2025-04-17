@@ -14,9 +14,7 @@ let tests =
           let program = Parser.program_rule Scanner.tokenize lexbuf in
           let actual = string_of_program program in
           let expected =
-            "LET ID(x) WALRUS LITERAL(10) SEMI IF LPAREN ID(x) GT LITERAL(5) RPAREN \
-             LBRACE RBRACE ELSE IF LPAREN ID(x) GT LITERAL(4) RPAREN LBRACE RBRACE ELSE \
-             LBRACE RBRACE"
+            "let x := 10;\nif (x > 5) {\n\n} else if (x > 4) {\n\n} else {\n\n}"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 

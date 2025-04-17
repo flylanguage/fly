@@ -31,6 +31,8 @@ let print_token = function
   | EQUAL -> "EQUAL"
   | PLUS_ASSIGN -> "PLUS_ASSIGN"
   | MINUS_ASSIGN -> "MINUS_ASSIGN"
+  | MULT_ASSIGN -> "MULT_ASSIGN"
+  | DIV_ASSIGN -> "DIV_ASSIGN"
   | INCR -> "INCR"
   | DECR -> "DECR"
   | SEMI -> "SEMI"
@@ -51,7 +53,6 @@ let print_token = function
   | LITERAL i -> Printf.sprintf "LITERAL(%d)" i
   | CLIT s -> Printf.sprintf "CLIT(%s)" (String.make 1 s)
   | SLIT s -> Printf.sprintf "SLIT(%s)" s
-  | UNIT -> "UNIT"
   | INT -> "INT" (* type declaration? *)
   | FLOAT -> "FLOAT"
   | BOOL -> "BOOL"
@@ -100,6 +101,9 @@ let string_of_assign_op = function
   IdentityAssign -> " = "
   | PlusAssign -> " += "
   | MinusAssign -> " -= "
+  | MultAssign -> " *= "
+  | DivAssign -> " /= "
+
 
 let rec string_of_expr = function
   Literal l -> string_of_int l
@@ -129,18 +133,38 @@ let rec string_of_expr = function
       ^ ")"
   | UDTInstance (udt_name, udt_members) -> udt_name ^ "{" ^ string_of_udt_instance udt_members ^ "}"
   | UDTAccess (udt_name, udt_accessed_member) -> udt_name ^ "." ^ udt_accessed_member
-  | UDTStaticAccess (udt_name, udt_accessed_member) -> udt_name ^ "::" ^ udt_accessed_member 
-  | IndexingList (list_name, idx_expr) -> list_name ^ "[" ^ string_of_expr idx_expr ^ "]"
+  | UDTInstanceAccess (udt_name, udt_accessed_member, args) -> 
+      string_of_expr udt_name ^ "." ^ udt_accessed_member ^ "(" ^ (String.concat ", " (List.map string_of_expr args)) ^ ")"
+
+  | UDTStaticAccess (udt_name, udt_accessed_member, args) -> 
+      udt_name ^ "::" ^ udt_accessed_member ^ "(" ^ (String.concat ", " (List.map string_of_expr args)) ^ ")"
+  | Index (indexed_expr, idx) -> string_of_expr indexed_expr ^ "[" ^ string_of_expr idx ^ "]"
   | Match (e1, case_list) -> "match (" ^ string_of_expr e1 ^ "){\n" ^ string_of_case_list case_list ^ "}"
   | Wildcard -> "_"
-
+  | EnumAccess (enum_name, enum_variant) -> enum_name ^ "." ^ enum_variant
+and string_of_pattern = function
+  | PLiteral ( num ) -> string_of_int num
+  | PBoolLit true -> "true"
+  | PBoolLit false -> "false"
+  | PFloatLit f -> string_of_float f
+  | PCharLit c -> Printf.sprintf "\'%s\'" (String.make 1 c)
+  | PStringLit s -> Printf.sprintf "\"%s\"" s
+  | PId (id) -> id
+  | PWildcard -> "_"
+  | PEmptyList -> "[]"
+  | PCons (pattern1, pattern2) -> string_of_pattern pattern1 ^ "::" ^ string_of_pattern pattern2
 and string_of_case_list = function 
   [] -> "" (* empty case *)
-  | hd :: tl -> string_of_expr (fst hd) ^ " -> " ^ string_of_expr (snd hd) ^ ",\n" ^ string_of_case_list tl
+  | hd :: tl -> string_of_pattern (fst hd) ^ " -> " ^ string_of_expr (snd hd) ^ ",\n" ^ string_of_case_list tl
 
 and string_of_udt_instance = function
   [] -> ""
   | hd :: tl -> (fst hd) ^ ": " ^ string_of_expr (snd hd) ^ ", " ^ string_of_udt_instance tl
+
+
+let string_of_enum_variant = function
+  | EnumVariantDefault (variant_name) -> variant_name
+  | EnumVariantExplicit (variant_name, variant_num) -> variant_name ^ " = " ^ string_of_int variant_num
 
 let rec string_of_type = function
   Int -> "int"
@@ -164,7 +188,7 @@ let rec string_of_block = function
   | DeclInfer (id, e) -> "let " ^ id ^ " := " ^ string_of_expr e ^ ";\n"
   | Assign (id, assign_op, e) -> id ^ string_of_assign_op assign_op ^ string_of_expr e ^ ";\n"
   | FunctionDefinition  (rtyp, func_name, func_args, func_body) ->
-    "fun " ^ func_name  ^ "(" ^  string_of_func_args func_args ^ ") -> " ^ string_of_type rtyp ^ "{\n"
+    "fun " ^ func_name  ^ "(" ^  string_of_func_args func_args ^ ") -> " ^ string_of_type rtyp ^ " {\n"
     ^ String.concat "" (List.map string_of_block func_body)
     ^ "\n}\n"
   | BoundFunctionDefinition (rtyp, func_name, func_args, func_body, bound_type) -> 
@@ -178,16 +202,20 @@ let rec string_of_block = function
   | UDTDef (udt_name, udt_members) -> 
     "type " ^ udt_name ^ "{\n"
     ^ string_of_func_args udt_members (* Re-use string_of_func_args  as it generates name: type string*)
-    ^ "\n}" 
+    ^ "\n}"
+  | EnumDeclaration (enum_name, enum_variants) ->
+    "enum " ^ enum_name ^ " {\n" 
+    ^ String.concat ",\n" (List.map string_of_enum_variant enum_variants)
+    ^ "\n}"
   | IfEnd (e, bl) ->
     "if (" ^ string_of_expr e ^ ") {\n"
     ^ String.concat "\n" (List.map string_of_block bl)
     ^ "\n}"
   | IfNonEnd (e, bl, nbl) ->
     "if (" ^ string_of_expr e ^ ") {\n"
-    ^ String.concat "\n" (List.map string_of_block bl)
+    ^ String.concat "\n" (List.map string_of_block bl) 
+    ^ "\n} "
     ^ string_of_block nbl
-    ^ "\n}"
   | ElifEnd (e, bl) ->
     "else if (" ^ string_of_expr e ^ ") {\n"
     ^ String.concat "\n" (List.map string_of_block bl)
@@ -195,10 +223,10 @@ let rec string_of_block = function
   | ElifNonEnd (e, bl, nbl) ->
     "else if (" ^ string_of_expr e ^ ") {\n"
     ^ String.concat "\n" (List.map string_of_block bl)
+    ^ "\n} "
     ^ string_of_block nbl
-    ^ "\n}"
   | ElseEnd bl ->
-    "else {" ^ String.concat "\n" (List.map string_of_block bl) ^ "\n}"
+    "else {\n" ^ String.concat "\n" (List.map string_of_block bl) ^ "\n}"
   | While (e, block_list) -> 
     "while (" ^ string_of_expr e ^ ") {\n"
     ^ String.concat "" (List.map string_of_block block_list)

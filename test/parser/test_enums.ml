@@ -10,7 +10,7 @@ let tests =
           let program = Parser.program_rule Scanner.tokenize lexbuf in
           let actual = string_of_program program in
           let expected =
-            "enum Color {\n\tRed,\n\tGreen,\n\tBlue\n}\n"
+            "enum Color {\nRed,\nGreen,\nBlue\n}"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("test2"
@@ -32,7 +32,7 @@ let tests =
           let program = Parser.program_rule Scanner.tokenize lexbuf in
           let actual = string_of_program program in
           let expected =
-            "if (a1 == Color.Red) {\n} else {\n}\n"
+            "if (a1 == Color.Red) {\n\n} else {\n\n}"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -52,7 +52,7 @@ let tests =
           let program = Parser.program_rule Scanner.tokenize lexbuf in
           let actual = string_of_program program in
           let expected =
-            "if (b1 == Color.Green) {\n} else {\n}\n"
+            "if (b1 == Color.Green) {\n\n} else {\n\n}"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 

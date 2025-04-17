@@ -49,10 +49,25 @@ block:
   declaration         { $1 }
   | assignment          { $1 }
   | func_def            { $1 }
-  | func_call           { $1 }
+  | func_call SEMI      { $1 }
   | udt_def             { $1 }
   | control_flow        { $1 }
   | enum_def            { $1 }
+
+typ:
+    INT { Int }
+  | BOOL { Bool }
+  | CHAR { Char }
+  | FLOAT { Float }
+  | STRING { String }
+  | LIST LT typ GT { List($3) }
+  | TUPLE LT typ_list GT { Tuple($3) }
+  | ID     { UserType($1) }
+  | LPAREN RPAREN { Unit }
+
+typ_list:
+  typ                  {[$1]}
+  | typ COMMA typ_list {$1 :: $3}
 
 declaration:
   LET MUT ID COLON typ EQUAL expr SEMI  { MutDeclTyped($3, $5, $7) }  (* let x: int = 5; *)
@@ -70,11 +85,11 @@ assignment:
 func_def:
   FUN ID LPAREN RPAREN ARROW typ LBRACE block_list RBRACE
   {
-    FunctionDefinition($5, $2, [], $7)
+    FunctionDefinition($6, $2, [], $8)
   }
 | FUN ID LPAREN RPAREN LBRACE block_list RBRACE (* Unspecified return type defaults to Unit. The semantic checker will check if this holds. All other return types must be specified *)
   {
-    FunctionDefinition(Unit, $2, [], $5)
+    FunctionDefinition(Unit, $2, [], $6)
   }
 | FUN ID LPAREN formals_opt RPAREN ARROW typ LBRACE block_list RBRACE
   {
@@ -95,14 +110,8 @@ func_def:
   }
 
 formals_opt:
-  (* empty *) { [] }
-| formal_list { List.rev $1 }
-
-
-formal_list:
     ID COLON typ                   { [($1,$3)] }
-  | formal_list COMMA ID COLON typ { ($3,$5) :: $1 }
-
+  | ID COLON typ COMMA formals_opt { ($1,$3) :: $5 }
 
 func_call:
   ID LPAREN list_elements RPAREN       { Call($1, $3) } (* Function call *)
@@ -114,21 +123,6 @@ udt_def:
 udt_members:
   ID COLON typ                        {[($1, $3)]}
   | ID COLON typ COMMA udt_members    {($1, $3) :: $5}
-
-typ:
-    INT { Int }
-  | BOOL { Bool }
-  | CHAR { Char }
-  | FLOAT { Float }
-  | STRING { String }
-  | LIST LT typ GT { List($3) }
-  | TUPLE LT typ_list GT { Tuple($3) }
-  | ID     { UserType($1) }
-  | LPAREN RPAREN { Unit }
-
-typ_list:
-  typ                  {[$1]}
-  | typ COMMA typ_list {$1 :: $3}
 
 
 expr:

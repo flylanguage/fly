@@ -1,20 +1,514 @@
-File "test/parser/dune", line 51, characters 8-15:
-51 |   (name test_lt)
-             ^^^^^^^
-............E...
+31 shift/reduce conflicts.
+File "test/parser/dune", line 10, characters 8-18:
+10 |   (name test_enums)
+             ^^^^^^^^^^
+.....EE..
 ==============================================================================
-Error: testing_lt:13:test15.
+Error: testing_enums:6:test7.
 
-File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_lt-xiang-2#02.log", line 20, characters 1-1:
-Error: testing_lt:13:test15 (in the log).
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_enums-xiang-2.local#01.log", line 11, characters 1-1:
+Error: testing_enums:6:test7 (in the log).
 
 Raised at Stdlib__Parsing.yyparse.loop in file "parsing.ml", line 139, characters 8-25
 Called from Stdlib__Parsing.yyparse in file "parsing.ml", line 165, characters 4-28
 Re-raised at Stdlib__Parsing.yyparse in file "parsing.ml", line 184, characters 8-17
-Called from Dune__exe__Test_lt.tests.(fun) in file "test/parser/test_lt.ml", line 178, characters 24-67
+Called from Dune__exe__Test_enums.tests.(fun) in file "test/parser/test_enums.ml", line 85, characters 24-67
 Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
 
 Stdlib.Parsing.Parse_error
 ------------------------------------------------------------------------------
-Ran: 16 tests in: 0.11 seconds.
-FAILED: Cases: 16 Tried: 16 Errors: 1 Failures: 0 Skip:  0 Todo: 0 Timeouts: 0.
+==============================================================================
+Error: testing_enums:5:test6.
+
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_enums-xiang-2.local#02.log", line 8, characters 1-1:
+Error: testing_enums:5:test6 (in the log).
+
+Raised at Stdlib__Parsing.yyparse.loop in file "parsing.ml", line 139, characters 8-25
+Called from Stdlib__Parsing.yyparse in file "parsing.ml", line 165, characters 4-28
+Re-raised at Stdlib__Parsing.yyparse in file "parsing.ml", line 184, characters 8-17
+Called from Dune__exe__Test_enums.tests.(fun) in file "test/parser/test_enums.ml", line 73, characters 24-67
+Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
+
+Stdlib.Parsing.Parse_error
+------------------------------------------------------------------------------
+Ran: 9 tests in: 0.00 seconds.
+FAILED: Cases: 9 Tried: 9 Errors: 2 Failures: 0 Skip:  0 Todo: 0 Timeouts: 0.
+.........
+Ran: 9 tests in: 0.11 seconds.
+OK
+........
+Ran: 8 tests in: 0.11 seconds.
+OK
+.............
+Ran: 13 tests in: 0.11 seconds.
+OK
+File "test/parser/dune", line 31, characters 8-31:
+31 |   (name test_func_def_and_call2)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+E.E.
+==============================================================================
+Error: testing_func_def_and_call2:3:test4.
+
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_func_def_and_call2-xiang-2.local#01.log", line 5, characters 1-1:
+Error: testing_func_def_and_call2:3:test4 (in the log).
+
+Raised at Stdlib__Parsing.yyparse.loop in file "parsing.ml", line 139, characters 8-25
+Called from Stdlib__Parsing.yyparse in file "parsing.ml", line 165, characters 4-28
+Re-raised at Stdlib__Parsing.yyparse in file "parsing.ml", line 184, characters 8-17
+Called from Dune__exe__Test_func_def_and_call2.tests.(fun) in file "test/parser/test_func_def_and_call2.ml", line 57, characters 24-67
+Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
+
+Stdlib.Parsing.Parse_error
+------------------------------------------------------------------------------
+==============================================================================
+Error: testing_func_def_and_call2:1:test2.
+
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_func_def_and_call2-xiang-2.local#02.log", line 2, characters 1-1:
+Error: testing_func_def_and_call2:1:test2 (in the log).
+
+Raised at Stdlib__Parsing.yyparse.loop in file "parsing.ml", line 139, characters 8-25
+Called from Stdlib__Parsing.yyparse in file "parsing.ml", line 165, characters 4-28
+Re-raised at Stdlib__Parsing.yyparse in file "parsing.ml", line 184, characters 8-17
+Called from Dune__exe__Test_func_def_and_call2.tests.(fun) in file "test/parser/test_func_def_and_call2.ml", line 27, characters 24-67
+Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
+
+Stdlib.Parsing.Parse_error
+------------------------------------------------------------------------------
+Ran: 4 tests in: 0.10 seconds.
+FAILED: Cases: 4 Tried: 4 Errors: 2 Failures: 0 Skip:  0 Todo: 0 Timeouts: 0.
+File "test/parser/dune", line 22, characters 8-22:
+22 |   (name test_func_bind)
+             ^^^^^^^^^^^^^^
+.EEE.
+==============================================================================
+Error: testing_func_bind:4:test5.
+
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_func_bind-xiang-2.local#01.log", line 25, characters 1-1:
+Error: testing_func_bind:4:test5 (in the log).
+
+Raised at Stdlib__Parsing.yyparse.loop in file "parsing.ml", line 139, characters 8-25
+Called from Stdlib__Parsing.yyparse in file "parsing.ml", line 165, characters 4-28
+Re-raised at Stdlib__Parsing.yyparse in file "parsing.ml", line 184, characters 8-17
+Called from Dune__exe__Test_func_bind.tests.(fun) in file "test/parser/test_func_bind.ml", line 64, characters 24-67
+Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
+
+Stdlib.Parsing.Parse_error
+------------------------------------------------------------------------------
+==============================================================================
+Error: testing_func_bind:3:test4.
+
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_func_bind-xiang-2.local#01.log", line 15, characters 1-1:
+Error: testing_func_bind:3:test4 (in the log).
+
+Raised at Stdlib__Parsing.yyparse.loop in file "parsing.ml", line 139, characters 8-25
+Called from Stdlib__Parsing.yyparse in file "parsing.ml", line 165, characters 4-28
+Re-raised at Stdlib__Parsing.yyparse in file "parsing.ml", line 184, characters 8-17
+Called from Dune__exe__Test_func_bind.tests.(fun) in file "test/parser/test_func_bind.ml", line 52, characters 24-67
+Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
+
+Stdlib.Parsing.Parse_error
+------------------------------------------------------------------------------
+==============================================================================
+Error: testing_func_bind:2:test3.
+
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_func_bind-xiang-2.local#01.log", line 5, characters 1-1:
+Error: testing_func_bind:2:test3 (in the log).
+
+Raised at Stdlib__Parsing.yyparse.loop in file "parsing.ml", line 139, characters 8-25
+Called from Stdlib__Parsing.yyparse in file "parsing.ml", line 165, characters 4-28
+Re-raised at Stdlib__Parsing.yyparse in file "parsing.ml", line 184, characters 8-17
+Called from Dune__exe__Test_func_bind.tests.(fun) in file "test/parser/test_func_bind.ml", line 38, characters 24-67
+Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
+
+Stdlib.Parsing.Parse_error
+------------------------------------------------------------------------------
+Ran: 5 tests in: 0.11 seconds.
+FAILED: Cases: 5 Tried: 5 Errors: 3 Failures: 0 Skip:  0 Todo: 0 Timeouts: 0.
+File "test/parser/dune", line 27, characters 8-31:
+27 |   (name test_func_def_and_call1)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+F.
+==============================================================================
+Error: testing_func_def_and_call1:0:test1.
+
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_func_def_and_call1-xiang-2.local#01.log", line 2, characters 1-1:
+Error: testing_func_def_and_call1:0:test1 (in the log).
+
+Raised at OUnitAssert.assert_failure in file "src/lib/ounit2/advanced/oUnitAssert.ml", line 45, characters 2-27
+Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
+
+expected: "fun countdown(timer: int, ) -> (){
+while (timer > 0) {
+timer -= 1;
+
+}
+}
+"
+but got: "fun countdown(timer: int, ) -> () {
+while (timer > 0) {
+timer -= 1;
+
+}
+}
+"
+------------------------------------------------------------------------------
+Ran: 2 tests in: 0.11 seconds.
+FAILED: Cases: 2 Tried: 2 Errors: 0 Failures: 1 Skip:  0 Todo: 0 Timeouts: 0.
+..............
+Ran: 14 tests in: 0.11 seconds.
+OK
+.............
+Ran: 13 tests in: 0.11 seconds.
+OK
+File "test/parser/dune", line 43, characters 8-17:
+43 |   (name test_list)
+             ^^^^^^^^^
+EE..E....
+==============================================================================
+Error: testing_list:4:test7.
+
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_list-xiang-2.local#02.log", line 15, characters 1-1:
+Error: testing_list:4:test7 (in the log).
+
+Raised at Stdlib__Parsing.yyparse.loop in file "parsing.ml", line 139, characters 8-25
+Called from Stdlib__Parsing.yyparse in file "parsing.ml", line 165, characters 4-28
+Re-raised at Stdlib__Parsing.yyparse in file "parsing.ml", line 184, characters 8-17
+Called from Dune__exe__Test_list.tests.(fun) in file "test/parser/test_list.ml", line 79, characters 24-67
+Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
+
+Stdlib.Parsing.Parse_error
+------------------------------------------------------------------------------
+==============================================================================
+Error: testing_list:1:test4.
+
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_list-xiang-2.local#02.log", line 2, characters 1-1:
+Error: testing_list:1:test4 (in the log).
+
+Raised at Stdlib__Parsing.yyparse.loop in file "parsing.ml", line 139, characters 8-25
+Called from Stdlib__Parsing.yyparse in file "parsing.ml", line 165, characters 4-28
+Re-raised at Stdlib__Parsing.yyparse in file "parsing.ml", line 184, characters 8-17
+Called from Dune__exe__Test_list.tests.(fun) in file "test/parser/test_list.ml", line 43, characters 24-67
+Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
+
+Stdlib.Parsing.Parse_error
+------------------------------------------------------------------------------
+==============================================================================
+Error: testing_list:0:test1.
+
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_list-xiang-2.local#01.log", line 2, characters 1-1:
+Error: testing_list:0:test1 (in the log).
+
+Raised at Stdlib__Parsing.yyparse.loop in file "parsing.ml", line 139, characters 8-25
+Called from Stdlib__Parsing.yyparse in file "parsing.ml", line 165, characters 4-28
+Re-raised at Stdlib__Parsing.yyparse in file "parsing.ml", line 184, characters 8-17
+Called from Dune__exe__Test_list.tests.(fun) in file "test/parser/test_list.ml", line 11, characters 24-67
+Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
+
+Stdlib.Parsing.Parse_error
+------------------------------------------------------------------------------
+Ran: 9 tests in: 0.11 seconds.
+FAILED: Cases: 9 Tried: 9 Errors: 3 Failures: 0 Skip:  0 Todo: 0 Timeouts: 0.
+...............
+Ran: 15 tests in: 0.12 seconds.
+OK
+File "test/parser/dune", line 47, characters 8-18:
+47 |   (name test_loops)
+             ^^^^^^^^^^
+E.EE.
+==============================================================================
+Error: testing_loops:4:test5.
+
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_loops-xiang-2.local#02.log", line 22, characters 1-1:
+Error: testing_loops:4:test5 (in the log).
+
+Raised at Stdlib__Parsing.yyparse.loop in file "parsing.ml", line 139, characters 8-25
+Called from Stdlib__Parsing.yyparse in file "parsing.ml", line 165, characters 4-28
+Re-raised at Stdlib__Parsing.yyparse in file "parsing.ml", line 184, characters 8-17
+Called from Dune__exe__Test_loops.tests.(fun) in file "test/parser/test_loops.ml", line 51, characters 24-67
+Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
+
+Stdlib.Parsing.Parse_error
+------------------------------------------------------------------------------
+==============================================================================
+Error: testing_loops:2:test3.
+
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_loops-xiang-2.local#02.log", line 12, characters 1-1:
+Error: testing_loops:2:test3 (in the log).
+
+Raised at Stdlib__Parsing.yyparse.loop in file "parsing.ml", line 139, characters 8-25
+Called from Stdlib__Parsing.yyparse in file "parsing.ml", line 165, characters 4-28
+Re-raised at Stdlib__Parsing.yyparse in file "parsing.ml", line 184, characters 8-17
+Called from Dune__exe__Test_loops.tests.(fun) in file "test/parser/test_loops.ml", line 33, characters 24-67
+Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
+
+Stdlib.Parsing.Parse_error
+------------------------------------------------------------------------------
+==============================================================================
+Error: testing_loops:1:test2.
+
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_loops-xiang-2.local#02.log", line 2, characters 1-1:
+Error: testing_loops:1:test2 (in the log).
+
+Raised at Stdlib__Parsing.yyparse.loop in file "parsing.ml", line 139, characters 8-25
+Called from Stdlib__Parsing.yyparse in file "parsing.ml", line 165, characters 4-28
+Re-raised at Stdlib__Parsing.yyparse in file "parsing.ml", line 184, characters 8-17
+Called from Dune__exe__Test_loops.tests.(fun) in file "test/parser/test_loops.ml", line 25, characters 24-67
+Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
+
+Stdlib.Parsing.Parse_error
+------------------------------------------------------------------------------
+Ran: 5 tests in: 0.11 seconds.
+FAILED: Cases: 5 Tried: 5 Errors: 3 Failures: 0 Skip:  0 Todo: 0 Timeouts: 0.
+...............
+Ran: 15 tests in: 0.11 seconds.
+OK
+.
+Ran: 1 tests in: 0.11 seconds.
+OK
+File "test/parser/dune", line 64, characters 8-18:
+64 |   (name test_match)
+             ^^^^^^^^^^
+E
+==============================================================================
+Error: testing_match:0:test2.
+
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_match-xiang-2.local#01.log", line 2, characters 1-1:
+Error: testing_match:0:test2 (in the log).
+
+Raised at Stdlib__Parsing.yyparse.loop in file "parsing.ml", line 139, characters 8-25
+Called from Stdlib__Parsing.yyparse in file "parsing.ml", line 165, characters 4-28
+Re-raised at Stdlib__Parsing.yyparse in file "parsing.ml", line 184, characters 8-17
+Called from Dune__exe__Test_match.tests.(fun) in file "test/parser/test_match.ml", line 27, characters 22-65
+Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
+
+Stdlib.Parsing.Parse_error
+------------------------------------------------------------------------------
+Ran: 1 tests in: 0.10 seconds.
+FAILED: Cases: 1 Tried: 1 Errors: 1 Failures: 0 Skip:  0 Todo: 0 Timeouts: 0.
+File "test/parser/dune", line 72, characters 8-16:
+72 |   (name test_mut)
+             ^^^^^^^^
+.E.
+==============================================================================
+Error: testing_mut:2:test3.
+
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_mut-xiang-2.local#01.log", line 5, characters 1-1:
+Error: testing_mut:2:test3 (in the log).
+
+Raised at Stdlib__Parsing.yyparse.loop in file "parsing.ml", line 139, characters 8-25
+Called from Stdlib__Parsing.yyparse in file "parsing.ml", line 165, characters 4-28
+Re-raised at Stdlib__Parsing.yyparse in file "parsing.ml", line 184, characters 8-17
+Called from Dune__exe__Test_mut.tests.(fun) in file "test/parser/test_mut.ml", line 34, characters 24-67
+Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
+
+Stdlib.Parsing.Parse_error
+------------------------------------------------------------------------------
+Ran: 3 tests in: 0.11 seconds.
+FAILED: Cases: 3 Tried: 3 Errors: 1 Failures: 0 Skip:  0 Todo: 0 Timeouts: 0.
+File "test/parser/dune", line 80, characters 8-16:
+80 |   (name test_not)
+             ^^^^^^^^
+......E..
+==============================================================================
+Error: testing_not:6:test7.
+
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_not-xiang-2.local#01.log", line 11, characters 1-1:
+Error: testing_not:6:test7 (in the log).
+
+Raised at Stdlib__Parsing.yyparse.loop in file "parsing.ml", line 139, characters 8-25
+Called from Stdlib__Parsing.yyparse in file "parsing.ml", line 165, characters 4-28
+Re-raised at Stdlib__Parsing.yyparse in file "parsing.ml", line 184, characters 8-17
+Called from Dune__exe__Test_not.tests.(fun) in file "test/parser/test_not.ml", line 87, characters 24-67
+Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
+
+Stdlib.Parsing.Parse_error
+------------------------------------------------------------------------------
+Ran: 9 tests in: 0.11 seconds.
+FAILED: Cases: 9 Tried: 9 Errors: 1 Failures: 0 Skip:  0 Todo: 0 Timeouts: 0.
+...........
+Ran: 11 tests in: 0.11 seconds.
+OK
+File "test/parser/dune", line 84, characters 8-15:
+84 |   (name test_or)
+             ^^^^^^^
+.....E...
+==============================================================================
+Error: testing_or:6:test7.
+
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_or-xiang-2.local#02.log", line 8, characters 1-1:
+Error: testing_or:6:test7 (in the log).
+
+Raised at Stdlib__Parsing.yyparse.loop in file "parsing.ml", line 139, characters 8-25
+Called from Stdlib__Parsing.yyparse in file "parsing.ml", line 165, characters 4-28
+Re-raised at Stdlib__Parsing.yyparse in file "parsing.ml", line 184, characters 8-17
+Called from Dune__exe__Test_or.tests.(fun) in file "test/parser/test_or.ml", line 93, characters 24-67
+Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
+
+Stdlib.Parsing.Parse_error
+------------------------------------------------------------------------------
+Ran: 9 tests in: 0.11 seconds.
+FAILED: Cases: 9 Tried: 9 Errors: 1 Failures: 0 Skip:  0 Todo: 0 Timeouts: 0.
+...........
+Ran: 11 tests in: 0.11 seconds.
+OK
+.......
+Ran: 7 tests in: 0.11 seconds.
+OK
+.........
+Ran: 9 tests in: 0.11 seconds.
+OK
+File "test/parser/dune", line 96, characters 8-18:
+96 |   (name test_tuple)
+             ^^^^^^^^^^
+EE.EEE...
+==============================================================================
+Error: testing_tuple:5:test6.
+
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_tuple-xiang-2.local#01.log", line 32, characters 1-1:
+Error: testing_tuple:5:test6 (in the log).
+
+Raised at Stdlib__Parsing.yyparse.loop in file "parsing.ml", line 139, characters 8-25
+Called from Stdlib__Parsing.yyparse in file "parsing.ml", line 165, characters 4-28
+Re-raised at Stdlib__Parsing.yyparse in file "parsing.ml", line 184, characters 8-17
+Called from Dune__exe__Test_tuple.tests.(fun) in file "test/parser/test_tuple.ml", line 64, characters 24-67
+Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
+
+Stdlib.Parsing.Parse_error
+------------------------------------------------------------------------------
+==============================================================================
+Error: testing_tuple:4:test5.
+
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_tuple-xiang-2.local#02.log", line 5, characters 1-1:
+Error: testing_tuple:4:test5 (in the log).
+
+Raised at Stdlib__Parsing.yyparse.loop in file "parsing.ml", line 139, characters 8-25
+Called from Stdlib__Parsing.yyparse in file "parsing.ml", line 165, characters 4-28
+Re-raised at Stdlib__Parsing.yyparse in file "parsing.ml", line 184, characters 8-17
+Called from Dune__exe__Test_tuple.tests.(fun) in file "test/parser/test_tuple.ml", line 52, characters 24-67
+Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
+
+Stdlib.Parsing.Parse_error
+------------------------------------------------------------------------------
+==============================================================================
+Error: testing_tuple:3:test4.
+
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_tuple-xiang-2.local#01.log", line 22, characters 1-1:
+Error: testing_tuple:3:test4 (in the log).
+
+Raised at Stdlib__Parsing.yyparse.loop in file "parsing.ml", line 139, characters 8-25
+Called from Stdlib__Parsing.yyparse in file "parsing.ml", line 165, characters 4-28
+Re-raised at Stdlib__Parsing.yyparse in file "parsing.ml", line 184, characters 8-17
+Called from Dune__exe__Test_tuple.tests.(fun) in file "test/parser/test_tuple.ml", line 42, characters 24-67
+Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
+
+Stdlib.Parsing.Parse_error
+------------------------------------------------------------------------------
+==============================================================================
+Error: testing_tuple:2:test3.
+
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_tuple-xiang-2.local#01.log", line 12, characters 1-1:
+Error: testing_tuple:2:test3 (in the log).
+
+Raised at Stdlib__Parsing.yyparse.loop in file "parsing.ml", line 139, characters 8-25
+Called from Stdlib__Parsing.yyparse in file "parsing.ml", line 165, characters 4-28
+Re-raised at Stdlib__Parsing.yyparse in file "parsing.ml", line 184, characters 8-17
+Called from Dune__exe__Test_tuple.tests.(fun) in file "test/parser/test_tuple.ml", line 30, characters 24-67
+Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
+
+Stdlib.Parsing.Parse_error
+------------------------------------------------------------------------------
+==============================================================================
+Error: testing_tuple:0:test1.
+
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_tuple-xiang-2.local#01.log", line 2, characters 1-1:
+Error: testing_tuple:0:test1 (in the log).
+
+Raised at Stdlib__Parsing.yyparse.loop in file "parsing.ml", line 139, characters 8-25
+Called from Stdlib__Parsing.yyparse in file "parsing.ml", line 165, characters 4-28
+Re-raised at Stdlib__Parsing.yyparse in file "parsing.ml", line 184, characters 8-17
+Called from Dune__exe__Test_tuple.tests.(fun) in file "test/parser/test_tuple.ml", line 10, characters 24-67
+Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
+
+Stdlib.Parsing.Parse_error
+------------------------------------------------------------------------------
+Ran: 9 tests in: 0.11 seconds.
+FAILED: Cases: 9 Tried: 9 Errors: 5 Failures: 0 Skip:  0 Todo: 0 Timeouts: 0.
+File "test/parser/dune", line 108, characters 8-25:
+108 |   (name test_predecrement)
+              ^^^^^^^^^^^^^^^^^
+....E...
+==============================================================================
+Error: testing_predecrement:5:test6.
+
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_predecrement-xiang-2.local#02.log", line 8, characters 1-1:
+Error: testing_predecrement:5:test6 (in the log).
+
+Raised at Stdlib__Parsing.yyparse.loop in file "parsing.ml", line 139, characters 8-25
+Called from Stdlib__Parsing.yyparse in file "parsing.ml", line 165, characters 4-28
+Re-raised at Stdlib__Parsing.yyparse in file "parsing.ml", line 184, characters 8-17
+Called from Dune__exe__Test_predecrement.tests.(fun) in file "test/parser/test_predecrement.ml", line 54, characters 22-65
+Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
+
+Stdlib.Parsing.Parse_error
+------------------------------------------------------------------------------
+Ran: 8 tests in: 0.11 seconds.
+FAILED: Cases: 8 Tried: 8 Errors: 1 Failures: 0 Skip:  0 Todo: 0 Timeouts: 0.
+.......
+Ran: 7 tests in: 0.11 seconds.
+OK
+File "test/parser/dune", line 104, characters 8-26:
+104 |   (name test_postincrement)
+              ^^^^^^^^^^^^^^^^^^
+..F.......
+==============================================================================
+Error: testing_postincrement:2:test3.
+
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_postincrement-xiang-2.local#01.log", line 5, characters 1-1:
+Error: testing_postincrement:2:test3 (in the log).
+
+Raised at OUnitAssert.assert_failure in file "src/lib/ounit2/advanced/oUnitAssert.ml", line 45, characters 2-27
+Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
+
+expected: "let mut a3 := 3.5;
+return a3++; 
+"
+but got: "let mut a3 := 3.5;
+return a3++;
+"
+------------------------------------------------------------------------------
+Ran: 10 tests in: 0.11 seconds.
+FAILED: Cases: 10 Tried: 10 Errors: 0 Failures: 1 Skip:  0 Todo: 0 Timeouts: 0.
+File "test/parser/dune", line 112, characters 8-25:
+112 |   (name test_preincrement)
+              ^^^^^^^^^^^^^^^^^
+..EE...
+==============================================================================
+Error: testing_preincrement:4:test5.
+
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_preincrement-xiang-2.local#01.log", line 18, characters 1-1:
+Error: testing_preincrement:4:test5 (in the log).
+
+Raised at Stdlib__Parsing.yyparse.loop in file "parsing.ml", line 139, characters 8-25
+Called from Stdlib__Parsing.yyparse in file "parsing.ml", line 165, characters 4-28
+Re-raised at Stdlib__Parsing.yyparse in file "parsing.ml", line 184, characters 8-17
+Called from Dune__exe__Test_preincrement.tests.(fun) in file "test/parser/test_preincrement.ml", line 45, characters 22-65
+Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
+
+Stdlib.Parsing.Parse_error
+------------------------------------------------------------------------------
+==============================================================================
+Error: testing_preincrement:3:test4.
+
+File "/Users/txy/Desktop/College Homework/Spring 2025/plt/fly/_build/default/test/parser/oUnit-testing_preincrement-xiang-2.local#01.log", line 8, characters 1-1:
+Error: testing_preincrement:3:test4 (in the log).
+
+Raised at Stdlib__Parsing.yyparse.loop in file "parsing.ml", line 139, characters 8-25
+Called from Stdlib__Parsing.yyparse in file "parsing.ml", line 165, characters 4-28
+Re-raised at Stdlib__Parsing.yyparse in file "parsing.ml", line 184, characters 8-17
+Called from Dune__exe__Test_preincrement.tests.(fun) in file "test/parser/test_preincrement.ml", line 36, characters 22-65
+Called from OUnitRunner.run_one_test.(fun) in file "src/lib/ounit2/advanced/oUnitRunner.ml", line 83, characters 13-26
+
+Stdlib.Parsing.Parse_error
+------------------------------------------------------------------------------
+Ran: 7 tests in: 0.10 seconds.
+FAILED: Cases: 7 Tried: 7 Errors: 2 Failures: 0 Skip:  0 Todo: 0 Timeouts: 0.

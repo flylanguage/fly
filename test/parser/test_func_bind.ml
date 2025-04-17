@@ -23,7 +23,7 @@ let tests =
           in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
-          let expected = "let p1: Person = Person{name: John, age: 12, };\n"
+          let expected = "let p1: Person = Person{name: \"John\", age: 12, };\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
