@@ -49,10 +49,25 @@ block:
   declaration         { $1 }
   | assignment          { $1 }
   | func_def            { $1 }
-  | func_call           { $1 }
+  | func_call SEMI      { $1 }
   | udt_def             { $1 }
   | control_flow        { $1 }
   | enum_def            { $1 }
+
+typ:
+    INT { Int }
+  | BOOL { Bool }
+  | CHAR { Char }
+  | FLOAT { Float }
+  | STRING { String }
+  | LIST LT typ GT { List($3) }
+  | TUPLE LT typ_list GT { Tuple($3) }
+  | ID     { UserType($1) }
+  | LPAREN RPAREN { Unit }
+
+typ_list:
+  typ                  {[$1]}
+  | typ COMMA typ_list {$1 :: $3}
 
 declaration:
   LET MUT ID COLON typ EQUAL expr SEMI  { MutDeclTyped($3, $5, $7) }  (* let x: int = 5; *)
@@ -114,21 +129,6 @@ udt_def:
 udt_members:
   ID COLON typ                        {[($1, $3)]}
   | ID COLON typ COMMA udt_members    {($1, $3) :: $5}
-
-typ:
-    INT { Int }
-  | BOOL { Bool }
-  | CHAR { Char }
-  | FLOAT { Float }
-  | STRING { String }
-  | LIST LT typ GT { List($3) }
-  | TUPLE LT typ_list GT { Tuple($3) }
-  | ID     { UserType($1) }
-  | LPAREN RPAREN { Unit }
-
-typ_list:
-  typ                  {[$1]}
-  | typ COMMA typ_list {$1 :: $3}
 
 
 expr:

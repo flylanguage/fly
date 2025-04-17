@@ -204,18 +204,18 @@ let rec string_of_block = function
     ^ string_of_func_args udt_members (* Re-use string_of_func_args  as it generates name: type string*)
     ^ "\n}"
   | EnumDeclaration (enum_name, enum_variants) ->
-    "Enum " ^ enum_name ^ "{\n" 
+    "enum " ^ enum_name ^ "{\n" 
     ^ String.concat ",\n" (List.map string_of_enum_variant enum_variants)
-    ^ "}"
+    ^ "\n}"
   | IfEnd (e, bl) ->
     "if (" ^ string_of_expr e ^ ") {\n"
     ^ String.concat "\n" (List.map string_of_block bl)
     ^ "\n}"
   | IfNonEnd (e, bl, nbl) ->
     "if (" ^ string_of_expr e ^ ") {\n"
-    ^ String.concat "\n" (List.map string_of_block bl)
+    ^ String.concat "\n" (List.map string_of_block bl) 
+    ^ "\n} "
     ^ string_of_block nbl
-    ^ "\n}"
   | ElifEnd (e, bl) ->
     "else if (" ^ string_of_expr e ^ ") {\n"
     ^ String.concat "\n" (List.map string_of_block bl)
@@ -223,10 +223,10 @@ let rec string_of_block = function
   | ElifNonEnd (e, bl, nbl) ->
     "else if (" ^ string_of_expr e ^ ") {\n"
     ^ String.concat "\n" (List.map string_of_block bl)
+    ^ "\n} "
     ^ string_of_block nbl
-    ^ "\n}"
   | ElseEnd bl ->
-    "else {" ^ String.concat "\n" (List.map string_of_block bl) ^ "\n}"
+    "else {\n" ^ String.concat "\n" (List.map string_of_block bl) ^ "\n}"
   | While (e, block_list) -> 
     "while (" ^ string_of_expr e ^ ") {\n"
     ^ String.concat "" (List.map string_of_block block_list)
