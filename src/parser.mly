@@ -161,9 +161,9 @@ expr:
   | NOT expr                           { Unop($2, Not)        }
 
   | list                               { $1 } (* list literal declaration *)
-  | ID LBRACKET expr RBRACKET          { IndexingList($1, $3) }  (* indexing into list *)
-
   | tuple                              { $1 } (* tuple literal declaration. need to handle indexing into tuple *)
+
+  | expr LBRACKET expr RBRACKET        {Index($1, $3)}
 
   | udt_instance                       { $1 } (* Instantiating a user defined type *)
   | ID DOT ID                          { UDTAccess($1, $3) } (* access member variable of user defined type *)

@@ -68,7 +68,7 @@ type expr =
   | UDTAccess of string * string
   | UDTStaticAccess of string * string
   | EnumAccess of string * string
-  | IndexingList of string * expr
+  | Index of expr * expr
   | ListElements of expr list
   | Match of expr * (pattern * expr) list
   | Wildcard
