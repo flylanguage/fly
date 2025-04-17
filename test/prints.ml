@@ -210,7 +210,4 @@ let rec string_of_block = function
 
 
 
-let string_of_program fdecl =
-  "\n\nParsed program: \n\n"
-  ^ String.concat "" (List.map string_of_block fdecl.body)
-  ^ "\n"
+let string_of_program fdecl = String.concat "" (List.map string_of_block fdecl.body)

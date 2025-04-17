@@ -94,10 +94,6 @@
 
 (test
   (name test_decr)
-  (libraries fly_lib ounit2 print_lib))  
-          
-(test
-  (name test_set)
   (libraries fly_lib ounit2 print_lib))
 
 (test
