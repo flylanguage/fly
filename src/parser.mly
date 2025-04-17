@@ -9,7 +9,7 @@ open Ast
 %token BEQ NEQ LT LEQ GT GEQ AND OR NOT
 
 %token IF ELSE WHILE FOR BREAK CONT IN
-%token INT BOOL CHAR FLOAT STRING LIST TUPLE UNIT 
+%token INT BOOL CHAR FLOAT STRING LIST TUPLE 
 %token FUN ARROW RETURN
 %token LET MUT MATCH UNDERSCORE INTERFACE
 %token TYPE SELF ENUM BIND AS
@@ -68,11 +68,11 @@ assignment:
   | ID DIV_ASSIGN expr SEMI               { Assign($1, DivAssign, $3)}
 
 func_def:
-  FUN ID UNIT ARROW typ LBRACE block_list RBRACE
+  FUN ID LPAREN RPAREN ARROW typ LBRACE block_list RBRACE
   {
     FunctionDefinition($5, $2, [], $7)
   }
-| FUN ID UNIT LBRACE block_list RBRACE (* Unspecified return type defaults to Unit. The semantic checker will check if this holds. All other return types must be specified *)
+| FUN ID LPAREN RPAREN LBRACE block_list RBRACE (* Unspecified return type defaults to Unit. The semantic checker will check if this holds. All other return types must be specified *)
   {
     FunctionDefinition(Unit, $2, [], $5)
   }
@@ -124,7 +124,7 @@ typ:
   | LIST LT typ GT { List($3) }
   | TUPLE LT typ_list GT { Tuple($3) }
   | ID     { UserType($1) }
-  | UNIT { Unit }
+  | LPAREN RPAREN { Unit }
 
 typ_list:
   typ                  {[$1]}
