@@ -16,45 +16,45 @@
 
 (test
   (name test_exp)
-  (libraries fly_lib ounit2 print_lib))
+  (libraries fly_lib ounit2 print_lib)) ;change expected
 
 (test
   (name test_func_bind)
-  (libraries fly_lib ounit2 print_lib))
+  (libraries fly_lib ounit2 print_lib)) ;errors
 
 
 (test
   (name test_func_def_and_call1)
-  (libraries fly_lib ounit2 print_lib))
+  (libraries fly_lib ounit2 print_lib)) ;errors
 
 (test
   (name test_func_def_and_call2)
-  (libraries fly_lib ounit2 print_lib))
+  (libraries fly_lib ounit2 print_lib)) ;errors
 
 (test
   (name test_gt)
-  (libraries fly_lib ounit2 print_lib))  
+  (libraries fly_lib ounit2 print_lib)) ;PASS
 
 (test
   (name test_ge)
-  (libraries fly_lib ounit2 print_lib))           
+  (libraries fly_lib ounit2 print_lib)) ;PASS          
     
 (test
   (name test_list)
-  (libraries fly_lib ounit2 print_lib))
+  (libraries fly_lib ounit2 print_lib)) ;errors
 
 (test
   (name test_loops)
-  (libraries fly_lib ounit2 print_lib))    
+  (libraries fly_lib ounit2 print_lib))  ;errors
 
 (test
   (name test_lt)
-  (libraries fly_lib ounit2 print_lib))
+  (libraries fly_lib ounit2 print_lib)) ;PASS
 
 
 (test
   (name test_le)
-  (libraries fly_lib ounit2 print_lib))
+  (libraries fly_lib ounit2 print_lib)) ;PASS
 
 (test
   (name test_ifelse)
@@ -65,56 +65,56 @@
 
 (test
   (name test_minusassign)
-  (libraries fly_lib ounit2 print_lib))
+  (libraries fly_lib ounit2 print_lib)) ;PASS
 
 (test
   (name test_mut)
-  (libraries fly_lib ounit2 print_lib))
+  (libraries fly_lib ounit2 print_lib)) ;errors
 
 (test
   (name test_neq)
-  (libraries fly_lib ounit2 print_lib))
+  (libraries fly_lib ounit2 print_lib)) ;PASS
           
 (test
   (name test_not)
-  (libraries fly_lib ounit2 print_lib))          
+  (libraries fly_lib ounit2 print_lib))  ;error        
           
 (test
   (name test_or)
-  (libraries fly_lib ounit2 print_lib))            
+  (libraries fly_lib ounit2 print_lib))   ;error         
           
 (test
   (name test_plusassign)
-  (libraries fly_lib ounit2 print_lib))           
+  (libraries fly_lib ounit2 print_lib))    ;PASS       
           
 (test
   (name test_incr)
-  (libraries fly_lib ounit2 print_lib))
+  (libraries fly_lib ounit2 print_lib)) ;error
 
 (test
   (name test_decr)
-  (libraries fly_lib ounit2 print_lib))
+  (libraries fly_lib ounit2 print_lib)) ;error
 
 (test
   (name test_times)
-  (libraries fly_lib ounit2 print_lib))       
+  (libraries fly_lib ounit2 print_lib))  ;big error     
 
 (test
   (name test_tuple)
-  (libraries fly_lib ounit2 print_lib))
+  (libraries fly_lib ounit2 print_lib)) ;big error
 
 (test
   (name test_postdecrement)
-  (libraries fly_lib ounit2 print_lib))  
+  (libraries fly_lib ounit2 print_lib))  ;big error
 
 (test
   (name test_postincrement)
-  (libraries fly_lib ounit2 print_lib))
+  (libraries fly_lib ounit2 print_lib)) ;big error
 
 (test
   (name test_predecrement)
-  (libraries fly_lib ounit2 print_lib))           
+  (libraries fly_lib ounit2 print_lib))  ;big error         
 
 (test
   (name test_preincrement)
-  (libraries fly_lib ounit2 print_lib))
+  (libraries fly_lib ounit2 print_lib)) ;big error

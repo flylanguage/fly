@@ -13,9 +13,7 @@ let tests =
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "LET ID(test_lst) COLON LIST LT INT GT EQUAL LBRACKET LITERAL(-5) COMMA \
-             LITERAL(0) COMMA LITERAL(5) COMMA LITERAL(9) COMMA LITERAL(100) RBRACKET \
-             SEMI"
+            "let test_lst: list<int> = [-5, 0, 5, 9, 100];\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -26,10 +24,7 @@ let tests =
           in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
-          let expected = "for i, v := test_lst {
-	//do work here
-}
-"
+          let expected = "for i, v := test_lst {\n\n}\n" in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
        ; ("test3"
@@ -37,10 +32,7 @@ let tests =
           let lexbuf = Lexing.from_string "for v := test_lst {\n\t//do work here\n}\n" in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
-          let expected = "for v := test_lst {
-	//do work here
-}
-"
+          let expected = "for v := test_lst {\n\n}\n}\n" in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
        ; ("test4"
@@ -48,8 +40,7 @@ let tests =
           let lexbuf = Lexing.from_string "let mut i: int = 0;\n" in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
-          let expected = "let mut i: int = 0;
-"
+          let expected = "let mut i: int = 0;\n" in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
        ; ("test5"

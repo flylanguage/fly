@@ -45,7 +45,7 @@ let tests =
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "let lst: list<int> = [0,1,2,3,4];\n"
+            "let lst: list<int> = [0, 1, 2, 3, 4];\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 

@@ -17,12 +17,9 @@ let tests =
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "FUN ID(countdown) LPAREN ID(timer) COLON INT RPAREN LBRACE WHILE LPAREN \
-             ID(timer) GT LITERAL(0) RPAREN LBRACE ID(timer) MINUS_ASSIGN LITERAL(1) \
-             SEMI RBRACE RBRACE"
+            "fun countdown(timer: int, ) -> (){\nwhile (timer > 0) {\ntimer-=1;\n\n}\n}\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
-
        ; ("test2"
           >:: fun _ ->
           let lexbuf = Lexing.from_string "countdown(10);\n" in

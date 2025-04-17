@@ -13,8 +13,7 @@ let tests =
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "LET ID(a1) WALRUS LITERAL(5) SEMI LET ID(b1) WALRUS LITERAL(10) SEMI LET \
-             ID(result1) WALRUS ID(a1) LEQ ID(b1) SEMI"
+            "let a1 := 5;\nlet b1 := 10;\nlet result1 := a1 <= b1;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -27,8 +26,7 @@ let tests =
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "LET ID(a2) WALRUS FLIT(3.500000) SEMI LET ID(b2) WALRUS FLIT(4.200000) SEMI \
-             LET ID(result2) WALRUS ID(a2) LEQ ID(b2) SEMI"
+            "let a2 := 3.5;\nlet b2 := 4.2;\nlet result2 := a2 <= b2;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -40,8 +38,7 @@ let tests =
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "LET ID(a3) WALRUS LITERAL(5) SEMI LET ID(b3) WALRUS LITERAL(5) SEMI LET \
-             ID(result3) WALRUS ID(a3) LEQ ID(b3) SEMI"
+            "let a3 := 5;\nlet b3 := 5;\nlet result3 := a3 <= b3;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -54,8 +51,7 @@ let tests =
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "LET ID(a4) WALRUS FLIT(5.500000) SEMI LET ID(b4) WALRUS FLIT(5.500000) SEMI \
-             LET ID(result4) WALRUS ID(a4) LEQ ID(b4) SEMI"
+            "let a4 := 5.5;\nlet b4 := 5.5;\nlet result4 := a4 <= b4;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -67,8 +63,7 @@ let tests =
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "LET ID(a5) WALRUS LITERAL(10) SEMI LET ID(b5) WALRUS LITERAL(5) SEMI LET \
-             ID(result5) WALRUS ID(a5) LEQ ID(b5) SEMI"
+            "let a5 := 10;\nlet b5 := 5;\nlet result5 := a5 <= b5;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -81,8 +76,7 @@ let tests =
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "LET ID(a6) WALRUS SLIT(hello) SEMI LET ID(b6) WALRUS SLIT(world) SEMI LET \
-             ID(result6) WALRUS ID(a6) LEQ ID(b6) SEMI"
+            "let a6 := \"hello\";\nlet b6 := \"world\";\nlet result6 := a6 <= b6;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -95,8 +89,7 @@ let tests =
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "LET ID(a7) WALRUS BLIT(true) SEMI LET ID(b7) WALRUS BLIT(false) SEMI LET \
-             ID(result7) WALRUS ID(a7) LEQ ID(b7) SEMI"
+            "let a7 := true;\nlet b7 := false;\nlet result7 := a7 <= b7;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -109,9 +102,7 @@ let tests =
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "LET ID(a8) WALRUS LPAREN LITERAL(1) COMMA LITERAL(2) RPAREN SEMI LET ID(b8) \
-             WALRUS LPAREN LITERAL(2) COMMA LITERAL(3) RPAREN SEMI LET ID(result8) \
-             WALRUS ID(a8) LEQ ID(b8) SEMI"
+            "let a8 := (1, 2);\nlet b8 := (2, 3);\nlet result8 := a8 <= b8;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -124,26 +115,7 @@ let tests =
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "LET ID(a9) WALRUS LBRACKET LITERAL(1) COMMA LITERAL(2) COMMA LITERAL(3) \
-             RBRACKET SEMI LET ID(b9) WALRUS LBRACKET LITERAL(4) COMMA LITERAL(5) COMMA \
-             LITERAL(6) RBRACKET SEMI LET ID(result9) WALRUS ID(a9) LEQ ID(b9) SEMI"
-          in
-          assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
-
-       ; ("test10"
-          >:: fun _ ->
-          let lexbuf =
-            Lexing.from_string
-              "let a10 := {1, 2, 3};\n\
-               let b10 := {4, 5, 6};\n\
-               let result10 := a10 <= b10;\n"
-          in
-          let program = Parser.program_rule Scanner.tokenize lexbuf in 
-          let actual = string_of_program program in
-          let expected =
-            "LET ID(a10) WALRUS LBRACE LITERAL(1) COMMA LITERAL(2) COMMA LITERAL(3) \
-             RBRACE SEMI LET ID(b10) WALRUS LBRACE LITERAL(4) COMMA LITERAL(5) COMMA \
-             LITERAL(6) RBRACE SEMI LET ID(result10) WALRUS ID(a10) LEQ ID(b10) SEMI"
+            "let a9 := [1, 2, 3];\nlet b9 := [4, 5, 6];\nlet result9 := a9 <= b9;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -156,8 +128,7 @@ let tests =
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "LET ID(a11) WALRUS LITERAL(5) SEMI LET ID(b11) WALRUS SLIT(string) SEMI LET \
-             ID(result11) WALRUS ID(a11) LEQ ID(b11) SEMI"
+            "let a11 := 5;\nlet b11 := \"string\";\nlet result11 := a11 <= b11;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -170,8 +141,7 @@ let tests =
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "LET ID(a12) WALRUS SLIT(hello) SEMI LET ID(b12) WALRUS LITERAL(5) SEMI LET \
-             ID(result12) WALRUS ID(a12) LEQ ID(b12) SEMI"
+            "let a12 := \"hello\";\nlet b12 := 5;\nlet result12 := a12 <= b12;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -184,9 +154,7 @@ let tests =
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "LET ID(a13) WALRUS LPAREN LITERAL(1) COMMA LITERAL(2) RPAREN SEMI LET \
-             ID(b13) WALRUS LITERAL(5) SEMI LET ID(result13) WALRUS ID(a13) LEQ ID(b13) \
-             SEMI"
+            "let a13 := (1, 2);\nlet b13 := 5;\nlet result13 := a13 <= b13;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -199,24 +167,7 @@ let tests =
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "LET ID(a14) WALRUS LBRACKET LITERAL(1) COMMA LITERAL(2) COMMA LITERAL(3) \
-             RBRACKET SEMI LET ID(b14) WALRUS LITERAL(5) SEMI LET ID(result14) WALRUS \
-             ID(a14) LEQ ID(b14) SEMI"
-          in
-          assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
-
-       ; ("test15"
-          >:: fun _ ->
-          let lexbuf =
-            Lexing.from_string
-              "let a15 := {1, 2, 3};\nlet b15 := 5;\nlet result15 := a15 <= b15;\n"
-          in
-          let program = Parser.program_rule Scanner.tokenize lexbuf in 
-          let actual = string_of_program program in
-          let expected =
-            "LET ID(a15) WALRUS LBRACE LITERAL(1) COMMA LITERAL(2) COMMA LITERAL(3) \
-             RBRACE SEMI LET ID(b15) WALRUS LITERAL(5) SEMI LET ID(result15) WALRUS \
-             ID(a15) LEQ ID(b15) SEMI"
+            "let a14 := [1, 2, 3];\nlet b14 := 5;\nlet result14 := a14 <= b14;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -229,8 +180,7 @@ let tests =
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "LET ID(a16) WALRUS BLIT(true) SEMI LET ID(b16) WALRUS LITERAL(5) SEMI LET \
-             ID(result16) WALRUS ID(a16) LEQ ID(b16) SEMI"
+            "let a16 := true;\nlet b16 := 5;\nlet result16 := a16 <= b16;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -243,8 +193,7 @@ let tests =
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "LET ID(a17) WALRUS BLIT(false) SEMI LET ID(b17) WALRUS SLIT(world) SEMI LET \
-             ID(result17) WALRUS ID(a17) LEQ ID(b17) SEMI"
+            "let a17 := false;\nlet b17 := \"world\";\nlet result17 := a17 <= b17;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
