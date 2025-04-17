@@ -5,7 +5,7 @@ open Ast
 
 %token SEMI COLON DCOLON DOT COMMA LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET
 %token PLUS MINUS DIVIDE MODULO TIMES INCR DECR EXPONENT
-%token EQUAL WALRUS PLUS_ASSIGN MINUS_ASSIGN
+%token EQUAL WALRUS PLUS_ASSIGN MINUS_ASSIGN MULT_ASSIGN DIV_ASSIGN
 %token BEQ NEQ LT LEQ GT GEQ AND OR NOT
 
 %token IF ELSE WHILE FOR BREAK CONT IN
@@ -64,6 +64,8 @@ assignment:
   ID EQUAL expr SEMI                       { Assign($1, IdentityAssign, $3) }
   | ID PLUS_ASSIGN expr SEMI             { Assign($1, PlusAssign, $3 ) }
   | ID MINUS_ASSIGN expr SEMI             { Assign($1, MinusAssign, $3 ) }
+  | ID MULT_ASSIGN expr SEMI              { Assign($1, MultAssign, $3)}
+  | ID DIV_ASSIGN expr SEMI               { Assign($1, DivAssign, $3)}
 
 func_def:
   FUN ID UNIT ARROW typ LBRACE block_list RBRACE
@@ -177,6 +179,7 @@ case_item:
   pattern ARROW expr { ($1, $3) }
 
 (* Only literals allowed here. TBH, this really needs discussion *)
+(* Added P to indicate these are patterns *)
 pattern:
     LITERAL                     { PLiteral($1)  }
   | BLIT                        { PBoolLit($1)  }

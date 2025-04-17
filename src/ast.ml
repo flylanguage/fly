@@ -34,6 +34,8 @@ type assign_op =
   | IdentityAssign
   | PlusAssign
   | MinusAssign
+  | MultAssign
+  | DivAssign
 
 type typ =
   | Int

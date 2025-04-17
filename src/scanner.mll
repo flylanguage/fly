@@ -45,6 +45,8 @@ rule tokenize = parse
   | ":=" { WALRUS }
   | "+=" { PLUS_ASSIGN }
   | "-=" { MINUS_ASSIGN }
+  | "*=" {MULT_ASSIGN}
+  | "/=" {DIV_ASSIGN}
   | "==" { BEQ }
   | "!=" { NEQ }
   | "<=" { LEQ }
