@@ -95,7 +95,6 @@ rule tokenize = parse
   *)
 
   (* Literals *)
-  | "()" { UNIT }
   | "false" { BLIT(false) }
   | "true" { BLIT(true) }
   | int as num { LITERAL(int_of_string num) }

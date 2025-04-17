@@ -106,7 +106,7 @@ formal_list:
 
 func_call:
   ID LPAREN list_elements RPAREN       { Call($1, $3) } (* Function call *)
-  | ID UNIT { CALL ($1, $2)} (* Function call with no args*)
+  | ID LPAREN RPAREN                   { Call ($1, [])} (* Function call with no argument*)
 
 udt_def:
   TYPE ID LBRACE udt_members RBRACE       { UDTDef($2, $4) }
@@ -138,6 +138,7 @@ expr:
   | CLIT                               { CharLit($1)  }
   | SLIT                               { StringLit($1)}
   | ID                                 { Id($1) }
+  | LPAREN RPAREN                      { Unit }
 
   | expr PLUS   expr                   { Binop($1, Add,   $3) } (* arithmetic expressions *)
   | expr MINUS  expr                   { Binop($1, Sub,   $3) }
@@ -167,7 +168,13 @@ expr:
 
   | udt_instance                       { $1 } (* Instantiating a user defined type *)
   | ID DOT ID                          { UDTAccess($1, $3) } (* access member variable of user defined type *)
-  | ID DCOLON ID LPAREN list_elements RPAREN    { UDTStaticAccess($1, $3, $5) } (* access static method on user defined type *)
+  
+  | ID DCOLON ID LPAREN list_elements RPAREN { UDTStaticAccess($1, $3, $5) }
+  | ID DCOLON ID LPAREN RPAREN               { UDTStaticAccess($1, $3, []) }
+
+  | expr DOT ID LPAREN list_elements RPAREN  { UDTInstanceAccess($1, $3, $5) }
+  | expr DOT ID LPAREN RPAREN                { UDTInstanceAccess($1, $3, []) }
+
   | LPAREN expr RPAREN                 { $2 }
   | MATCH LPAREN expr RPAREN LBRACE case_list RBRACE { Match($3, $6) } (* match is an expression and should evaluate to something *)
 

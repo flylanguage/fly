@@ -66,7 +66,8 @@ type expr =
   | UDTInstance of string * kv_list
     (* typ to indicate the exact user defined type and kv_list for member variables *)
   | UDTAccess of string * string
-  | UDTStaticAccess of string * string
+  | UDTInstanceAccess of expr * string * expr list
+  | UDTStaticAccess of string * string * expr list
   | EnumAccess of string * string
   | Index of expr * expr
   | ListElements of expr list
