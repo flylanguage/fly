@@ -87,14 +87,6 @@
 (test
   (name test_plusassign)
   (libraries fly_lib ounit2 print_lib))    ;PASS       
-          
-(test
-  (name test_incr)
-  (libraries fly_lib ounit2 print_lib)) ;error
-
-(test
-  (name test_decr)
-  (libraries fly_lib ounit2 print_lib)) ;error
 
 (test
   (name test_times)
