@@ -17,7 +17,7 @@ let tests =
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "fun countdown(timer: int, ) -> (){\nwhile (timer > 0) {\ntimer -= 1;\n\n}\n}\n"
+            "fun countdown(timer: int, ) -> () {\nwhile (timer > 0) {\ntimer -= 1;\n\n}\n}\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("test2"

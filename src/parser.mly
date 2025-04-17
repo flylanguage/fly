@@ -110,14 +110,8 @@ func_def:
   }
 
 formals_opt:
-  (* empty *) { [] }
-| formal_list { List.rev $1 }
-
-
-formal_list:
     ID COLON typ                   { [($1,$3)] }
-  | formal_list COMMA ID COLON typ { ($3,$5) :: $1 }
-
+  | ID COLON typ COMMA formals_opt { ($1,$3) :: $5 }
 
 func_call:
   ID LPAREN list_elements RPAREN       { Call($1, $3) } (* Function call *)

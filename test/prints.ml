@@ -188,7 +188,7 @@ let rec string_of_block = function
   | DeclInfer (id, e) -> "let " ^ id ^ " := " ^ string_of_expr e ^ ";\n"
   | Assign (id, assign_op, e) -> id ^ string_of_assign_op assign_op ^ string_of_expr e ^ ";\n"
   | FunctionDefinition  (rtyp, func_name, func_args, func_body) ->
-    "fun " ^ func_name  ^ "(" ^  string_of_func_args func_args ^ ") -> " ^ string_of_type rtyp ^ "{\n"
+    "fun " ^ func_name  ^ "(" ^  string_of_func_args func_args ^ ") -> " ^ string_of_type rtyp ^ " {\n"
     ^ String.concat "" (List.map string_of_block func_body)
     ^ "\n}\n"
   | BoundFunctionDefinition (rtyp, func_name, func_args, func_body, bound_type) -> 
@@ -204,7 +204,7 @@ let rec string_of_block = function
     ^ string_of_func_args udt_members (* Re-use string_of_func_args  as it generates name: type string*)
     ^ "\n}"
   | EnumDeclaration (enum_name, enum_variants) ->
-    "enum " ^ enum_name ^ "{\n" 
+    "enum " ^ enum_name ^ " {\n" 
     ^ String.concat ",\n" (List.map string_of_enum_variant enum_variants)
     ^ "\n}"
   | IfEnd (e, bl) ->

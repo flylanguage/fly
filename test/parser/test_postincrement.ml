@@ -26,7 +26,7 @@ let tests = "testing_postincrement" >::: [
         let lexbuf = Lexing.from_string "let mut a3 := 3.5;\nreturn a3++; \n" in
         let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
-        let expected = "let mut a3 := 3.5;\nreturn a3++; \n" in
+        let expected = "let mut a3 := 3.5;\nreturn a3++;\n" in
         assert_equal 
         expected actual
         ~printer:(fun s -> "\"" ^ s ^ "\""));
