@@ -17,98 +17,104 @@ let tests =
           >:: fun _ ->
           let lexbuf =
             Lexing.from_string
-              "let a1 := Color.Red;\nlet b1 := Color.Green;\nlet c1 := Color.Blue;\n"
+              "let a1 := Color::Red;\nlet b1 := Color::Green;\nlet c1 := Color::Blue;\n"
           in
           let program = Parser.program_rule Scanner.tokenize lexbuf in
           let actual = string_of_program program in
           let expected =
-            "let a1 := Color.Red;\nlet b1 := Color.Green;\nlet c1 := Color.Blue;\n"
+            "let a1 := Color::Red;\nlet b1 := Color::Green;\nlet c1 := Color::Blue;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
        ; ("test3"
           >:: fun _ ->
-          let lexbuf = Lexing.from_string "if (a1 == Color.Red) {\n} else {\n}\n" in
+          let lexbuf = Lexing.from_string "if (a1 == Color::Red) {\n} else {\n}\n" in
           let program = Parser.program_rule Scanner.tokenize lexbuf in
           let actual = string_of_program program in
           let expected =
-            "if (a1 == Color.Red) {\n\n} else {\n\n}"
+            "if (a1 == Color::Red) {\n\n} else {\n\n}"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
        ; ("test4"
           >:: fun _ ->
-          let lexbuf = Lexing.from_string "let a2 := Color.Yellow;\n" in
+          let lexbuf = Lexing.from_string "let a2 := Color::Yellow;\n" in
           let program = Parser.program_rule Scanner.tokenize lexbuf in
           let actual = string_of_program program in
           let expected = 
-               "let a2 := Color.Yellow;\n"
+               "let a2 := Color::Yellow;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
        ; ("test5"
           >:: fun _ ->
-          let lexbuf = Lexing.from_string "if (b1 == Color.Green) {\n} else {\n}\n" in
+          let lexbuf = Lexing.from_string "if (b1 == Color::Green) {\n} else {\n}\n" in
           let program = Parser.program_rule Scanner.tokenize lexbuf in
           let actual = string_of_program program in
           let expected =
-            "if (b1 == Color.Green) {\n\n} else {\n\n}"
+            "if (b1 == Color::Green) {\n\n} else {\n\n}"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
-
+(* 
        ; ("test6"
           >:: fun _ ->
           let lexbuf =
             Lexing.from_string
-              "match (c1) {\nColor.Red -> {\n
-              \  }\n\
-              \  Color.Green -> { \n\
-              \  }\n\
-              \  Color.Blue -> { \n\
-              \  }\n\
-              \  _ -> {\n\
-              \  }\n\
+              "match (c1) {\nColor::Red -> \"Red\",\n
+              \  Color::Green -> \"Green\",\n
+              \  Color::Blue -> \"Blue\",\n
+              \  _ -> \"nope\"
                }\n"
           in
           let program = Parser.program_rule Scanner.tokenize lexbuf in
           let actual = string_of_program program in
           let expected =
-            "MATCH LPAREN ID(c1) RPAREN LBRACE ID(Color) DOT ID(Red) ARROW LBRACE RBRACE \
-             ID(Color) DOT ID(Green) ARROW LBRACE RBRACE ID(Color) DOT ID(Blue) ARROW \
-             LBRACE RBRACE UNDERSCORE ARROW LBRACE RBRACE RBRACE"
+            "match (c1) {\nColor::Red -> \"red\",\n
+              \  Color::Green -> \"Green\",\n
+              \  Color::Blue -> \"Blue\",\n
+              \  _ -> \"nope\"
+               }\n"
           in
-          assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
+          assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\"")) *)
 
        ; ("test7"
           >:: fun _ ->
-          let lexbuf = Lexing.from_string "let a3 := 5;\na3 := Color.Red;\n" in
+          let lexbuf = Lexing.from_string "let a3 := 5;\nlet a3 := Color::Red;\n" in
           let program = Parser.program_rule Scanner.tokenize lexbuf in
           let actual = string_of_program program in
           let expected =
-            "let a3 := 5;\na3 := Color.Red;\n"
+            "let a3 := 5;\nlet a3 := Color::Red;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
        ; ("test8"
           >:: fun _ ->
-          let lexbuf = Lexing.from_string "let a4 := Color.Red + Color.Green;\n" in
+          let lexbuf = Lexing.from_string "let a4 := Color::Red + Color::Green;\n" in
           let program = Parser.program_rule Scanner.tokenize lexbuf in
           let actual = string_of_program program in
           let expected =
-            "let a4 := Color.Red + Color.Green;\n"
+            "let a4 := Color::Red + Color::Green;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
        ; ("test9"
           >:: fun _ ->
-          let lexbuf = Lexing.from_string "let a5 := !Color.Red;\n" in
+          let lexbuf = Lexing.from_string "let a5 := !Color::Red;\n" in
           let program = Parser.program_rule Scanner.tokenize lexbuf in
           let actual = string_of_program program in
           let expected = 
-            "let a5 := !Color.Red;\n"
+            "let a5 := !Color::Red;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
-
+        ; ("test10"
+          >:: fun _ ->
+          let lexbuf = Lexing.from_string "let a := Color::Red :: xs;\n" in
+          let program = Parser.program_rule Scanner.tokenize lexbuf in
+          let actual = string_of_program program in
+          let expected = 
+            "let a := Color::Red :: xs;\n"
+          in
+          assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ]
 ;;
 

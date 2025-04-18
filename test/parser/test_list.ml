@@ -11,7 +11,7 @@ let tests =
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in 
           let expected =
-            "fun nothing() -> () {\nlet mut a1 := [1, 2, 3];\na1[0] = 4;\n}"
+            "fun nothing() -> () {\nlet mut a1 := [1, 2, 3];\na1[0] = 4;\n\n}\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -39,11 +39,11 @@ let tests =
 
        ; ("test4"
           >:: fun _ ->
-          let lexbuf = Lexing.from_string "fun nothing() -> bool {let a6 := [1, 2, 3];\na6[1] := 5;\n}" in
+          let lexbuf = Lexing.from_string "fun nothing() -> bool {let a6 := [1, 2, 3];\na6[1] = 5;\n}" in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "fun nothing() -> bool {let a6 := [1, 2, 3];\na6[1] := 5;\n\n}\n"
+            "fun nothing() -> bool {\nlet a6 := [1, 2, 3];\na6[1] = 5;\n\n}\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -79,7 +79,7 @@ let tests =
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "fun nothing() -> () {let mut a9 := [1, 2, 3];\nlet b9 := \"string\" :: a9;\n\n}\n"
+            "fun nothing() -> () {\nlet mut a9 := [1, 2, 3];\nlet b9 := \"string\" :: a9;\n\n}\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 

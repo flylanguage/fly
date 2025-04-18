@@ -6,7 +6,7 @@ let tests =
   "testing_divide"
   >::: [ ("test1"
           >:: fun _ ->
-          let lexbuf = Lexing.from_string "let a1 := 10;\nlet b1 := 2;\return a1 / b1;\n" in
+          let lexbuf = Lexing.from_string "let a1 := 10;\nlet b1 := 2;\nreturn a1 / b1;\n" in
           let program = Parser.program_rule Scanner.tokenize lexbuf in
           let actual = string_of_program program in
           let expected =
@@ -20,7 +20,7 @@ let tests =
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "let a2 := 5.5;\nlet b2 := 2.0;\nreturn a2 / b2;\n"
+            "let a2 := 5.5;\nlet b2 := 2.;\nreturn a2 / b2;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -66,7 +66,7 @@ let tests =
 
        ; ("test7"
           >:: fun _ ->
-          let lexbuf = Lexing.from_string "let a7 := (5, 3);\nlet b7 := 2;\na7 / b7;\n" in
+          let lexbuf = Lexing.from_string "let a7 := (5, 3);\nlet b7 := 2;\nreturn a7 / b7;\n" in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =

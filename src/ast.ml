@@ -18,6 +18,7 @@ type op =
   | And
   | Or
   | Not
+  | Cons
 
 type pattern = 
   | PLiteral of int
@@ -48,6 +49,7 @@ type typ =
   | Unit
   | UserType of string
 
+
 type expr =
   | Literal of int
   | BoolLit of bool
@@ -55,26 +57,27 @@ type expr =
   | CharLit of char
   | StringLit of string
   | Unit
-  | TupleElements of expr list
   | Id of string
+  | Tuple of expr list
   | Binop of expr * op * expr
   | Unop of expr * op (* this is for not *)
   | UnopSideEffect of string * op (* this is for postincr, postdecr, preincr, postdecr *)
-  | Assign of string * assign_op * expr
-  | Call of string * expr list
-    (* string for function name and list of exprs for arguments to pass to the function *)
+  | FunctionCall of func
   | UDTInstance of string * kv_list
-    (* typ to indicate the exact user defined type and kv_list for member variables *)
-  | UDTAccess of string * string
-  | UDTInstanceAccess of expr * string * expr list
-  | UDTStaticAccess of string * string * expr list
+  | UDTAccess of string * udt_access
+  | UDTStaticAccess of string * func
   | EnumAccess of string * string
   | Index of expr * expr
-  | ListElements of expr list
+  | List of expr list
   | Match of expr * (pattern * expr) list
   | Wildcard
-
+  | TypeCast of typ * expr
+and func = string * expr list
 and kv_list = (string * expr) list (* for user defined types *)
+and udt_access = 
+  | UDTVariable of string
+  | UDTFunction of func
+
 
 type enum_variant =
   | EnumVariantDefault of string
@@ -82,14 +85,13 @@ type enum_variant =
 
 
 type block =
-  MutDeclTyped of string * typ * expr
+  | MutDeclTyped of string * typ * expr
   | MutDeclInfer of string * expr
   | DeclTyped of string * typ * expr
   | DeclInfer of string * expr
-  | Assign of string * assign_op * expr
+  | Assign of expr * assign_op * expr
   | FunctionDefinition of typ * string * (string * typ) list * block list (* rtyp, func_name, func_args, func_body *)
   | BoundFunctionDefinition of typ * string * (string * typ) list * block list * typ (* rtyp, func_name, func_args, func_body, bound_type *)
-  | Call of string * expr list
   | EnumDeclaration of string * enum_variant list
   | UDTDef of string * (string * typ) list
   | IfEnd of expr * block list
@@ -98,9 +100,13 @@ type block =
   | ElifEnd of expr * block list
   | ElseEnd of block list
   | While of expr * block list
+  | For of string * expr * block list
   | Break
   | Continue
   | ReturnUnit
   | ReturnVal of expr
+  | Expr of expr
+
+
 
 type program = { body : block list }

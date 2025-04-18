@@ -76,6 +76,17 @@ let print_token = function
 ;;
 
 (* Print functions for AST *)
+let rec string_of_type = function
+  Int -> "int"
+  | Bool -> "bool"
+  | Char -> "char"
+  | Float -> "float"
+  | String -> "string"
+  | List (t) -> "list<" ^ string_of_type t ^ ">"
+  | Tuple (t_list) -> "tuple<" ^ (String.concat ", " (List.map string_of_type t_list)) ^ ">"
+  | Unit -> "()"
+  | UserType (udt_name) -> udt_name
+
 let string_of_op = function
   | Add -> "+"
   | Sub -> "-"
@@ -96,6 +107,7 @@ let string_of_op = function
   | And -> "&&"
   | Or -> "|"
   | Not -> "!"
+  | Cons -> "::"
 
 let string_of_assign_op = function
   IdentityAssign -> " = "
@@ -106,14 +118,14 @@ let string_of_assign_op = function
 
 
 let rec string_of_expr = function
-  Literal l -> string_of_int l
+  | Literal l -> string_of_int l
   | BoolLit true -> "true"
   | BoolLit false -> "false"
   | FloatLit f -> string_of_float f
   | CharLit c -> Printf.sprintf "\'%s\'" (String.make 1 c)
   | StringLit s -> Printf.sprintf "\"%s\"" s
-  | Id id -> id
   | Unit -> "()"
+  | Id id -> id
   | Binop (e1, o, e2) ->
       string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
   | UnopSideEffect (id, op) -> 
@@ -124,24 +136,21 @@ let rec string_of_expr = function
       | _ -> raise (Failure "Invalid operation in UnopSideEffect"))
     
   | Unop (e, op) -> string_of_op op ^ "" ^ string_of_expr e
-  | Assign (id, assign_op, e) -> id ^ " " ^ string_of_assign_op assign_op ^ " " ^ string_of_expr e
-  | ListElements elems -> "[" ^ String.concat ", " (List.map string_of_expr elems) ^ "]"
-  | TupleElements elems -> "(" ^ String.concat ", " (List.map string_of_expr elems) ^ ")"
-  | Call (func_name, func_args) ->
+  | List elems -> "[" ^ String.concat ", " (List.map string_of_expr elems) ^ "]"
+  | Tuple elems -> "(" ^ String.concat ", " (List.map string_of_expr elems) ^ ")"
+  | FunctionCall (func_name, func_args) ->
       func_name ^ "("
       ^ String.concat ", " (List.map string_of_expr func_args)
       ^ ")"
   | UDTInstance (udt_name, udt_members) -> udt_name ^ "{" ^ string_of_udt_instance udt_members ^ "}"
-  | UDTAccess (udt_name, udt_accessed_member) -> udt_name ^ "." ^ udt_accessed_member
-  | UDTInstanceAccess (udt_name, udt_accessed_member, args) -> 
-      string_of_expr udt_name ^ "." ^ udt_accessed_member ^ "(" ^ (String.concat ", " (List.map string_of_expr args)) ^ ")"
-
-  | UDTStaticAccess (udt_name, udt_accessed_member, args) -> 
-      udt_name ^ "::" ^ udt_accessed_member ^ "(" ^ (String.concat ", " (List.map string_of_expr args)) ^ ")"
+  | UDTAccess (udt_name, udt_access) -> udt_name ^ "." ^ string_of_udt_access udt_access
+  | UDTStaticAccess (udt_name, udt_function) -> 
+      udt_name ^ "::" ^ (fst udt_function) ^ "(" ^ (String.concat ", " (List.map string_of_expr (snd udt_function))) ^ ")"
   | Index (indexed_expr, idx) -> string_of_expr indexed_expr ^ "[" ^ string_of_expr idx ^ "]"
-  | Match (e1, case_list) -> "match (" ^ string_of_expr e1 ^ "){\n" ^ string_of_case_list case_list ^ "}"
+  | Match (e1, case_list) -> "match (" ^ string_of_expr e1 ^ ") {\n" ^ string_of_case_list case_list ^ "}"
   | Wildcard -> "_"
-  | EnumAccess (enum_name, enum_variant) -> enum_name ^ "." ^ enum_variant
+  | EnumAccess (enum_name, enum_variant) -> enum_name ^ "::" ^ enum_variant
+  | TypeCast (type_name, e) ->  string_of_expr e ^ " as " ^ string_of_type type_name
 and string_of_pattern = function
   | PLiteral ( num ) -> string_of_int num
   | PBoolLit true -> "true"
@@ -160,45 +169,34 @@ and string_of_case_list = function
 and string_of_udt_instance = function
   [] -> ""
   | hd :: tl -> (fst hd) ^ ": " ^ string_of_expr (snd hd) ^ ", " ^ string_of_udt_instance tl
-
+and string_of_udt_access = function
+  | UDTVariable (udt_var) -> udt_var
+  | UDTFunction (udt_func) -> (fst udt_func) ^ "("
+    ^ String.concat ", " (List.map string_of_expr (snd udt_func))
+    ^ ")"
 
 let string_of_enum_variant = function
   | EnumVariantDefault (variant_name) -> variant_name
   | EnumVariantExplicit (variant_name, variant_num) -> variant_name ^ " = " ^ string_of_int variant_num
-
-let rec string_of_type = function
-  Int -> "int"
-  | Bool -> "bool"
-  | Char -> "char"
-  | Float -> "float"
-  | String -> "string"
-  | List (t) -> "list<" ^ string_of_type t ^ ">"
-  | Tuple (t_list) -> "tuple<" ^ (String.concat ", " (List.map string_of_type t_list)) ^ ">"
-  | Unit -> "()"
-  | UserType (udt_name) -> udt_name
 
 let rec string_of_func_args = function
   [] -> ""
   | hd :: tl -> (fst hd) ^ ": " ^ string_of_type (snd hd) ^ ", " ^ string_of_func_args tl
 
 let rec string_of_block = function
-  MutDeclTyped (id, typ, e) -> "let mut " ^ id ^ ": " ^ string_of_type typ ^ " = " ^ string_of_expr e ^ ";\n"
+  | MutDeclTyped (id, typ, e) -> "let mut " ^ id ^ ": " ^ string_of_type typ ^ " = " ^ string_of_expr e ^ ";\n"
   | MutDeclInfer (id, e) ->  "let mut " ^ id ^ " := " ^ string_of_expr e ^ ";\n"
   | DeclTyped (id, typ, e) -> "let " ^ id ^ ": " ^ string_of_type typ ^ " = " ^ string_of_expr e ^ ";\n"
   | DeclInfer (id, e) -> "let " ^ id ^ " := " ^ string_of_expr e ^ ";\n"
-  | Assign (id, assign_op, e) -> id ^ string_of_assign_op assign_op ^ string_of_expr e ^ ";\n"
+  | Assign (e1, assign_op, e2) -> string_of_expr e1 ^ string_of_assign_op assign_op ^ string_of_expr e2 ^ ";\n"
   | FunctionDefinition  (rtyp, func_name, func_args, func_body) ->
     "fun " ^ func_name  ^ "(" ^  string_of_func_args func_args ^ ") -> " ^ string_of_type rtyp ^ " {\n"
     ^ String.concat "" (List.map string_of_block func_body)
     ^ "\n}\n"
   | BoundFunctionDefinition (rtyp, func_name, func_args, func_body, bound_type) -> 
-    "bind " ^ func_name  ^ "<" ^ string_of_type bound_type ^ ">" ^ "(" ^  string_of_func_args func_args ^ ") -> " ^ string_of_type rtyp ^ "{\n"
+    "bind " ^ func_name  ^ "<" ^ string_of_type bound_type ^ ">" ^ "(" ^  string_of_func_args func_args ^ ") -> " ^ string_of_type rtyp ^ " {\n"
     ^ String.concat "" (List.map string_of_block func_body)
     ^ "\n}\n"
-  | Call (func_name, func_args) ->
-    func_name ^ "("
-    ^ String.concat ", " (List.map string_of_expr func_args)
-    ^ ")"
   | UDTDef (udt_name, udt_members) -> 
     "type " ^ udt_name ^ "{\n"
     ^ string_of_func_args udt_members (* Re-use string_of_func_args  as it generates name: type string*)
@@ -231,11 +229,15 @@ let rec string_of_block = function
     "while (" ^ string_of_expr e ^ ") {\n"
     ^ String.concat "" (List.map string_of_block block_list)
     ^ "\n}"
-  | Break -> "break"
-  | Continue -> "continue"
+  | For (idx, it, block_list) -> 
+      "for " ^ idx ^ " := " ^ string_of_expr it ^ " {\n"
+      ^ String.concat "" (List.map string_of_block block_list)
+      ^ "\n}"
+  | Break -> "break;"
+  | Continue -> "continue;"
   | ReturnUnit -> "return;\n"
   | ReturnVal (e) -> "return " ^ string_of_expr e ^ ";\n"
-
+  | Expr (e) -> string_of_expr e ^ ";\n"
 
 
 let string_of_program fdecl = String.concat "" (List.map string_of_block fdecl.body)

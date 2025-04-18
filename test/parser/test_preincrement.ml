@@ -32,7 +32,7 @@ let tests = "testing_preincrement" >::: [
         ~printer:(fun s -> "\"" ^ s ^ "\""));
 
         "test4" >:: (fun _ ->
-        let lexbuf = Lexing.from_string "let mut x4 := \"Hello\";\n++x4;\n" in
+        let lexbuf = Lexing.from_string "let mut x4 := \"Hello\";\nreturn ++x4;\n" in
         let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
         let expected = "let mut x4 := \"Hello\";\nreturn ++x4;\n" in
@@ -41,7 +41,7 @@ let tests = "testing_preincrement" >::: [
         ~printer:(fun s -> "\"" ^ s ^ "\""));
 
         "test5" >:: (fun _ ->
-        let lexbuf = Lexing.from_string "let mut x5 := [1, 2, 3];\n++x5;\n" in
+        let lexbuf = Lexing.from_string "let mut x5 := [1, 2, 3];\nreturn ++x5;\n" in
         let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
         let expected = "let mut x5 := [1, 2, 3];\nreturn ++x5;\n" in

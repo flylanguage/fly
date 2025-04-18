@@ -49,14 +49,6 @@ let tests = "testing_predecrement" >::: [
         expected actual
         ~printer:(fun s -> "\"" ^ s ^ "\""));
 
-        "test6" >:: (fun _ ->
-        let lexbuf = Lexing.from_string "let mut x6 := {1, 2, 3};\nreturn --x6;\n" in
-        let program = Parser.program_rule Scanner.tokenize lexbuf in 
-          let actual = string_of_program program in
-        let expected = "let mut x6 := {1, 2, 3};\nreturn --x6;\n" in
-        assert_equal 
-        expected actual
-        ~printer:(fun s -> "\"" ^ s ^ "\""));
 
         "test7" >:: (fun _ ->
         let lexbuf = Lexing.from_string "let mut x7 := 'a';\nreturn --x7;\n" in

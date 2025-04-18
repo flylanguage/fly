@@ -32,12 +32,14 @@ let tests =
           let lexbuf =
             Lexing.from_string
               "bind new<Person>(name: string, age: int) -> Person {\n\
-               \treturn Person {name: name, age: age};\n\
+               \treturn Person{name: name, age: age};\n\
                }\n"
           in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
-          let expected = ""
+          let expected = "bind new<Person>(name: string, age: int, ) -> Person {\n\
+               return Person{name: name, age: age, };\n\
+               \n}\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -46,12 +48,14 @@ let tests =
           let lexbuf =
             Lexing.from_string
               "bind info<Person>(self) -> string {\n\
-               \treturn self.name + \" \" + self.age;\n\
+               \treturn self.name + self.age;\n\
                }\n"
           in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
-          let expected = ""
+          let expected = "bind info<Person>(self: Person, ) -> string {\n\
+               return self.name + self.age;\n\
+               \n}\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -59,11 +63,11 @@ let tests =
           >:: fun _ ->
           let lexbuf =
             Lexing.from_string
-              "let p2 := Person::new(\"John\", 12);\nlet info: string = p.info();\n"
+              "let p2 := Person::new(\"John\", 12);\np.info();\n"
           in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
-          let expected = ""
+          let expected = "let p2 := Person::new(\"John\", 12);\np.info();\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
