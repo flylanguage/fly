@@ -45,6 +45,57 @@ block_list:
  {[]}
  | block block_list { $1 :: $2 }
 
+expr:
+    LITERAL                            { Literal($1)  } (* base types *)
+  | BLIT                               { BoolLit($1)  }
+  | FLIT                               { FloatLit($1) }
+  | CLIT                               { CharLit($1)  }
+  | SLIT                               { StringLit($1)}
+  | ID                                 { Id($1) }
+  | LPAREN RPAREN                      { Unit }
+
+  | expr PLUS   expr                   { Binop($1, Add,   $3) } (* arithmetic expressions *)
+  | expr MINUS  expr                   { Binop($1, Sub,   $3) }
+  | expr TIMES  expr                   { Binop($1, Mult,  $3) }
+  | expr DIVIDE expr                   { Binop($1, Div,   $3) }
+  | expr MODULO expr                   { Binop($1, Mod, $3)}
+  | expr EXPONENT expr                 { Binop($1, Exp, $3)}
+  | ID INCR                            { UnopSideEffect($1, Postincr)   }
+  | ID DECR                            { UnopSideEffect($1, Postdecr)   }
+  | INCR ID                            { UnopSideEffect($2, Preincr)    }
+  | DECR ID                            { UnopSideEffect($2, Predecr)    }
+
+  | expr BEQ    expr                   { Binop($1, Equal, $3) } (* logical expressions *)
+  | expr NEQ    expr                   { Binop($1, Neq,   $3) }
+  | expr LT     expr                   { Binop($1, Less,  $3) }
+  | expr LEQ    expr                   { Binop($1, Leq,   $3) }
+  | expr GT     expr                   { Binop($1, Greater, $3) }
+  | expr GEQ    expr                   { Binop($1, Geq,   $3) }
+  | expr AND    expr                   { Binop($1, And,   $3) }
+  | expr OR     expr                   { Binop($1, Or,    $3) }
+  | NOT expr                           { Unop($2, Not)        }
+
+  | list                               { $1 } (* list literal declaration *)
+  | tuple                              { $1 } (* tuple literal declaration. need to handle indexing into tuple *)
+  | expr DCOLON expr                   {Binop($1, Cons, $3)}
+
+  | expr LBRACKET expr RBRACKET        {Index($1, $3)}
+
+  | udt_instance                       { $1 } (* Instantiating a user defined type *)
+  | ID DOT ID                          { UDTAccess($1, $3) } (* access member variable of user defined type *)
+  | SELF DOT ID                        { UDTAccess ("self", $3) }
+  
+  | ID DCOLON ID LPAREN list_elements RPAREN         { UDTStaticAccess($1, $3, $5) }
+  | ID DCOLON ID LPAREN RPAREN                       { UDTStaticAccess($1, $3, []) }
+
+  | expr DOT ID LPAREN list_elements RPAREN          { UDTInstanceAccess($1, $3, $5) }
+  | expr DOT ID LPAREN RPAREN                        { UDTInstanceAccess($1, $3, []) }
+
+  | LPAREN expr RPAREN                               { $2 }
+  | MATCH LPAREN expr RPAREN LBRACE case_list RBRACE { Match($3, $6) } (* match is an expression and should evaluate to something *)
+  | func_call                                        { $1 }
+  | typ LPAREN expr RPAREN                           { TypeCast($1, $3) }
+
 block:
   declaration            { $1 }
   | assignment           { $1 }
@@ -53,6 +104,7 @@ block:
   | udt_def              { $1 }
   | control_flow         { $1 }
   | enum_def             { $1 }
+  | expr                 { Expr($1) }
 
 typ:
     INT { Int }
@@ -137,57 +189,6 @@ udt_members:
   ID COLON typ                        {[($1, $3)]}
   | ID COLON typ COMMA udt_members    {($1, $3) :: $5}
 
-
-expr:
-    LITERAL                            { Literal($1)  } (* base types *)
-  | BLIT                               { BoolLit($1)  }
-  | FLIT                               { FloatLit($1) }
-  | CLIT                               { CharLit($1)  }
-  | SLIT                               { StringLit($1)}
-  | ID                                 { Id($1) }
-  | LPAREN RPAREN                      { Unit }
-
-  | expr PLUS   expr                   { Binop($1, Add,   $3) } (* arithmetic expressions *)
-  | expr MINUS  expr                   { Binop($1, Sub,   $3) }
-  | expr TIMES  expr                   { Binop($1, Mult,  $3) }
-  | expr DIVIDE expr                   { Binop($1, Div,   $3) }
-  | expr MODULO expr                   { Binop($1, Mod, $3)}
-  | expr EXPONENT expr                 { Binop($1, Exp, $3)}
-  | ID INCR                            { UnopSideEffect($1, Postincr)   }
-  | ID DECR                            { UnopSideEffect($1, Postdecr)   }
-  | INCR ID                            { UnopSideEffect($2, Preincr)    }
-  | DECR ID                            { UnopSideEffect($2, Predecr)    }
-
-  | expr BEQ    expr                   { Binop($1, Equal, $3) } (* logical expressions *)
-  | expr NEQ    expr                   { Binop($1, Neq,   $3) }
-  | expr LT     expr                   { Binop($1, Less,  $3) }
-  | expr LEQ    expr                   { Binop($1, Leq,   $3) }
-  | expr GT     expr                   { Binop($1, Greater, $3) }
-  | expr GEQ    expr                   { Binop($1, Geq,   $3) }
-  | expr AND    expr                   { Binop($1, And,   $3) }
-  | expr OR     expr                   { Binop($1, Or,    $3) }
-  | NOT expr                           { Unop($2, Not)        }
-
-  | list                               { $1 } (* list literal declaration *)
-  | tuple                              { $1 } (* tuple literal declaration. need to handle indexing into tuple *)
-  | expr DCOLON expr                   {Binop($1, Cons, $3)}
-
-  | expr LBRACKET expr RBRACKET        {Index($1, $3)}
-
-  | udt_instance                       { $1 } (* Instantiating a user defined type *)
-  | ID DOT ID                          { UDTAccess($1, $3) } (* access member variable of user defined type *)
-  | SELF DOT ID                        { UDTAccess ("self", $3) }
-  
-  | ID DCOLON ID LPAREN list_elements RPAREN         { UDTStaticAccess($1, $3, $5) }
-  | ID DCOLON ID LPAREN RPAREN                       { UDTStaticAccess($1, $3, []) }
-
-  | expr DOT ID LPAREN list_elements RPAREN          { UDTInstanceAccess($1, $3, $5) }
-  | expr DOT ID LPAREN RPAREN                        { UDTInstanceAccess($1, $3, []) }
-
-  | LPAREN expr RPAREN                               { $2 }
-  | MATCH LPAREN expr RPAREN LBRACE case_list RBRACE { Match($3, $6) } (* match is an expression and should evaluate to something *)
-  | func_call                                        { $1 }
-  | typ LPAREN expr RPAREN                           { TypeCast($1, $3) }
 
 case_list:
   case_item                    {[$1]} (* Base case *)

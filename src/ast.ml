@@ -105,5 +105,6 @@ type block =
   | Continue
   | ReturnUnit
   | ReturnVal of expr
+  | Expr of expr
 
 type program = { body : block list }
