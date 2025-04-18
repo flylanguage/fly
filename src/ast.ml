@@ -20,7 +20,7 @@ type op =
   | Not
   | Cons
 
-type pattern = 
+type pattern =
   | PLiteral of int
   | PBoolLit of bool
   | PFloatLit of float
@@ -49,7 +49,6 @@ type typ =
   | Unit
   | UserType of string
 
-
 type expr =
   | Literal of int
   | BoolLit of bool
@@ -72,17 +71,17 @@ type expr =
   | Match of expr * (pattern * expr) list
   | Wildcard
   | TypeCast of typ * expr
+
 and func = string * expr list
 and kv_list = (string * expr) list (* for user defined types *)
-and udt_access = 
+
+and udt_access =
   | UDTVariable of string
   | UDTFunction of func
-
 
 type enum_variant =
   | EnumVariantDefault of string
   | EnumVariantExplicit of string * int
-
 
 type block =
   | MutDeclTyped of string * typ * expr
@@ -90,8 +89,17 @@ type block =
   | DeclTyped of string * typ * expr
   | DeclInfer of string * expr
   | Assign of expr * assign_op * expr
-  | FunctionDefinition of typ * string * (string * typ) list * block list (* rtyp, func_name, func_args, func_body *)
-  | BoundFunctionDefinition of typ * string * (string * typ) list * block list * typ (* rtyp, func_name, func_args, func_body, bound_type *)
+  | FunctionDefinition of
+      typ
+      * string
+      * (string * typ) list
+      * block list (* rtyp, func_name, func_args, func_body *)
+  | BoundFunctionDefinition of
+      typ
+      * string
+      * (string * typ) list
+      * block list
+      * typ (* rtyp, func_name, func_args, func_body, bound_type *)
   | EnumDeclaration of string * enum_variant list
   | UDTDef of string * (string * typ) list
   | IfEnd of expr * block list
@@ -106,7 +114,5 @@ type block =
   | ReturnUnit
   | ReturnVal of expr
   | Expr of expr
-
-
 
 type program = { body : block list }
