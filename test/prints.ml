@@ -188,7 +188,7 @@ let rec string_of_block = function
   | MutDeclInfer (id, e) ->  "let mut " ^ id ^ " := " ^ string_of_expr e ^ ";\n"
   | DeclTyped (id, typ, e) -> "let " ^ id ^ ": " ^ string_of_type typ ^ " = " ^ string_of_expr e ^ ";\n"
   | DeclInfer (id, e) -> "let " ^ id ^ " := " ^ string_of_expr e ^ ";\n"
-  | Assign (assigned_obj, assign_op, e) -> string_of_assigned_obj assigned_obj ^ string_of_assign_op assign_op ^ string_of_expr e ^ ";\n"
+  | Assign (e1, assign_op, e2) -> string_of_expr e1 ^ string_of_assign_op assign_op ^ string_of_expr e2 ^ ";\n"
   | FunctionDefinition  (rtyp, func_name, func_args, func_body) ->
     "fun " ^ func_name  ^ "(" ^  string_of_func_args func_args ^ ") -> " ^ string_of_type rtyp ^ " {\n"
     ^ String.concat "" (List.map string_of_block func_body)
@@ -229,14 +229,15 @@ let rec string_of_block = function
     "while (" ^ string_of_expr e ^ ") {\n"
     ^ String.concat "" (List.map string_of_block block_list)
     ^ "\n}"
+  | For (idx, it, block_list) -> 
+      "for " ^ idx ^ " := " ^ string_of_expr it ^ " {\n"
+      ^ String.concat "" (List.map string_of_block block_list)
+      ^ "\n}"
   | Break -> "break;"
   | Continue -> "continue;"
   | ReturnUnit -> "return;\n"
   | ReturnVal (e) -> "return " ^ string_of_expr e ^ ";\n"
   | Expr (e) -> string_of_expr e
-and string_of_assigned_obj = function
-  | Id (s) -> s
-  | Index (e1, e2) -> string_of_expr e1 ^ "[" ^ string_of_expr e2 ^ "]"
 
 
 let string_of_program fdecl = String.concat "" (List.map string_of_block fdecl.body)

@@ -89,7 +89,7 @@ type block =
   | MutDeclInfer of string * expr
   | DeclTyped of string * typ * expr
   | DeclInfer of string * expr
-  | Assign of variable * assign_op * expr
+  | Assign of expr * assign_op * expr
   | FunctionDefinition of typ * string * (string * typ) list * block list (* rtyp, func_name, func_args, func_body *)
   | BoundFunctionDefinition of typ * string * (string * typ) list * block list * typ (* rtyp, func_name, func_args, func_body, bound_type *)
   | EnumDeclaration of string * enum_variant list
@@ -100,14 +100,12 @@ type block =
   | ElifEnd of expr * block list
   | ElseEnd of block list
   | While of expr * block list
+  | For of string * expr * block list
   | Break
   | Continue
   | ReturnUnit
   | ReturnVal of expr
   | Expr of expr
-and variable =
-  | Id of string
-  | Index of expr * expr
 
 
 

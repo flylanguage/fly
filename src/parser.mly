@@ -27,13 +27,6 @@ open Ast
 
 %right EQUAL PLUS_ASSIGN MINUS_ASSIGN MULT_ASSIGN DIV_ASSIGN WALRUS
 %right DCOLON
-%left OR
-%left AND
-%nonassoc NOT
-%nonassoc BEQ NEQ LT LEQ GT GEQ
-%left PLUS MINUS
-%left TIMES DIVIDE MODULO
-%right EXPONENT
 
 
 %%
@@ -45,22 +38,6 @@ block_list:
   /* empty */       {[]}
  | block block_list { $1 :: $2 }
 
-binop:
-  | PLUS                              { Add }
-  | MINUS                             { Sub }
-  | TIMES                             { Mult }
-  | DIVIDE                            { Div }
-  | MODULO                            { Mod }
-  | EXPONENT                          { Exp }
-  | BEQ                               { Equal }
-  | NEQ                               { Neq }
-  | LT                                { Less }
-  | LEQ                               { Leq }
-  | GT                                { Greater }
-  | GEQ                               { Geq }
-  | AND                               { And }
-  | OR                                { Or }
-  | DCOLON                            { Cons }
 
 literal:
     LITERAL                           { Literal($1)  } (* base types *)
@@ -75,52 +52,81 @@ literal_expr:
   | tuple                             { $1 } (* tuple literal declaration *)
 
 side_effect_expr:
-  | ID INCR                     { UnopSideEffect($1, Postincr) }
-  | ID DECR                     { UnopSideEffect($1, Postdecr) }
-  | INCR ID                     { UnopSideEffect($2, Preincr)  }
-  | DECR ID                     { UnopSideEffect($2, Predecr)  }
+  | ID INCR                           { UnopSideEffect($1, Postincr) }
+  | ID DECR                           { UnopSideEffect($1, Postdecr) }
+  | INCR ID                           { UnopSideEffect($2, Preincr)  }
+  | DECR ID                           { UnopSideEffect($2, Predecr)  }
 
 access_expr:
-  | ID DOT udt_access                 { UDTAccess($1, $3) }
-  | ID DCOLON func_call               { UDTStaticAccess($1, $3) }
-  | SELF DOT udt_access               { UDTAccess ("self", $3) }
-  | expr LBRACKET expr RBRACKET       { Index($1, $3) }
+  | ID DOT udt_access                   { UDTAccess($1, $3) }
+  | ID DCOLON func_call                 { UDTStaticAccess($1, $3) }
+  | SELF DOT udt_access                 { UDTAccess ("self", $3) }
+  | expr8 LBRACKET expr8 RBRACKET       { Index($1, $3) }
 
 udt_access:
-  ID udt_suffix {
-    match $2 with
-    | `Call args -> UDTFunction($1, args)
-    | `Var -> UDTVariable($1)
-  }
-
-udt_suffix:
-  /* Empty */                       { `Var }
-  | LPAREN list_elements_opt RPAREN {`Call $2 }
+  | ID                                 { UDTVariable($1) }
+  | ID LPAREN list_elements_opt RPAREN { UDTFunction($1, $3) }
 
 match_expr:
   MATCH LPAREN expr RPAREN LBRACE case_list RBRACE  { Match($3, $6) }
 
 expr:
-  | literal_expr                              { $1 }
-  | ID                                        { Id($1) }
-  | expr binop expr                           { Binop($1, $2, $3) }
-  | side_effect_expr                          { $1 }
-  | access_expr                               { $1 }
-  | NOT expr                                  { Unop($2, Not) }
-  | udt_instance                              { $1 } (* Instantiating a user defined type *)
-  | match_expr                                { $1 } (* match is an expression and should evaluate to something *)
-  | func_call                                 { FunctionCall($1) }
-  | typ LPAREN expr RPAREN                    { TypeCast($1, $3) }
-  | parens_expr                               { $1 }
-  
+  expr1                                        { $1 }
+
+expr1:
+ | expr1 OR expr2         { Binop($1, Or, $3) }
+ | expr2                  { $1 }
+
+expr2:
+ | expr2 AND expr3        { Binop($1, And, $3) }
+ | expr3                  { $1 }
+
+expr3:
+ | expr3 BEQ expr4        { Binop($1, Equal, $3) }
+ | expr3 NEQ expr4        { Binop($1, Neq, $3) }
+ | expr4                  { $1 }
+
+expr4:
+ | expr4 GT expr5         { Binop($1, Greater, $3) }
+ | expr4 GEQ expr5        { Binop($1, Geq, $3) }
+ | expr4 LT expr5         { Binop($1, Less, $3) }
+ | expr4 LEQ expr5        { Binop($1, Leq, $3) }
+ | expr5                  { $1 }
+
+expr5:
+ | expr5 TIMES expr6      { Binop($1, Mult, $3) }
+ | expr5 DIVIDE expr6     { Binop($1, Div, $3) }
+ | expr5 MODULO expr6     { Binop($1, Mod, $3) }
+ | expr6                  { $1 }
+
+expr6:
+ | expr6 EXPONENT expr7   { Binop($1, Exp, $3) }
+ | expr7                  { $1 }
+
+expr7:
+ | NOT expr7              { Unop($2, Not) }
+ | expr8                  { $1 } 
+
+expr8:
+ | literal_expr                              { $1 }
+ | ID                                        { Id($1) }
+ | side_effect_expr                          { $1 }
+ | access_expr                               { $1 }
+ | udt_instance                              { $1 } (* Instantiating a user defined type *)
+ | match_expr                                { $1 } (* match is an expression and should evaluate to something *)
+ | func_call                                 { FunctionCall($1) }
+ | expr8 AS typ                              { TypeCast($3, $1) }
+ | parens_expr                               { $1 }
+
+
 parens_expr:
-  | LPAREN expr RPAREN                        { $2 }
+  | LPAREN expr1 RPAREN                        { $2 }
 
 block:
   | declaration          { $1 }
   | assignment           { $1 }
   | control_flow         { $1 }
-  | expr                 { Expr($1) }
+  | expr SEMI            { Expr($1) }
 
 typ:
   | INT                   { Int }
@@ -130,9 +136,11 @@ typ:
   | STRING                { String }
   | LIST LT typ GT        { List($3) }
   | TUPLE LT typ_list GT  { Tuple($3) }
-  | ID                    { UserType($1) }
+  | typ_id                { $1 }
   | LPAREN RPAREN         { Unit }
 
+typ_id:
+  ID                      { UserType($1) }
 
 typ_list:
   | typ                 { [$1] }
@@ -202,16 +210,12 @@ enum_variants:
   | enum_variant COMMA enum_variants { $1::$3 }
 
 enum_variant:
-  | ID               { EnumVariantDefault($1) }
-  | ID EQUAL LITERAL { EnumVariantExplicit($1, $3) }
+  | ID                            { EnumVariantDefault($1) }
+  | ID EQUAL LITERAL              { EnumVariantExplicit($1, $3) }
 
 assignment:
- assigned_obj assign_op expr SEMI           { Assign($1, $2, $3) }
+ expr assign_op expr SEMI         { Assign($1, $2, $3) }
 
-
-assigned_obj:
-  | ID                            { Id($1) }
-  | expr LBRACKET expr RBRACKET   { Index($1, $3) }
 
 assign_op:
   | EQUAL                         { IdentityAssign }
@@ -249,8 +253,8 @@ list_elements_opt:
   | list_elements             { $1 }
 
 list_elements:
-  | expr                      {[$1]}
-  | expr COMMA list_elements  {$1 :: $3}
+  | expr8                      {[$1]}
+  | expr8 COMMA list_elements  {$1 :: $3}
 
 list:
   LBRACKET list_elements_opt RBRACKET             { List($2) }
@@ -270,11 +274,12 @@ udt_contents:
   | udt_element COMMA udt_contents     { $1 :: $3 }
 
 udt_element:
-  ID COLON expr                        { ($1, $3) }
+  ID COLON expr8                       { ($1, $3) }
 
 control_flow:
   | if_stmt          { $1 }
   | while_loop       { $1 }
+  | for_loop         { $1 }
   | BREAK SEMI       { Break }
   | CONT SEMI        { Continue }
   | RETURN SEMI      { ReturnUnit}
@@ -291,3 +296,8 @@ elif_stmt:
 
 while_loop:
   WHILE LPAREN expr RPAREN LBRACE block_list RBRACE     { While($3, $6) }
+
+(* Currently allow only list or variable as iterators *)
+for_loop:
+  | FOR ID WALRUS list LBRACE block_list RBRACE         { For($2, $4, $6) }
+  | FOR ID WALRUS ID LBRACE block_list RBRACE           { For($2, Id($4), $6) }
