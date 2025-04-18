@@ -82,7 +82,7 @@ expr2:
  | expr3                  { $1 }
 
 expr3:
-//  | expr3 DCOLON expr4     { Binop($1, Cons, $3) }
+ | expr3 DCOLON expr4     { Binop($1, Cons, $3) }
  | expr4                  { $1 }
 
 expr4:

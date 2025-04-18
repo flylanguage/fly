@@ -71,7 +71,7 @@ let tests =
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
-       (* ; ("test7"
+       ; ("test7"
           >:: fun _ ->
           let lexbuf =
             Lexing.from_string "fun nothing() {let mut a9 := [1, 2, 3];\nlet b9 := \"string\" :: a9;\n}"
@@ -81,7 +81,7 @@ let tests =
           let expected =
             "fun nothing() -> () {\nlet mut a9 := [1, 2, 3];\nlet b9 := \"string\" :: a9;\n\n}\n"
           in
-          assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\"")) *)
+          assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
        ; ("test8"
           >:: fun _ ->
