@@ -25,7 +25,6 @@ open Ast
 %start program_rule
 %type <Ast.program> program_rule
 
-
 %right EQUAL PLUS_ASSIGN MINUS_ASSIGN MULT_ASSIGN DIV_ASSIGN WALRUS
 %right DCOLON
 %left OR
@@ -69,7 +68,6 @@ literal:
   | FLIT                              { FloatLit($1) }
   | CLIT                              { CharLit($1)  }
   | SLIT                              { StringLit($1)}
-  | ID                                { Id($1) }
 
 literal_expr:
   | literal                           { $1 }
@@ -89,14 +87,22 @@ access_expr:
   | expr LBRACKET expr RBRACKET       { Index($1, $3) }
 
 udt_access:
-  | func_call                         { UDTFunction($1) }
-  | ID                          { UDTVariable($1) }
+  ID udt_suffix {
+    match $2 with
+    | `Call args -> UDTFunction($1, args)
+    | `Var -> UDTVariable($1)
+  }
+
+udt_suffix:
+  /* Empty */                       { `Var }
+  | LPAREN list_elements_opt RPAREN {`Call $2 }
 
 match_expr:
   MATCH LPAREN expr RPAREN LBRACE case_list RBRACE  { Match($3, $6) }
 
 expr:
   | literal_expr                              { $1 }
+  | ID                                        { Id($1) }
   | expr binop expr                           { Binop($1, $2, $3) }
   | side_effect_expr                          { $1 }
   | access_expr                               { $1 }
