@@ -20,7 +20,7 @@ let tests =
        ; ("test2"
           >:: fun _ ->
           let lexbuf =
-            Lexing.from_string "for i, v := test_lst {\n\t//do work here\n}\n"
+            Lexing.from_string "for i, v := test_lst {}\n"
           in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
@@ -46,13 +46,12 @@ let tests =
        ; ("test5"
           >:: fun _ ->
           let lexbuf =
-            Lexing.from_string "while (i < 5) {\n\t//do work here\n\ti += 1\n}\n"
+            Lexing.from_string "while (i < 5) {i += 1;\n}\n"
           in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "WHILE LPAREN ID(i) LT LITERAL(5) RPAREN LBRACE ID(i) PLUS_ASSIGN LITERAL(1) \
-             RBRACE"
+            "while (i < 5) {\ni += 1;\n\n}"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 

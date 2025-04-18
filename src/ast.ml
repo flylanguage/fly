@@ -74,6 +74,7 @@ type expr =
   | ListElements of expr list
   | Match of expr * (pattern * expr) list
   | Wildcard
+  | TypeCast of typ * expr
 
 and kv_list = (string * expr) list (* for user defined types *)
 

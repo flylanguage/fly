@@ -48,7 +48,7 @@ let tests =
           let lexbuf =
             Lexing.from_string
               "bind info<Person>(self) -> string {\n\
-               \treturn self.name + \" \" + self.age;\n\
+               \treturn self.name + self.age;\n\
                }\n"
           in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 

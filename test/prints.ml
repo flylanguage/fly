@@ -76,6 +76,17 @@ let print_token = function
 ;;
 
 (* Print functions for AST *)
+let rec string_of_type = function
+  Int -> "int"
+  | Bool -> "bool"
+  | Char -> "char"
+  | Float -> "float"
+  | String -> "string"
+  | List (t) -> "list<" ^ string_of_type t ^ ">"
+  | Tuple (t_list) -> "tuple<" ^ (String.concat ", " (List.map string_of_type t_list)) ^ ">"
+  | Unit -> "()"
+  | UserType (udt_name) -> udt_name
+
 let string_of_op = function
   | Add -> "+"
   | Sub -> "-"
@@ -140,9 +151,10 @@ let rec string_of_expr = function
   | UDTStaticAccess (udt_name, udt_accessed_member, args) -> 
       udt_name ^ "::" ^ udt_accessed_member ^ "(" ^ (String.concat ", " (List.map string_of_expr args)) ^ ")"
   | Index (indexed_expr, idx) -> string_of_expr indexed_expr ^ "[" ^ string_of_expr idx ^ "]"
-  | Match (e1, case_list) -> "match (" ^ string_of_expr e1 ^ "){\n" ^ string_of_case_list case_list ^ "}"
+  | Match (e1, case_list) -> "match (" ^ string_of_expr e1 ^ ") {\n" ^ string_of_case_list case_list ^ "}"
   | Wildcard -> "_"
   | EnumAccess (enum_name, enum_variant) -> enum_name ^ "." ^ enum_variant
+  | TypeCast (type_name, e) -> string_of_type type_name ^ "(" ^ string_of_expr e ^ ")"
 and string_of_pattern = function
   | PLiteral ( num ) -> string_of_int num
   | PBoolLit true -> "true"
@@ -166,17 +178,6 @@ and string_of_udt_instance = function
 let string_of_enum_variant = function
   | EnumVariantDefault (variant_name) -> variant_name
   | EnumVariantExplicit (variant_name, variant_num) -> variant_name ^ " = " ^ string_of_int variant_num
-
-let rec string_of_type = function
-  Int -> "int"
-  | Bool -> "bool"
-  | Char -> "char"
-  | Float -> "float"
-  | String -> "string"
-  | List (t) -> "list<" ^ string_of_type t ^ ">"
-  | Tuple (t_list) -> "tuple<" ^ (String.concat ", " (List.map string_of_type t_list)) ^ ">"
-  | Unit -> "()"
-  | UserType (udt_name) -> udt_name
 
 let rec string_of_func_args = function
   [] -> ""

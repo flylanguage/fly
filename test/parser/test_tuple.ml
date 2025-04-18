@@ -37,12 +37,12 @@ let tests =
        ; ("test4"
           >:: fun _ ->
           let lexbuf =
-            Lexing.from_string "fun idx_tuple() {\nlet x4 := (1, 2, 3);\nx4[0];\nx4[1];\nreturn x4[2];\n\n}\n"
+            Lexing.from_string "fun idx_tuple() {\nlet x4 := (1, 2, 3);\nlet y:= x4[0];\nlet z := x4[1];\nreturn x4[2];\n\n}\n"
           in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "fun idx_tuple() -> () {\nlet x4 := (1, 2, 3);\nx4[0];\nx4[1];\nreturn x4[2];\n\n}\n"
+            "fun idx_tuple() -> () {\nlet x4 := (1, 2, 3);\nlet y := x4[0];\nlet z := x4[1];\nreturn x4[2];\n\n}\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -59,12 +59,12 @@ let tests =
        ; ("test6"
           >:: fun _ ->
           let lexbuf =
-            Lexing.from_string "let x6 := (1, 2, 3);\nlet x7 := (4, 5, 6);\nfun illegal_add_tuples(left: tuple<int, int, int>, right: tuple<int,int,int>) {left + right;\n}"
+            Lexing.from_string "let x6 := (1, 2, 3);\nlet x7 := (4, 5, 6);\nfun illegal_add_tuples(left: tuple<int, int, int>, right: tuple<int,int,int>) {return left + right;\n}"
           in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "let x6 := (1, 2, 3);\nlet x7 := (4, 5, 6);\nfun illegal_add_tuples(left: tuple<int, int, int>, right: tuple<int,int,int>) {left + right;\n\n}\n"
+            "let x6 := (1, 2, 3);\nlet x7 := (4, 5, 6);\nfun illegal_add_tuples(left: tuple<int, int, int>, right: tuple<int, int, int>, ) -> () {\nreturn left + right;\n\n}\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 

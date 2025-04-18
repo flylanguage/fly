@@ -70,7 +70,7 @@ typ_list:
   | typ COMMA typ_list {$1 :: $3}
 
 declaration:
-  LET MUT ID COLON typ EQUAL expr SEMI  { MutDeclTyped($3, $5, $7) }  (* let x: int = 5; *)
+  LET MUT ID COLON typ EQUAL expr SEMI    { MutDeclTyped($3, $5, $7) }  (* let x: int = 5; *)
   | LET MUT ID WALRUS expr SEMI           { MutDeclInfer($3, $5) }      (* let x := 5; *)
   | LET ID COLON typ EQUAL expr SEMI      { DeclTyped($2, $4, $6) }  (* let x: int = 5; *)
   | LET ID WALRUS expr SEMI               { DeclInfer($2, $4) }      (* let x := 5; *)
@@ -176,6 +176,7 @@ expr:
 
   | udt_instance                       { $1 } (* Instantiating a user defined type *)
   | ID DOT ID                          { UDTAccess($1, $3) } (* access member variable of user defined type *)
+  | SELF DOT ID                        { UDTAccess ("self", $3) }
   
   | ID DCOLON ID LPAREN list_elements RPAREN         { UDTStaticAccess($1, $3, $5) }
   | ID DCOLON ID LPAREN RPAREN                       { UDTStaticAccess($1, $3, []) }
@@ -186,6 +187,7 @@ expr:
   | LPAREN expr RPAREN                               { $2 }
   | MATCH LPAREN expr RPAREN LBRACE case_list RBRACE { Match($3, $6) } (* match is an expression and should evaluate to something *)
   | func_call                                        { $1 }
+  | typ LPAREN expr RPAREN                           { TypeCast($1, $3) }
 
 case_list:
   case_item                    {[$1]} (* Base case *)
