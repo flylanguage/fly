@@ -6,11 +6,11 @@ let tests =
   "testing_tuple"
   >::: [ ("test1"
           >:: fun _ ->
-          let lexbuf = Lexing.from_string "fun nothing() -> () {\nlet x1 := (1, 2, 3);\nx1;\n}" in
+          let lexbuf = Lexing.from_string "fun nothing() -> () {\nlet x1 := (1, 2, 3);\nreturn x1;\n}" in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "fun nothing() -> () {\nlet x1 := (1, 2, 3);\nx1;\n\n}\n"
+            "fun nothing() -> () {\nlet x1 := (1, 2, 3);\nreturn x1;\n\n}\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -26,33 +26,33 @@ let tests =
 
        ; ("test3"
           >:: fun _ ->
-          let lexbuf = Lexing.from_string "fun bool_tup() -> tuple<bool, bool> {\nlet x3 := (true, false);\nx3;\n}" in
+          let lexbuf = Lexing.from_string "fun bool_tup() -> tuple<bool, bool> {\nlet x3 := (true, false);\nreturn x3;\n}" in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "fun bool_tup -> tuple<bool, bool> {\nlet x3 := (true, false);\nx3;\n\n}\n"
+            "fun bool_tup() -> tuple<bool, bool> {\nlet x3 := (true, false);\nreturn x3;\n\n}\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
        ; ("test4"
           >:: fun _ ->
           let lexbuf =
-            Lexing.from_string "fun idx_tuple() {\nlet x4 := (1, 2, 3);\nx4[0];\nx4[1];\nx4[2];\n\n}\n"
+            Lexing.from_string "fun idx_tuple() {\nlet x4 := (1, 2, 3);\nx4[0];\nx4[1];\nreturn x4[2];\n\n}\n"
           in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "fun idx_tuple() -> () {\nlet x4 := (1, 2, 3);\nx4[0];\nx4[1];\nx4[2];\n\n}\n"
+            "fun idx_tuple() -> () {\nlet x4 := (1, 2, 3);\nx4[0];\nx4[1];\nreturn x4[2];\n\n}\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
        ; ("test5"
           >:: fun _ ->
-          let lexbuf = Lexing.from_string "fun tup_arg(x: tuple<int, int, int>) {\nlet x5 := (1, 2, 3);\nx5[1] := 4;\n\n}\n" in
+          let lexbuf = Lexing.from_string "fun tup_arg(x: tuple<int, int, int>) {\nlet x5 := (1, 2, 3);\nx5[1] = 4;\n\n}\n" in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "fun tup_arg(x: tuple<int, int, int>) {let x5 := (1, 2, 3);\nx5[1] := 4;\n}\n"
+            "fun tup_arg(x: tuple<int, int, int>, ) -> () {\nlet x5 := (1, 2, 3);\nx5[1] = 4;\n\n}\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 

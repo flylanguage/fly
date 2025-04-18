@@ -18,6 +18,7 @@ type op =
   | And
   | Or
   | Not
+  | Cons
 
 type pattern = 
   | PLiteral of int
@@ -61,7 +62,7 @@ type expr =
   | Unop of expr * op (* this is for not *)
   | UnopSideEffect of string * op (* this is for postincr, postdecr, preincr, postdecr *)
   | Assign of string * assign_op * expr
-  | Call of string * expr list
+  | FunctionCall of string * expr list
     (* string for function name and list of exprs for arguments to pass to the function *)
   | UDTInstance of string * kv_list
     (* typ to indicate the exact user defined type and kv_list for member variables *)
@@ -87,9 +88,10 @@ type block =
   | DeclTyped of string * typ * expr
   | DeclInfer of string * expr
   | Assign of string * assign_op * expr
+  | IndexAssign of string * expr * assign_op * expr
   | FunctionDefinition of typ * string * (string * typ) list * block list (* rtyp, func_name, func_args, func_body *)
   | BoundFunctionDefinition of typ * string * (string * typ) list * block list * typ (* rtyp, func_name, func_args, func_body, bound_type *)
-  | Call of string * expr list
+  | FunctionBlockCall of string * expr list
   | EnumDeclaration of string * enum_variant list
   | UDTDef of string * (string * typ) list
   | IfEnd of expr * block list

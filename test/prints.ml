@@ -96,6 +96,7 @@ let string_of_op = function
   | And -> "&&"
   | Or -> "|"
   | Not -> "!"
+  | Cons -> "::"
 
 let string_of_assign_op = function
   IdentityAssign -> " = "
@@ -127,7 +128,7 @@ let rec string_of_expr = function
   | Assign (id, assign_op, e) -> id ^ " " ^ string_of_assign_op assign_op ^ " " ^ string_of_expr e
   | ListElements elems -> "[" ^ String.concat ", " (List.map string_of_expr elems) ^ "]"
   | TupleElements elems -> "(" ^ String.concat ", " (List.map string_of_expr elems) ^ ")"
-  | Call (func_name, func_args) ->
+  | FunctionCall (func_name, func_args) ->
       func_name ^ "("
       ^ String.concat ", " (List.map string_of_expr func_args)
       ^ ")"
@@ -187,6 +188,7 @@ let rec string_of_block = function
   | DeclTyped (id, typ, e) -> "let " ^ id ^ ": " ^ string_of_type typ ^ " = " ^ string_of_expr e ^ ";\n"
   | DeclInfer (id, e) -> "let " ^ id ^ " := " ^ string_of_expr e ^ ";\n"
   | Assign (id, assign_op, e) -> id ^ string_of_assign_op assign_op ^ string_of_expr e ^ ";\n"
+  | IndexAssign (id, e1, assign_op, e2) -> id ^ "[" ^ string_of_expr e1 ^ "]" ^ string_of_assign_op assign_op ^ string_of_expr e2 ^ ";\n" 
   | FunctionDefinition  (rtyp, func_name, func_args, func_body) ->
     "fun " ^ func_name  ^ "(" ^  string_of_func_args func_args ^ ") -> " ^ string_of_type rtyp ^ " {\n"
     ^ String.concat "" (List.map string_of_block func_body)
@@ -195,7 +197,7 @@ let rec string_of_block = function
     "bind " ^ func_name  ^ "<" ^ string_of_type bound_type ^ ">" ^ "(" ^  string_of_func_args func_args ^ ") -> " ^ string_of_type rtyp ^ "{\n"
     ^ String.concat "" (List.map string_of_block func_body)
     ^ "\n}\n"
-  | Call (func_name, func_args) ->
+  | FunctionBlockCall (func_name, func_args) ->
     func_name ^ "("
     ^ String.concat ", " (List.map string_of_expr func_args)
     ^ ")"
@@ -231,8 +233,8 @@ let rec string_of_block = function
     "while (" ^ string_of_expr e ^ ") {\n"
     ^ String.concat "" (List.map string_of_block block_list)
     ^ "\n}"
-  | Break -> "break"
-  | Continue -> "continue"
+  | Break -> "break;"
+  | Continue -> "continue;"
   | ReturnUnit -> "return;\n"
   | ReturnVal (e) -> "return " ^ string_of_expr e ^ ";\n"
 

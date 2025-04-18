@@ -46,13 +46,13 @@ block_list:
  | block block_list { $1 :: $2 }
 
 block:
-  declaration         { $1 }
-  | assignment          { $1 }
-  | func_def            { $1 }
-  | func_call SEMI      { $1 }
-  | udt_def             { $1 }
-  | control_flow        { $1 }
-  | enum_def            { $1 }
+  declaration            { $1 }
+  | assignment           { $1 }
+  | func_def             { $1 }
+  | func_block_call      { $1 }
+  | udt_def              { $1 }
+  | control_flow         { $1 }
+  | enum_def             { $1 }
 
 typ:
     INT { Int }
@@ -76,11 +76,16 @@ declaration:
   | LET ID WALRUS expr SEMI               { DeclInfer($2, $4) }      (* let x := 5; *)
 
 assignment:
-  ID EQUAL expr SEMI                       { Assign($1, IdentityAssign, $3) }
-  | ID PLUS_ASSIGN expr SEMI             { Assign($1, PlusAssign, $3 ) }
-  | ID MINUS_ASSIGN expr SEMI             { Assign($1, MinusAssign, $3 ) }
-  | ID MULT_ASSIGN expr SEMI              { Assign($1, MultAssign, $3)}
-  | ID DIV_ASSIGN expr SEMI               { Assign($1, DivAssign, $3)}
+  ID EQUAL expr SEMI                                  { Assign($1, IdentityAssign, $3) }
+  | ID PLUS_ASSIGN expr SEMI                          { Assign($1, PlusAssign, $3 ) }
+  | ID MINUS_ASSIGN expr SEMI                         { Assign($1, MinusAssign, $3 ) }
+  | ID MULT_ASSIGN expr SEMI                          { Assign($1, MultAssign, $3)}
+  | ID DIV_ASSIGN expr SEMI                           { Assign($1, DivAssign, $3)}
+  | ID LBRACKET expr RBRACKET EQUAL expr SEMI         { IndexAssign($1, $3, IdentityAssign, $6)}
+  | ID LBRACKET expr RBRACKET PLUS_ASSIGN expr SEMI   { IndexAssign($1, $3, PlusAssign, $6)}
+  | ID LBRACKET expr RBRACKET MINUS_ASSIGN expr SEMI  { IndexAssign($1, $3, MinusAssign, $6)}
+  | ID LBRACKET expr RBRACKET MULT_ASSIGN expr SEMI   { IndexAssign($1, $3, MultAssign, $6)}
+  | ID LBRACKET expr RBRACKET DIV_ASSIGN expr SEMI    { IndexAssign($1, $3, DivAssign, $6)}
 
 func_def:
   FUN ID LPAREN RPAREN ARROW typ LBRACE block_list RBRACE
@@ -108,14 +113,22 @@ func_def:
   {
     BoundFunctionDefinition(Unit, $2, ("self", $4) :: $8, $11, $4)
   }
+| BIND ID LT typ GT LPAREN formals_opt RPAREN ARROW typ LBRACE block_list RBRACE (* This is a static function *)
+  {
+    BoundFunctionDefinition($4, $2, $7, $12, $4)
+  }
 
 formals_opt:
     ID COLON typ                   { [($1,$3)] }
   | ID COLON typ COMMA formals_opt { ($1,$3) :: $5 }
 
 func_call:
-  ID LPAREN list_elements RPAREN       { Call($1, $3) } (* Function call *)
-  | ID LPAREN RPAREN                   { Call ($1, [])} (* Function call with no argument*)
+  ID LPAREN list_elements RPAREN       { FunctionCall($1, $3) } (* Function call *)
+  | ID LPAREN RPAREN                   { FunctionCall ($1, [])} (* Function call with no argument*)
+
+func_block_call:
+  ID LPAREN list_elements RPAREN       { FunctionBlockCall($1, $3) } (* Function call *)
+  | ID LPAREN RPAREN                   { FunctionBlockCall ($1, [])} (* Function call with no argument*)
 
 udt_def:
   TYPE ID LBRACE udt_members RBRACE       { UDTDef($2, $4) }
@@ -157,20 +170,22 @@ expr:
 
   | list                               { $1 } (* list literal declaration *)
   | tuple                              { $1 } (* tuple literal declaration. need to handle indexing into tuple *)
+  | expr DCOLON expr                   {Binop($1, Cons, $3)}
 
   | expr LBRACKET expr RBRACKET        {Index($1, $3)}
 
   | udt_instance                       { $1 } (* Instantiating a user defined type *)
   | ID DOT ID                          { UDTAccess($1, $3) } (* access member variable of user defined type *)
   
-  | ID DCOLON ID LPAREN list_elements RPAREN { UDTStaticAccess($1, $3, $5) }
-  | ID DCOLON ID LPAREN RPAREN               { UDTStaticAccess($1, $3, []) }
+  | ID DCOLON ID LPAREN list_elements RPAREN         { UDTStaticAccess($1, $3, $5) }
+  | ID DCOLON ID LPAREN RPAREN                       { UDTStaticAccess($1, $3, []) }
 
-  | expr DOT ID LPAREN list_elements RPAREN  { UDTInstanceAccess($1, $3, $5) }
-  | expr DOT ID LPAREN RPAREN                { UDTInstanceAccess($1, $3, []) }
+  | expr DOT ID LPAREN list_elements RPAREN          { UDTInstanceAccess($1, $3, $5) }
+  | expr DOT ID LPAREN RPAREN                        { UDTInstanceAccess($1, $3, []) }
 
-  | LPAREN expr RPAREN                 { $2 }
+  | LPAREN expr RPAREN                               { $2 }
   | MATCH LPAREN expr RPAREN LBRACE case_list RBRACE { Match($3, $6) } (* match is an expression and should evaluate to something *)
+  | func_call                                        { $1 }
 
 case_list:
   case_item                    {[$1]} (* Base case *)
@@ -217,11 +232,11 @@ udt_element:
 
 
 control_flow:
-  if_stmt       { $1 }
-  | while_loop  { $1 }
-  | BREAK       { Break }
-  | CONT        { Continue }
-  | RETURN SEMI { ReturnUnit}
+  if_stmt            { $1 }
+  | while_loop       { $1 }
+  | BREAK SEMI       { Break }
+  | CONT SEMI        { Continue }
+  | RETURN SEMI      { ReturnUnit}
   | RETURN expr SEMI { ReturnVal($2) }
 
 enum_def:

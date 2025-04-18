@@ -32,12 +32,14 @@ let tests =
           let lexbuf =
             Lexing.from_string
               "bind new<Person>(name: string, age: int) -> Person {\n\
-               \treturn Person {name: name, age: age};\n\
+               \treturn Person{name: name, age: age};\n\
                }\n"
           in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
-          let expected = ""
+          let expected = "bind new<Person>(name: string, age: int, ) -> Person{\n\
+               return Person{name: name, age: age, };\n\
+               \n}\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 

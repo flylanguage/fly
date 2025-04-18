@@ -60,32 +60,30 @@ let tests =
           >:: fun _ ->
           let lexbuf =
             Lexing.from_string
-              "match (c1) {\nColor.Red -> {\n
-              \  }\n\
-              \  Color.Green -> { \n\
-              \  }\n\
-              \  Color.Blue -> { \n\
-              \  }\n\
-              \  _ -> {\n\
-              \  }\n\
+              "match (c1) {\nColor.Red -> \"Red\",\n
+              \  Color.Green -> \"Green\",\n
+              \  Color.Blue -> \"Blue\",\n
+              \  _ -> \"nope\"
                }\n"
           in
           let program = Parser.program_rule Scanner.tokenize lexbuf in
           let actual = string_of_program program in
           let expected =
-            "MATCH LPAREN ID(c1) RPAREN LBRACE ID(Color) DOT ID(Red) ARROW LBRACE RBRACE \
-             ID(Color) DOT ID(Green) ARROW LBRACE RBRACE ID(Color) DOT ID(Blue) ARROW \
-             LBRACE RBRACE UNDERSCORE ARROW LBRACE RBRACE RBRACE"
+            "match (c1) {\nColor.Red -> \"red\",\n
+              \  Color.Green -> \"Green\",\n
+              \  Color.Blue -> \"Blue\",\n
+              \  _ -> \"nope\"
+               }\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
        ; ("test7"
           >:: fun _ ->
-          let lexbuf = Lexing.from_string "let a3 := 5;\na3 := Color.Red;\n" in
+          let lexbuf = Lexing.from_string "let a3 := 5;\nlet a3 := Color.Red;\n" in
           let program = Parser.program_rule Scanner.tokenize lexbuf in
           let actual = string_of_program program in
           let expected =
-            "let a3 := 5;\na3 := Color.Red;\n"
+            "let a3 := 5;\nlet a3 := Color.Red;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 

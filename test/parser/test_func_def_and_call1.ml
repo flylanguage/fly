@@ -22,10 +22,10 @@ let tests =
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("test2"
           >:: fun _ ->
-          let lexbuf = Lexing.from_string "countdown(10);\n" in
+          let lexbuf = Lexing.from_string "let x := countdown(10);\n" in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
-          let expected = "countdown(10)" in
+          let expected = "let x := countdown(10);\n" in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
        ]

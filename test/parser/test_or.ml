@@ -97,7 +97,7 @@ let tests =
                while (b5 | true) {\n\
                let result7 := \"looping\";\n\
                break;\n\
-               }\n"
+               }"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
