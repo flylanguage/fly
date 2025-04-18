@@ -20,7 +20,7 @@
 
 (test
   (name test_func_bind)
-  (libraries fly_lib ounit2 print_lib)) ;ERROR
+  (libraries fly_lib ounit2 print_lib))
 
 
 (test
@@ -45,7 +45,7 @@
 
 (test
   (name test_loops)
-  (libraries fly_lib ounit2 print_lib))  ;ERROR
+  (libraries fly_lib ounit2 print_lib))
 
 (test
   (name test_lt)

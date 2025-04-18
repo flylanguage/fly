@@ -106,7 +106,15 @@ let tests =
             "let a5 := !Color::Red;\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
-
+        ; ("test10"
+          >:: fun _ ->
+          let lexbuf = Lexing.from_string "let a := Color::Red :: xs;\n" in
+          let program = Parser.program_rule Scanner.tokenize lexbuf in
+          let actual = string_of_program program in
+          let expected = 
+            "let a := Color::Red :: xs;\n"
+          in
+          assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ]
 ;;
 

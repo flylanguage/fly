@@ -26,7 +26,8 @@ open Ast
 %type <Ast.program> program_rule
 
 %right EQUAL PLUS_ASSIGN MINUS_ASSIGN MULT_ASSIGN DIV_ASSIGN WALRUS
-%right DCOLON
+%left DCOLON
+%nonassoc ENUMACCESS
 
 
 %%
@@ -61,8 +62,8 @@ access_expr:
   | ID DOT udt_access                   { UDTAccess($1, $3) }
   | ID DCOLON func_call                 { UDTStaticAccess($1, $3) }
   | SELF DOT udt_access                 { UDTAccess ("self", $3) }
-  | ID DCOLON ID                        { EnumAccess($1, $3) }
-  | expr10 LBRACKET expr10 RBRACKET       { Index($1, $3) }
+  | ID DCOLON ID %prec ENUMACCESS       { EnumAccess($1, $3) }
+  | expr10 LBRACKET expr10 RBRACKET     { Index($1, $3) }
 
 udt_access:
   | ID                                 { UDTVariable($1) }
@@ -119,7 +120,6 @@ expr9:
 
 expr10:
  | literal_expr                              { $1 }
- | ID                                        { Id($1) }
  | side_effect_expr                          { $1 }
  | access_expr                               { $1 }
  | udt_instance                              { $1 } (* Instantiating a user defined type *)
@@ -127,6 +127,8 @@ expr10:
  | func_call                                 { FunctionCall($1) }
  | expr10 AS typ                              { TypeCast($3, $1) }
  | parens_expr                               { $1 }
+ | ID                                        { Id($1) }
+
 
 
 parens_expr:

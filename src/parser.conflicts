@@ -1,9 +1,9 @@
 
 ** Conflict (shift/reduce) in state 16.
-** Token involved: LBRACE
+** Token involved: DCOLON
 ** This state is reached from program_rule after reading:
 
-FOR ID WALRUS ID
+ID
 
 ** The derivations that appear below have the following common factor:
 ** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
@@ -11,20 +11,35 @@ FOR ID WALRUS ID
 program_rule 
 block_list EOF 
 block block_list 
-control_flow 
-for_loop 
+expr SEMI 
+expr1 
+expr2 
+expr3 
 (?)
 
-** In state 16, looking ahead at LBRACE, reducing production
-** expr8 -> ID
-** is permitted because of the following sub-derivation:
-
-FOR ID WALRUS expr8 LBRACE block_list RBRACE // lookahead token appears
-              ID . 
-
-** In state 16, looking ahead at LBRACE, shifting is permitted
+** In state 16, looking ahead at DCOLON, shifting is permitted
 ** because of the following sub-derivation:
 
-FOR ID WALRUS expr8 LBRACE block_list RBRACE 
-              udt_instance 
-              ID . LBRACE udt_contents_opt RBRACE 
+expr4 
+expr5 
+expr6 
+expr7 
+expr8 
+expr9 
+expr10 
+access_expr 
+ID . DCOLON func_call 
+
+** In state 16, looking ahead at DCOLON, reducing production
+** expr10 -> ID
+** is permitted because of the following sub-derivation:
+
+expr3 DCOLON expr4 // lookahead token appears
+expr4 // lookahead token is inherited
+expr5 // lookahead token is inherited
+expr6 // lookahead token is inherited
+expr7 // lookahead token is inherited
+expr8 // lookahead token is inherited
+expr9 // lookahead token is inherited
+expr10 // lookahead token is inherited
+ID . 
