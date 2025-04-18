@@ -149,8 +149,8 @@ let rec string_of_expr = function
   | Index (indexed_expr, idx) -> string_of_expr indexed_expr ^ "[" ^ string_of_expr idx ^ "]"
   | Match (e1, case_list) -> "match (" ^ string_of_expr e1 ^ ") {\n" ^ string_of_case_list case_list ^ "}"
   | Wildcard -> "_"
-  | EnumAccess (enum_name, enum_variant) -> enum_name ^ "." ^ enum_variant
-  | TypeCast (type_name, e) -> string_of_type type_name ^ "(" ^ string_of_expr e ^ ")"
+  | EnumAccess (enum_name, enum_variant) -> enum_name ^ "::" ^ enum_variant
+  | TypeCast (type_name, e) ->  string_of_expr e ^ " as " ^ string_of_type type_name
 and string_of_pattern = function
   | PLiteral ( num ) -> string_of_int num
   | PBoolLit true -> "true"
@@ -194,7 +194,7 @@ let rec string_of_block = function
     ^ String.concat "" (List.map string_of_block func_body)
     ^ "\n}\n"
   | BoundFunctionDefinition (rtyp, func_name, func_args, func_body, bound_type) -> 
-    "bind " ^ func_name  ^ "<" ^ string_of_type bound_type ^ ">" ^ "(" ^  string_of_func_args func_args ^ ") -> " ^ string_of_type rtyp ^ "{\n"
+    "bind " ^ func_name  ^ "<" ^ string_of_type bound_type ^ ">" ^ "(" ^  string_of_func_args func_args ^ ") -> " ^ string_of_type rtyp ^ " {\n"
     ^ String.concat "" (List.map string_of_block func_body)
     ^ "\n}\n"
   | UDTDef (udt_name, udt_members) -> 

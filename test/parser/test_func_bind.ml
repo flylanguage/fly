@@ -37,7 +37,7 @@ let tests =
           in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
-          let expected = "bind new<Person>(name: string, age: int, ) -> Person{\n\
+          let expected = "bind new<Person>(name: string, age: int, ) -> Person {\n\
                return Person{name: name, age: age, };\n\
                \n}\n"
           in
@@ -53,7 +53,9 @@ let tests =
           in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
-          let expected = ""
+          let expected = "bind info<Person>(self: Person, ) -> string {\n\
+               return self.name + self.age;\n\
+               \n}\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
@@ -65,7 +67,7 @@ let tests =
           in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
-          let expected = ""
+          let expected = "let p2 := Person::new(\"John\", 12);\nlet info: string = p.info();\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 

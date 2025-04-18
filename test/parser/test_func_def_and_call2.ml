@@ -32,12 +32,12 @@ let tests =
        ("test4"
           >:: fun _ ->
           let lexbuf =
-            Lexing.from_string "fun typecast(x: int) -> float {return float(x);}"
+            Lexing.from_string "fun typecast(x: int) -> float {return x as float;}"
           in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "fun typecast(x: int, ) -> float {\nreturn float(x);\n\n}\n"
+            "fun typecast(x: int, ) -> float {\nreturn x as float;\n\n}\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 
