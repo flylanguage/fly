@@ -70,7 +70,34 @@ let tests =
           let expected = "let p2 := Person::new(\"John\", 12);\np.info();\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
-
+        ; ("test6"
+          >:: fun _ ->
+          let lexbuf =
+            Lexing.from_string
+              "bind increase_age<Person>(self) {\n\
+               \tself.age += 1;\n\
+               }\n"
+          in
+          let program = Parser.program_rule Scanner.tokenize lexbuf in 
+          let actual = string_of_program program in
+          let expected = "bind increase_age<Person>(self: Person, ) -> () {\n\
+                          self.age += 1;\n\n}\n"
+          in
+          assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
+        ; ("test7"
+          >:: fun _ ->
+          let lexbuf =
+            Lexing.from_string
+              "bind change_age<Person>(self, new_age: int) {\n\
+               \tself.age = new_age;\n\
+               }\n"
+          in
+          let program = Parser.program_rule Scanner.tokenize lexbuf in 
+          let actual = string_of_program program in
+          let expected = "bind change_age<Person>(self: Person, new_age: int, ) -> () {\n\
+                          self.age = new_age;\n\n}\n"
+          in
+          assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ]
 ;;
 

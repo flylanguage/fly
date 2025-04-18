@@ -74,12 +74,12 @@ let tests =
        ; ("test7"
           >:: fun _ ->
           let lexbuf =
-            Lexing.from_string "fun nothing() {let mut a9 := [1, 2, 3];\nlet b9 := \"string\" :: a9;\n}"
+            Lexing.from_string "fun nothing() {let mut a9 := [1, 2, 3];\nlet b9 := \"string\" + a9;\n}"
           in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
           let expected =
-            "fun nothing() -> () {\nlet mut a9 := [1, 2, 3];\nlet b9 := \"string\" :: a9;\n\n}\n"
+            "fun nothing() -> () {\nlet mut a9 := [1, 2, 3];\nlet b9 := \"string\" + a9;\n\n}\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 

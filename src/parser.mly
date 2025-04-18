@@ -61,7 +61,7 @@ access_expr:
   | ID DCOLON func_call                 { UDTStaticAccess($1, $3) }
   | SELF DOT udt_access                 { UDTAccess ("self", $3) }
   | ID DCOLON ID                        { EnumAccess($1, $3) }
-  | expr10 LBRACKET expr10 RBRACKET     { Index($1, $3) }
+  | expr9 LBRACKET expr9 RBRACKET     { Index($1, $3) }
 
 udt_access:
   | ID                                 { UDTVariable($1) }
@@ -82,48 +82,44 @@ expr2:
  | expr3                  { $1 }
 
 expr3:
- | expr3 DCOLON expr4     { Binop($1, Cons, $3) }
+ | expr3 BEQ expr4        { Binop($1, Equal, $3) }
+ | expr3 NEQ expr4        { Binop($1, Neq, $3) }
  | expr4                  { $1 }
 
 expr4:
- | expr4 BEQ expr5        { Binop($1, Equal, $3) }
- | expr4 NEQ expr5        { Binop($1, Neq, $3) }
+ | expr4 GT expr5         { Binop($1, Greater, $3) }
+ | expr4 GEQ expr5        { Binop($1, Geq, $3) }
+ | expr4 LT expr5         { Binop($1, Less, $3) }
+ | expr4 LEQ expr5        { Binop($1, Leq, $3) }
  | expr5                  { $1 }
 
 expr5:
- | expr5 GT expr6         { Binop($1, Greater, $3) }
- | expr5 GEQ expr6        { Binop($1, Geq, $3) }
- | expr5 LT expr6         { Binop($1, Less, $3) }
- | expr5 LEQ expr6        { Binop($1, Leq, $3) }
+ | expr5 PLUS expr6       { Binop($1, Add, $3) }
+ | expr5 MINUS expr6      { Binop($1, Sub, $3) }
  | expr6                  { $1 }
 
 expr6:
- | expr6 PLUS expr7       { Binop($1, Add, $3) }
- | expr6 MINUS expr7      { Binop($1, Sub, $3) }
+ | expr6 TIMES expr7      { Binop($1, Mult, $3) }
+ | expr6 DIVIDE expr7     { Binop($1, Div, $3) }
+ | expr6 MODULO expr7     { Binop($1, Mod, $3) }
  | expr7                  { $1 }
 
 expr7:
- | expr7 TIMES expr8      { Binop($1, Mult, $3) }
- | expr7 DIVIDE expr8     { Binop($1, Div, $3) }
- | expr7 MODULO expr8     { Binop($1, Mod, $3) }
+ | expr7 EXPONENT expr8   { Binop($1, Exp, $3) }
  | expr8                  { $1 }
 
 expr8:
- | expr8 EXPONENT expr9   { Binop($1, Exp, $3) }
- | expr9                  { $1 }
+ | NOT expr8              { Unop($2, Not) }
+ | expr9                  { $1 } 
 
 expr9:
- | NOT expr9              { Unop($2, Not) }
- | expr10                  { $1 } 
-
-expr10:
  | literal_expr                              { $1 }
  | side_effect_expr                          { $1 }
  | access_expr                               { $1 }
  | udt_instance                              { $1 } (* Instantiating a user defined type *)
  | match_expr                                { $1 } (* match is an expression and should evaluate to something *)
  | func_call                                 { FunctionCall($1) }
- | expr10 AS typ                              { TypeCast($3, $1) }
+ | expr9 AS typ                              { TypeCast($3, $1) }
  | parens_expr                               { $1 }
  | ID                                        { Id($1) }
 
@@ -179,13 +175,21 @@ func_decl:
   }
   (* first argument to bound function must be self *)
   (* Need to differentiate between bound static and non-static functions*)
-| BIND ID LT typ GT LPAREN SELF formals_opt RPAREN ARROW typ LBRACE block_list RBRACE
+| BIND ID LT typ GT LPAREN SELF RPAREN ARROW typ LBRACE block_list RBRACE
   {
-    BoundFunctionDefinition($11, $2, ("self", $4) :: $8, $13, $4)
+    BoundFunctionDefinition($10, $2, [("self", $4)], $12, $4)
   }
-| BIND ID LT typ GT LPAREN SELF formals_opt RPAREN LBRACE block_list RBRACE (* Unit return type bound function*)
+| BIND ID LT typ GT LPAREN SELF COMMA formals RPAREN ARROW typ LBRACE block_list RBRACE
   {
-    BoundFunctionDefinition(Unit, $2, ("self", $4) :: $8, $11, $4)
+    BoundFunctionDefinition($12, $2, ("self", $4) :: $9, $14, $4)
+  }
+| BIND ID LT typ GT LPAREN SELF RPAREN LBRACE block_list RBRACE (* Unit return type bound function*)
+  {
+    BoundFunctionDefinition(Unit, $2, [("self", $4)], $10, $4)
+  }
+| BIND ID LT typ GT LPAREN SELF COMMA formals RPAREN LBRACE block_list RBRACE (* Unit return type bound function*)
+  {
+    BoundFunctionDefinition(Unit, $2, ("self", $4) :: $9, $12, $4)
   }
 | BIND ID LT typ GT LPAREN formals_opt RPAREN ARROW typ LBRACE block_list RBRACE (* This is a static function *)
   {
@@ -263,8 +267,8 @@ list_elements_opt:
   | list_elements             { $1 }
 
 list_elements:
-  | expr10                      {[$1]}
-  | expr10 COMMA list_elements  {$1 :: $3}
+  | expr9                      {[$1]}
+  | expr9 COMMA list_elements  {$1 :: $3}
 
 list:
   LBRACKET list_elements_opt RBRACKET             { List($2) }
@@ -284,7 +288,7 @@ udt_contents:
   | udt_element COMMA udt_contents     { $1 :: $3 }
 
 udt_element:
-  ID COLON expr10                       { ($1, $3) }
+  ID COLON expr9                       { ($1, $3) }
 
 control_flow:
   | if_stmt          { $1 }
