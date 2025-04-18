@@ -1,6 +1,7 @@
 (library
  (name fly_lib)
- (modules ast scanner parser))
+ (modules ast scanner parser irgen)
+ (libraries llvm))
 
 (executable
  (name fly)
