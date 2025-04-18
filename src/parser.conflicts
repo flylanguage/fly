@@ -1,0 +1,192 @@
+
+** Conflict (shift/reduce) in state 216.
+** Token involved: LBRACKET
+** This state is reached from program_rule after reading:
+
+expr
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program_rule 
+block_list EOF 
+(?)
+
+** In state 216, looking ahead at LBRACKET, shifting is permitted
+** because of the following sub-derivation:
+
+block block_list 
+expr 
+access_expr 
+expr . LBRACKET expr RBRACKET 
+
+** In state 216, looking ahead at LBRACKET, reducing production
+** block -> expr
+** is permitted because of the following sub-derivation:
+
+block block_list // lookahead token appears because block_list can begin with LBRACKET
+expr . 
+
+** Conflict (shift/reduce/reduce) in state 173.
+** Tokens involved: LPAREN INCR DECR DCOLON
+** The following explanations concentrate on token LPAREN.
+** This state is reached from program_rule after reading:
+
+ID
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program_rule 
+block_list EOF 
+(?)
+
+** In state 173, looking ahead at LPAREN, shifting is permitted
+** because of the following sub-derivation:
+
+block block_list 
+expr 
+func_call 
+ID . LPAREN list_elements_opt RPAREN 
+
+** In state 173, looking ahead at LPAREN, reducing production
+** literal -> ID
+** is permitted because of the following sub-derivation:
+
+block block_list // lookahead token appears because block_list can begin with LPAREN
+expr // lookahead token is inherited
+literal_expr // lookahead token is inherited
+literal // lookahead token is inherited
+ID . 
+
+** In state 173, looking ahead at LPAREN, reducing production
+** typ -> ID
+** is permitted because of the following sub-derivation:
+
+block block_list 
+expr 
+typ LPAREN expr RPAREN // lookahead token appears
+ID . 
+
+** Conflict (shift/reduce) in state 126.
+** Token involved: LBRACKET
+** This state is reached from program_rule after reading:
+
+NOT expr
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program_rule 
+block_list EOF 
+(?)
+
+** In state 126, looking ahead at LBRACKET, shifting is permitted
+** because of the following sub-derivation:
+
+block block_list 
+expr 
+NOT expr 
+    access_expr 
+    expr . LBRACKET expr RBRACKET 
+
+** In state 126, looking ahead at LBRACKET, reducing production
+** expr -> NOT expr
+** is permitted because of the following sub-derivation:
+
+block block_list // lookahead token appears because block_list can begin with LBRACKET
+expr // lookahead token is inherited
+NOT expr . 
+
+** Conflict (shift/reduce) in state 76.
+** Tokens involved: TIMES PLUS OR NEQ MODULO MINUS LT LEQ LBRACKET GT GEQ EXPONENT DIVIDE DCOLON BEQ AND
+** The following explanations concentrate on token TIMES.
+** This state is reached from program_rule after reading:
+
+expr binop expr
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program_rule 
+block_list EOF 
+block block_list 
+expr 
+(?)
+
+** In state 76, looking ahead at TIMES, shifting is permitted
+** because of the following sub-derivation:
+
+expr binop expr 
+           expr binop expr 
+                . TIMES 
+
+** In state 76, looking ahead at TIMES, reducing production
+** expr -> expr binop expr
+** is permitted because of the following sub-derivation:
+
+expr binop expr // lookahead token appears because binop can begin with TIMES
+expr binop expr . 
+
+** Conflict (shift/reduce) in state 35.
+** Tokens involved: LPAREN INCR DECR DCOLON
+** The following explanations concentrate on token LPAREN.
+** This state is reached from program_rule after reading:
+
+RETURN ID
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program_rule 
+block_list EOF 
+block block_list 
+control_flow 
+RETURN expr SEMI 
+       (?)
+
+** In state 35, looking ahead at LPAREN, shifting is permitted
+** because of the following sub-derivation:
+
+func_call 
+ID . LPAREN list_elements_opt RPAREN 
+
+** In state 35, looking ahead at LPAREN, reducing production
+** typ -> ID
+** is permitted because of the following sub-derivation:
+
+typ LPAREN expr RPAREN // lookahead token appears
+ID . 
+
+** Conflict (shift/reduce) in state 25.
+** Token involved: LPAREN
+** This state is reached from program_rule after reading:
+
+SELF DOT ID
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program_rule 
+block_list EOF 
+(?)
+
+** In state 25, looking ahead at LPAREN, shifting is permitted
+** because of the following sub-derivation:
+
+block block_list 
+expr 
+access_expr 
+SELF DOT udt_access 
+         func_call 
+         ID . LPAREN list_elements_opt RPAREN 
+
+** In state 25, looking ahead at LPAREN, reducing production
+** udt_access -> ID
+** is permitted because of the following sub-derivation:
+
+block block_list // lookahead token appears because block_list can begin with LPAREN
+expr // lookahead token is inherited
+access_expr // lookahead token is inherited
+SELF DOT udt_access // lookahead token is inherited
+         ID . 
