@@ -63,11 +63,11 @@ let tests =
           >:: fun _ ->
           let lexbuf =
             Lexing.from_string
-              "let p2 := Person::new(\"John\", 12);\nlet info: string = p.info();\n"
+              "let p2 := Person::new(\"John\", 12);\np.info();\n"
           in
           let program = Parser.program_rule Scanner.tokenize lexbuf in 
           let actual = string_of_program program in
-          let expected = "let p2 := Person::new(\"John\", 12);\nlet info: string = p.info();\n"
+          let expected = "let p2 := Person::new(\"John\", 12);\np.info();\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
 

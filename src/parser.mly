@@ -27,8 +27,7 @@ open Ast
 
 %right EQUAL PLUS_ASSIGN MINUS_ASSIGN MULT_ASSIGN DIV_ASSIGN WALRUS
 %left DCOLON
-%nonassoc ENUMACCESS
-
+%nonassoc LOWEST
 
 %%
 
@@ -60,9 +59,9 @@ side_effect_expr:
 
 access_expr:
   | ID DOT udt_access                   { UDTAccess($1, $3) }
-  | ID DCOLON func_call                 { UDTStaticAccess($1, $3) }
+  | ID DCOLON func_call  %prec LOWEST   { UDTStaticAccess($1, $3) }
   | SELF DOT udt_access                 { UDTAccess ("self", $3) }
-  | ID DCOLON ID %prec ENUMACCESS       { EnumAccess($1, $3) }
+  | ID DCOLON ID                        { EnumAccess($1, $3) }
   | expr10 LBRACKET expr10 RBRACKET     { Index($1, $3) }
 
 udt_access:

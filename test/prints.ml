@@ -237,7 +237,7 @@ let rec string_of_block = function
   | Continue -> "continue;"
   | ReturnUnit -> "return;\n"
   | ReturnVal (e) -> "return " ^ string_of_expr e ^ ";\n"
-  | Expr (e) -> string_of_expr e
+  | Expr (e) -> string_of_expr e ^ ";\n"
 
 
 let string_of_program fdecl = String.concat "" (List.map string_of_block fdecl.body)
