@@ -1,6 +1,6 @@
 (library
  (name fly_lib)
- (modules ast scanner parser))
+ (modules ast scanner parser semant sast))
 
 (executable
  (name fly)
