@@ -21,9 +21,6 @@ type envs = {
   enum_env: enum_def StringMap.t;
 }
 
-(* ref is ocaml syntax for pointers. See here for more: https://cs3110.github.io/textbook/chapters/mut/refs.html*)
-(* Char.code 'a' returns the ASCII code of 'a' *)
-(* type_variable is used for variables whose types are not explicity specified for the user, and require inference *)
 let rec find_var var_name env =
   try StringMap.find var_name env 
   with Not_found -> 
@@ -81,6 +78,41 @@ and enum_dec_helper enum_name enum_variants envs =
   else
     StringMap.add enum_name enum_variants envs.udt_env
 
+and check_binop e1 binop e2 envs special_blocks = 
+  let t1, e1' = check_expr e1 envs special_blocks in
+  let t2, e2' = check_expr e2 envs special_blocks in
+  let rtype = get_binop_return_type t1 binop t2 in
+  (rtype, SBinop((t1, e1'), binop, (t2, e2')))
+
+and get_binop_return_type t1 binop t2 = 
+  match binop with
+  | Add | Sub | Mult | Div | Mod | Exp -> (
+    match (t1, t2) with
+    | Int, Int -> Int
+    | Float, Float -> Float
+    _, _ -> raise (Failure("Invalid types for arithmetic operation"))
+  )
+  | Equal | Neq -> (
+    if t1 = t2 then Bool
+    else raise (Failure("Invalid types for checking equality"))
+  )
+  | Less | Leq | Greater | Geq -> (
+    match (t1, t2) with
+    | Int, Int -> Bool
+    | Float, Float -> Bool
+    _, _ -> raise (Failure("Invalid types for checking equality"))
+  )
+  | And | Or  -> (
+    match (t1, t2) with
+    | Bool, Bool -> Bool
+    | _, _ raise (Failure("Invalid types for logical operator"))
+  )
+  | Cons -> (
+    match (t1, t2) with
+    | t1', List t2' when t1' = t2' -> List t1' 
+    | _, _ -> raise (Failure ("Invalid types for appending to list"))
+  )
+
 and check_expr expr envs special_blocks = 
   match expr with 
   | Literal i -> (Int, SLiteral i)
@@ -92,26 +124,26 @@ and check_expr expr envs special_blocks =
   | Id id_name -> 
     let t = find_var id_name envs.var_env in
     (t, SId id_name)
-
   | Tuple expr_list -> 
     let sexpr_list = List.map (fun e -> check_expr e envs special_blocks) expr_list in 
     let (typs, sexprs) = List.split sexpr_list in
     (Tuple typs, STuple sexpr_list)
 
-  | Binop (e1, binop, e2) -> 
-    let et1 = check_expr e1 envs special_blocks in
-    let et2 = check_expr e2 envs special_blocks in
-    let new_type = gen_new_type () in
-    (new_type, SBinop (et1, binop, et2))
+  | Binop (e1, binop, e2) -> check_binop e1 binop e2 envs special_blocks
 
   | Unop (e, unop) -> 
-    let et = check_expr e envs special_blocks in
-    let new_type = gen_new_type () in
-    (new_type, SUnop (et, unop))
+    let t, e' = check_expr e envs special_blocks in
+    if t <> Bool then
+      raise (Failure ("Trying to do NOT on a non-boolean expression!"))
+    else
+      (Bool, SUnop((t, e')))
 
   | UnopSideEffect (id_name, side_effect_op) -> 
     let typ = find_var id_name envs.var_env in
-    (typ, SUnopSideEffect (id_name, side_effect_op))
+    if typ = Int | typ = Float then
+      (typ, SUnopSideEffect (id_name, side_effect_op))
+    else
+      raise (Failure ("Trying to do increment/decrement on a non-numeric expression!"))
 
   | FunctionCall (func_name, func_args) -> 
     let sfunc_args = List.map (fun arg -> check_expr arg envs special_blocks) func_args in
@@ -146,7 +178,6 @@ and check_expr expr envs special_blocks =
           (new_type, SUDTAccess (id_name, SUDTFunction sfunc_args))
       end
     else  
-      let new_type = gen_new_type () in
       begin match udt_accessed_member with
       | UDTVariable member_name ->
           (new_type, SUDTAccess (id_name, SUDTVariable member_name))
@@ -157,7 +188,6 @@ and check_expr expr envs special_blocks =
 
   | UDTStaticAccess (udt_name, (func_name, args)) -> 
     let sfunc_args = List.map (fun arg -> check_expr arg envs special_blocks) args in
-    let new_type = gen_new_type () in
     (new_type, SUDTStaticAccess (udt_name, func_name, sfunc_args))
 
   | EnumAccess (enum_name, variant) -> 
@@ -167,13 +197,11 @@ and check_expr expr envs special_blocks =
   | Index (e1, e2) -> 
     let et1 = check_expr e1 envs special_blocks in
     let et2 = check_expr e2 envs special_blocks in
-    let new_type = gen_new_type () in
     (new_type, SIndex (et1, et2))
 
   | List expr_list ->
     let sexpr_list = List.map (fun e -> check_expr e envs special_blocks) expr_list in
     let (typs, sexprs) = List.split sexpr_list in
-    let list_type = gen_new_type () in
     (List list_type, SList sexprs)
 
   | Match (matched_expr, match_arms) -> 
@@ -183,12 +211,10 @@ and check_expr expr envs special_blocks =
       let s_arm_expr = check_expr arm_expr envs updated_special_blocks in
       (pattern, s_arm_expr)
     ) match_arms in
-    let result_type = gen_new_type () in
     (result_type, SMatch (s_matched, annotated_arms))
 
   | Wildcard -> 
     if StringSet.mem "wildcard" special_blocks then
-      let wildcard_type = gen_new_type () in
       (wildcard_type, SWildcard)
     else
       raise (Failure ("Unallowed wildcard"))
