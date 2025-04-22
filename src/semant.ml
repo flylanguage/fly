@@ -161,12 +161,12 @@ and check_expr expr envs special_blocks =
 
   | Tuple expr_list -> 
     let sexpr_list = List.map (fun e -> check_expr e envs special_blocks) expr_list in 
-    let (typs, sexprs) = List.split sexpr_list in
+    let (typs, _) = List.split sexpr_list in
     (Tuple typs, STuple sexpr_list)
 
   | List expr_list ->
     let sexpr_list = List.map (fun e -> check_expr e envs special_blocks) expr_list in
-    let (typs, sexprs) = List.split sexpr_list in
+    let (typs, _) = List.split sexpr_list in
     begin match typs with 
     | [] -> raise (Failure("Cannot infer type on empty list")) (* TODO: Allow empty lists *)
     | first_typ :: rest -> 
@@ -288,12 +288,11 @@ and check_expr expr envs special_blocks =
         else
           raise (Failure ("All match arms must return the same type!"))
     end
-(* TODO: What should the type of Wildcard be?
   | Wildcard -> 
     if StringSet.mem "wildcard" special_blocks then
-      (wildcard_type, SWildcard)
+      (Unit, SWildcard)
     else
-      raise (Failure ("Unallowed wildcard")) *)
+      raise (Failure ("Unallowed wildcard"))
 
   | TypeCast (target_typ, e) ->
     (* There is some really weird type casting allowed. Might need further discussion *)
@@ -327,7 +326,7 @@ and check_block block envs special_blocks =
   match block with
   | MutDeclTyped (var_name, t, e) -> 
     let annotated_e = check_expr e envs special_blocks in
-    let (typ, sexpr) =  annotated_e in
+    let (typ, _) =  annotated_e in
     if typ <> t then
       raise (Failure (var_name ^ " is supposed to have type " ^ string_of_type t ^ " but expression has type " ^ string_of_type typ))
     else
@@ -337,14 +336,14 @@ and check_block block envs special_blocks =
 
   | MutDeclInfer (var_name, e) -> 
     let annotated_e = check_expr e envs special_blocks in
-    let (typ, sexpr) = annotated_e in
+    let (typ, _) = annotated_e in
     let new_var_env = var_dec_helper var_name typ envs in
     let updated_envs = { envs with var_env = new_var_env } in
     (updated_envs, SMutDeclInfer(var_name, annotated_e))
 
   | DeclTyped (var_name, t, e) -> 
     let annotated_e = check_expr e envs special_blocks in
-    let (typ, sexpr) =  annotated_e in
+    let (typ, _) =  annotated_e in
     if typ <> t then
       raise (Failure (var_name ^ " is supposed to have type " ^ string_of_type t ^ " but expression has type " ^ string_of_type typ))
     else
@@ -354,7 +353,7 @@ and check_block block envs special_blocks =
     
   | DeclInfer (var_name, e) -> 
     let annotated_e = check_expr e envs special_blocks in
-    let (typ, sexpr) = annotated_e in
+    let (typ, _) = annotated_e in
     let new_var_env = var_dec_helper var_name typ envs in
     let updated_envs = { envs with var_env = new_var_env } in
     (updated_envs, SDeclInfer(var_name, annotated_e))
@@ -421,7 +420,7 @@ and check_block block envs special_blocks =
       raise (Failure("Condition must be a boolean!"))
     else
       let checked_body = check_block_list body envs special_blocks in
-      let envs_other_arm, checked_other_arm = check_block other_arm envs special_blocks in
+      let _, checked_other_arm = check_block other_arm envs special_blocks in
       ( envs, SIfNonEnd (checked_condition, checked_body, checked_other_arm ))
 
   | ElifNonEnd (condition, body, other_arm) ->
@@ -431,7 +430,7 @@ and check_block block envs special_blocks =
       raise (Failure("Condition must be a boolean!"))
     else
       let checked_body = check_block_list body envs special_blocks in
-      let envs_other_arm, checked_other_arm = check_block other_arm envs special_blocks in
+      let _, checked_other_arm = check_block other_arm envs special_blocks in
       ( envs, SElifNonEnd (checked_condition, checked_body, checked_other_arm ))
 
   | ElifEnd (condition, body) ->
@@ -453,15 +452,15 @@ and check_block block envs special_blocks =
     let checked_body = check_block_list body envs updated_special_blocks in
     (envs, SWhile (checked_condition, checked_body))
 
-  | For (index_var, iterator, body) ->
+  | For (_, iterator, body) ->
     let checked_iterator = check_expr iterator envs special_blocks in
-    let t, iterator_expr = checked_iterator in
+    let t, _ = checked_iterator in
     begin match t with 
-    | List x -> 
+    | List _ -> 
       let updated_special_blocks = StringSet.add "break" (StringSet.add "continue" (StringSet.add "return" special_blocks)) in
       let checked_body = check_block_list body envs updated_special_blocks in
       (envs, SWhile (checked_iterator, checked_body)) 
-    | Tuple typ_list -> 
+    | Tuple _ -> 
       let updated_special_blocks = StringSet.add "break" (StringSet.add "continue" (StringSet.add "return" special_blocks)) in
       let checked_body = check_block_list body envs updated_special_blocks in
       (envs, SWhile (checked_iterator, checked_body)) 
