@@ -79,7 +79,7 @@ and enum_dec_helper enum_name enum_variants envs =
   if List.exists (fun x -> x) env_checks then
     raise (Failure(enum_name ^ "already exists!"))
   else
-    StringMap.add enum_name enum_variants envs.udt_env
+    StringMap.add enum_name enum_variants envs.enum_env
 
 and check_binop e1 binop e2 envs special_blocks = 
   let t1, e1' = check_expr e1 envs special_blocks in
@@ -228,30 +228,68 @@ and check_expr expr envs special_blocks =
     (Int, SEnumAccess (enum_name, variant))
 
   | Index (e1, e2) -> 
-    let et1 = check_expr e1 envs special_blocks in
-    let et2 = check_expr e2 envs special_blocks in
-    (new_type, SIndex (et1, et2))
-
+    let t1, e1' = check_expr e1 envs special_blocks in
+    let t2, e2' = check_expr e2 envs special_blocks in
+    begin match t1 with
+    | List x -> (x, SIndex ((t1, e1'), (t2, e2')))
+    (* This is a very weird edge case. We need to find the type of member that was accessed.
+    But we can't compute the actual index the user wants in this phase??? *)
+    (* | Tuple typ_list -> 
+      if List.length typ_list <= 
+      (y, SIndex ((t1, e1'), (t2, e2'))) *)
+    | _ -> raise (Failure("Trying to index into an non-indexable expression"))
+    end
 
 
   | Match (matched_expr, match_arms) -> 
     let s_matched = check_expr matched_expr envs special_blocks in
-    let annotated_arms = List.map (fun (pattern, arm_expr) ->
+    let checked_arms = List.map (fun (pattern, arm_expr) ->
       let updated_special_blocks = StringSet.add "wildcard" special_blocks in
       let s_arm_expr = check_expr arm_expr envs updated_special_blocks in
       (pattern, s_arm_expr)
     ) match_arms in
-    (result_type, SMatch (s_matched, annotated_arms))
-
+    let _, sexpr_list = List.split checked_arms in
+    let typs, _ = List.split sexpr_list in
+    begin match typs with
+      | [] -> raise (Failure("Cannot infer type on empty match expression")) (* This should never run?*)
+      | first_typ :: rest -> 
+        if List.for_all (fun x -> x = first_typ) rest then
+          (first_typ, SMatch (s_matched, checked_arms))
+        else
+          raise (Failure ("All match arms must return the same type!"))
+    end
+(* TODO: What should the type of Wildcard be?
   | Wildcard -> 
     if StringSet.mem "wildcard" special_blocks then
       (wildcard_type, SWildcard)
     else
-      raise (Failure ("Unallowed wildcard"))
+      raise (Failure ("Unallowed wildcard")) *)
 
   | TypeCast (target_typ, e) ->
-    (* we can throw away the type returned in this scenario because we know target_typ is the exact type we are trying to cast to *)
-    let (_, sexpr) = check_expr e envs special_blocks in
+    (* There is some really weird type casting allowed. Might need further discussion *)
+    let t, e' = check_expr e envs special_blocks in
+    let sexpr = (t, e') in
+    let _ =  
+      begin match (t, target_typ) with (* we can throw away the result of the match because we have target_typ *)
+      | Int, Int -> Int
+      | Int, Float -> Float
+      | Int, Bool -> Bool
+      | Int, String -> String
+      | Int, Char -> Char
+      | Float, Int -> Int
+      | Float, Bool -> Bool
+      | Float, String -> String
+      | Bool, Int -> Int
+      | Bool, Float -> Float
+      | Bool, String -> String
+      | Char, Int -> Int
+      | Char, String -> String
+      | String, Int -> Int
+      | String, Bool -> Bool
+      | String, Char -> Char
+      | _, _ -> raise (Failure("Invalid type casting"))
+      end
+    in
     (target_typ, STypeCast (target_typ, sexpr))
 
 
@@ -261,7 +299,7 @@ and check_block block envs special_blocks =
     let annotated_e = check_expr e envs special_blocks in
     let (typ, sexpr) =  annotated_e in
     if typ <> t then
-      raise (Failure (var_name ^ " is supposed to have type " ^ t ^ " but expression has type " ^ typ))
+      raise (Failure (var_name ^ " is supposed to have type " ^ string_of_type t ^ " but expression has type " ^ string_of_type typ))
     else
       let new_var_env = var_dec_helper var_name t envs in
       let updated_envs = { envs with var_env = new_var_env } in
@@ -278,7 +316,7 @@ and check_block block envs special_blocks =
     let annotated_e = check_expr e envs special_blocks in
     let (typ, sexpr) =  annotated_e in
     if typ <> t then
-      raise (Failure (var_name ^ " is supposed to have type " ^ t ^ " but expression has type " ^ typ))
+      raise (Failure (var_name ^ " is supposed to have type " ^ string_of_type t ^ " but expression has type " ^ string_of_type typ))
     else
       let new_var_env = var_dec_helper var_name t envs in
       let updated_envs = { envs with var_env = new_var_env } in
