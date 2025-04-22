@@ -209,8 +209,19 @@ and check_expr expr envs special_blocks =
 
 
   | UDTStaticAccess (udt_name, (func_name, args)) -> 
-    let sfunc_args = List.map (fun arg -> check_expr arg envs special_blocks) args in
-    (new_type, SUDTStaticAccess (udt_name, func_name, sfunc_args))
+    let udt_typ = find_udt udt_name envs.udt_env in
+    begin match (List.find_opt (fun x -> x = func_name) udt_typ.methods) with
+      | Some _ -> 
+        let func_sig = find_func func_name envs.func_env in
+        let _, def_arg_types = List.split func_sig.args in
+        let sexpr_list = List.map (fun e -> check_expr e envs special_blocks) args in
+        let arg_types, _  = List.split sexpr_list in
+        if arg_types = def_arg_types then
+          (func_sig.rtyp, SUDTStaticAccess(udt_name, (func_name, sexpr_list)))
+        else
+          raise (Failure("Incorrect types passed to this method"))
+      | None -> raise (Failure((func_name ^ "is not a method bound to " ^ udt_name)))
+    end
 
   | EnumAccess (enum_name, variant) -> 
     let t = find_enum enum_name envs.enum_env in
