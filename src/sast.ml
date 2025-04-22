@@ -13,7 +13,7 @@ and sx =
   | SBinop of sexpr * op * sexpr
   | SUnop of sexpr * op (* this is for not *)
   | SUnopSideEffect of string * op (* this is for postincr, postdecr, preincr, postdecr *)
-  | SFunctionCall of func
+  | SFunctionCall of sfunc
   | SUDTInstance of string * skv_list
   | SUDTAccess of string * sudt_access
   | SUDTStaticAccess of string * sfunc
