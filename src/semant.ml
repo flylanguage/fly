@@ -15,7 +15,7 @@ type udt_def = {
   methods: string list;
 }
 
-type enum_def = (string * int) list 
+type enum_def = enum_variant list
 
 type envs = {
   var_env:  typ StringMap.t;
@@ -336,6 +336,7 @@ and check_block block envs special_blocks =
 
   (* | FunctionDefinition (rtyp, func_name, func_args, func_body) -> 
     
+    
   | BoundFunctionDefinition (rtyp, func_name, func_args, func_body, bound_type) ->  *)
 
   | EnumDeclaration (enum_name, enum_variants) -> 
@@ -344,75 +345,103 @@ and check_block block envs special_blocks =
     (updated_envs, SEnumDeclaration(enum_name, enum_variants) )
 
   | UDTDef (udt_name, udt_members) -> 
-    let new_udt_env = udt_def_helper udt_name udt_members envs in
+    let initial_udt_def = {members = udt_members; methods = []} in (* follow type definition udt_def above *)
+    let new_udt_env = udt_def_helper udt_name initial_udt_def envs in
     let updated_envs = { envs with udt_env = new_udt_env } in
     (updated_envs, SUDTDef(udt_name, udt_members))
 
   | IfEnd (condition, body) -> 
-    let annotated_condition = check_expr condition envs special_blocks in
-    let annotated_body = check_block_list body envs special_blocks in
-    ( envs, SIfEnd (annotated_condition, annotated_body ))
+    let checked_condition = check_expr condition envs special_blocks in
+    let t, _ = checked_condition in
+    if t <> Bool then
+      raise (Failure("Condition must be a boolean!"))
+    else
+      let checked_body = check_block_list body envs special_blocks in
+      ( envs, SIfEnd (checked_condition, checked_body ))
 
   | IfNonEnd (condition, body, other_arm) -> 
-    let annotated_condition = check_expr condition envs special_blocks in
-    let annotated_body = check_block_list body envs special_blocks in
-    let annotated_other_arm = check_block other_arm envs special_blocks in
-    ( envs, SIfEnd (annotated_condition, annotated_body, annotated_other_arm ))
+    let checked_condition = check_expr condition envs special_blocks in
+    let t, _ =  checked_condition in
+    if t <> Bool then
+      raise (Failure("Condition must be a boolean!"))
+    else
+      let checked_body = check_block_list body envs special_blocks in
+      let envs_other_arm, checked_other_arm = check_block other_arm envs special_blocks in
+      ( envs, SIfNonEnd (checked_condition, checked_body, checked_other_arm ))
 
   | ElifNonEnd (condition, body, other_arm) ->
-    let annotated_condition = check_expr condition envs special_blocks in
-    let annotated_body = check_block_list body envs special_blocks in
-    let annotated_other_arm = check_block other_arm envs special_blocks in
-    ( envs, SElifNonEnd (annotated_condition, annotated_body, annotated_other_arm ))
+    let checked_condition = check_expr condition envs special_blocks in
+    let t, _ = checked_condition in
+    if t <> Bool then
+      raise (Failure("Condition must be a boolean!"))
+    else
+      let checked_body = check_block_list body envs special_blocks in
+      let envs_other_arm, checked_other_arm = check_block other_arm envs special_blocks in
+      ( envs, SElifNonEnd (checked_condition, checked_body, checked_other_arm ))
 
   | ElifEnd (condition, body) ->
-    let annotated_condition = check_expr condition envs special_blocks in
-    let annotated_body = check_block_list body envs special_blocks in
-    ( envs, SElifEnd (annotated_condition, annotated_body))
+    let checked_condition = check_expr condition envs special_blocks in
+    let t, _ = checked_condition in
+    if t <> Bool then
+      raise (Failure("Condition must be a boolean!"))
+    else
+      let checked_body = check_block_list body envs special_blocks in
+      ( envs, SElifEnd (checked_condition, checked_body))
 
   | ElseEnd (body) -> 
-    let annotated_body = check_block_list body envs special_blocks in
-    ( envs, SElseEnd (annotated_body))
+    let checked_body = check_block_list body envs special_blocks in
+    ( envs, SElseEnd (checked_body))
 
   | While (condition, body) -> 
-    let annotated_condition = check_expr condition envs special_blocks in
+    let checked_condition = check_expr condition envs special_blocks in
     let updated_special_blocks = StringSet.add "break" (StringSet.add "continue" (StringSet.add "return" special_blocks)) in
-    let annotated_body = check_block_list body envs updated_special_blocks in
-    (envs, SWhile (annotated_condition, annotated_body))
+    let checked_body = check_block_list body envs updated_special_blocks in
+    (envs, SWhile (checked_condition, checked_body))
 
   | For (index_var, iterator, body) ->
-    let annotated_condition = check_expr condition envs special_blocks in
-    let updated_special_blocks = StringSet.add "break" (StringSet.add "continue" (StringSet.add "return" special_blocks)) in
-    let annotated_body = check_block_list body envs updated_special_blocks in
-    (envs, SWhile (annotated_condition, annotated_body)) 
-  
+    let checked_iterator = check_expr iterator envs special_blocks in
+    let t, iterator_expr = checked_iterator in
+    begin match t with 
+    | List x -> 
+      let updated_special_blocks = StringSet.add "break" (StringSet.add "continue" (StringSet.add "return" special_blocks)) in
+      let checked_body = check_block_list body envs updated_special_blocks in
+      (envs, SWhile (checked_iterator, checked_body)) 
+    | Tuple typ_list -> 
+      let updated_special_blocks = StringSet.add "break" (StringSet.add "continue" (StringSet.add "return" special_blocks)) in
+      let checked_body = check_block_list body envs updated_special_blocks in
+      (envs, SWhile (checked_iterator, checked_body)) 
+    | _ ->  raise (Failure("Unable to iterate over a non-iterable!"))
+    end
+
   | Break -> 
-    if StringSet.mem "break" then
+    if StringSet.mem "break" special_blocks then
       (envs, SBreak)
     else
       raise (Failure ("Unallowed break statement")) 
 
   | Continue ->
-    if StringSet.mem "continue" then
+    if StringSet.mem "continue" special_blocks then
       (envs, SContinue)
     else
       raise (Failure ("Unallowed continue statement")) 
 
   | ReturnUnit ->     
-    if StringSet.mem "return" then
+    if StringSet.mem "return" special_blocks then
       (envs, SReturnUnit)
     else
       raise (Failure ("Unallowed return statement")) 
 
   | ReturnVal (return_expr) -> 
-    if StringSet.mem "return" then
+    if StringSet.mem "return" special_blocks then
       (envs, SReturnVal (check_expr return_expr envs special_blocks))
     else
       raise (Failure ("Unallowed return statement")) 
 
-  | Expr (expr) -> SExpr(check_expr envs special_blocks)
+  | Expr (expr) -> 
+    let checked_expr = check_expr expr envs special_blocks in
+    (envs, SExpr(checked_expr))
 
-let rec check_block_list block_list envs special_blocks =
+and check_block_list block_list envs special_blocks =
   match block_list with 
   | [] -> []
   | curr_block :: rest -> 
@@ -434,4 +463,4 @@ let check block_list =
    For example, a return is only allowed inside a function defintion and a break is only allowed inside a loop 
    I should really come up with a better name for this *)
   let special_blocks = StringSet.empty in
-  check_block_list initial_envs special_blocks
+  check_block_list block_list initial_envs special_blocks
