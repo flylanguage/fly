@@ -55,6 +55,19 @@ and var_dec_helper var_name t envs =
   else
     StringMap.add var_name t envs.var_env
 
+and func_def_helper func_name args rtyp envs = 
+  let open StringMap in 
+  let env_checks = [
+    mem func_name envs.var_env;
+    mem func_name envs.func_env;
+    mem func_name envs.udt_env;
+    mem func_name envs.enum_env;
+  ] in
+  if List.exists (fun x -> x) env_checks then
+    raise (Failure(func_name ^ "already exists!"))
+  else
+    StringMap.add func_name { args = args; rtyp = rtyp }  envs.func_env
+
 and udt_def_helper udt_name udt_members envs =
   let open StringMap in 
   let env_checks = [
@@ -80,6 +93,23 @@ and enum_dec_helper enum_name enum_variants envs =
     raise (Failure(enum_name ^ "already exists!"))
   else
     StringMap.add enum_name enum_variants envs.enum_env
+
+and add_func_args func_args envs = 
+  match func_args with
+  | [] -> envs.var_env
+  | first_arg :: rest -> 
+    let new_var_env = var_dec_helper (fst first_arg) (snd first_arg) envs in
+    let updated_envs = { envs with var_env = new_var_env } in
+    add_func_args rest updated_envs
+
+and add_bound_func_def func_name udt_name envs =
+  let udt_exists = StringMap.find_opt udt_name envs.udt_env in
+  match udt_exists with
+  | Some udt_info -> 
+    let updated_udt_info = { udt_info with methods = func_name :: udt_info.methods } in
+    StringMap.add udt_name updated_udt_info envs.udt_env
+
+  | None -> raise (Failure("Trying to bind to a non-existent type!"))
 
 and check_binop e1 binop e2 envs special_blocks = 
   let t1, e1' = check_expr e1 envs special_blocks in
@@ -334,10 +364,35 @@ and check_block block envs special_blocks =
     let annotated_e2 = check_expr e2 envs special_blocks in
     (envs, SAssign(annotated_e1, op, annotated_e2))
 
-  (* | FunctionDefinition (rtyp, func_name, func_args, func_body) -> 
-    
-    
-  | BoundFunctionDefinition (rtyp, func_name, func_args, func_body, bound_type) ->  *)
+  | FunctionDefinition (rtyp, func_name, func_args, func_body) -> 
+    let new_func_env = func_def_helper func_name func_args rtyp envs in (* add function name to environment *)
+    let updated_envs1 = { envs with func_env = new_func_env } in
+    let new_var_env =  add_func_args func_args updated_envs1 in (* add function arguments to environment *)
+    let updated_envs2 = { updated_envs1 with var_env = new_var_env } in
+    let updated_special_blocks = 
+      if rtyp = Unit then
+        StringSet.add "ReturnUnit" special_blocks
+      else
+        StringSet.add "ReturnVal" special_blocks
+      in
+    let checked_func_body = check_block_list func_body updated_envs2 updated_special_blocks in
+    (updated_envs2, SFunctionDefinition(rtyp, func_name, func_args, checked_func_body))
+
+  | BoundFunctionDefinition (rtyp, func_name, func_args, func_body, bound_type) -> 
+    let new_func_env = func_def_helper func_name func_args rtyp envs in (* add function name to environment *)
+    let updated_envs1 = { envs with func_env = new_func_env } in
+    let new_var_env =  add_func_args func_args updated_envs1 in (* add function arguments to environment *)
+    let updated_envs2 = { updated_envs1 with var_env = new_var_env } in
+    let updated_special_blocks = 
+      if rtyp = Unit then
+        StringSet.add "ReturnUnit" special_blocks
+      else
+        StringSet.add "ReturnVal" special_blocks
+      in
+    let checked_func_body = check_block_list func_body updated_envs2 updated_special_blocks in
+    let new_udt_env = add_bound_func_def func_name (string_of_type bound_type) envs in
+    let updated_envs3 = { updated_envs2 with udt_env = new_udt_env } in
+    (updated_envs3, SFunctionDefinition(rtyp, func_name, func_args, checked_func_body))
 
   | EnumDeclaration (enum_name, enum_variants) -> 
     let new_enum_env = enum_dec_helper enum_name enum_variants envs in
