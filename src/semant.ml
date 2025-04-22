@@ -10,7 +10,10 @@ type func_sig = {
   rtyp: typ;
 }
 
-type udt_def = (string * typ) list
+type udt_def = {
+  members: (string * typ) list;
+  methods: string list;
+}
 
 type enum_def = (string * int) list 
 
@@ -90,7 +93,7 @@ and get_binop_return_type t1 binop t2 =
     match (t1, t2) with
     | Int, Int -> Int
     | Float, Float -> Float
-    _, _ -> raise (Failure("Invalid types for arithmetic operation"))
+    | _, _ -> raise (Failure("Invalid types for arithmetic operation"))
   )
   | Equal | Neq -> (
     if t1 = t2 then Bool
@@ -100,18 +103,19 @@ and get_binop_return_type t1 binop t2 =
     match (t1, t2) with
     | Int, Int -> Bool
     | Float, Float -> Bool
-    _, _ -> raise (Failure("Invalid types for checking equality"))
+    | _, _ -> raise (Failure("Invalid types for checking equality"))
   )
   | And | Or  -> (
     match (t1, t2) with
     | Bool, Bool -> Bool
-    | _, _ raise (Failure("Invalid types for logical operator"))
+    | _, _ -> raise (Failure("Invalid types for logical operator"))
   )
   | Cons -> (
     match (t1, t2) with
     | t1', List t2' when t1' = t2' -> List t1' 
     | _, _ -> raise (Failure ("Invalid types for appending to list"))
   )
+  | _ -> raise (Failure("Invalid binary operator"))
 
 and check_expr expr envs special_blocks = 
   match expr with 
@@ -124,23 +128,51 @@ and check_expr expr envs special_blocks =
   | Id id_name -> 
     let t = find_var id_name envs.var_env in
     (t, SId id_name)
+
   | Tuple expr_list -> 
     let sexpr_list = List.map (fun e -> check_expr e envs special_blocks) expr_list in 
     let (typs, sexprs) = List.split sexpr_list in
     (Tuple typs, STuple sexpr_list)
 
+  | List expr_list ->
+    let sexpr_list = List.map (fun e -> check_expr e envs special_blocks) expr_list in
+    let (typs, sexprs) = List.split sexpr_list in
+    begin match typs with 
+    | [] -> raise (Failure("Cannot infer type on empty list")) (* TODO: Allow empty lists *)
+    | first_typ :: rest -> 
+      if List.for_all (fun x -> x = first_typ) rest then
+        (List first_typ, SList sexpr_list)
+      else
+        raise (Failure ("Lists must only have 1 type!"))
+    end
+
+  | UDTInstance (udt_name, udt_members) -> 
+      let udt_def = find_udt udt_name envs.udt_env in (* udt_def is a (string * typ) list *)
+      let (def_names, def_types) = List.split udt_def.members in
+      let (instance_names, instance_exprs) = List.split udt_members in
+      if def_names = instance_names then (* this means the order of members in the instance must in the same order as definition *)
+        let sexpr_list = List.map (fun e -> check_expr e envs special_blocks) instance_exprs in
+        let (instance_types, _ ) = List.split sexpr_list in
+        if def_types = instance_types then
+          let skv_list = List.combine instance_names sexpr_list in
+          (UserType(udt_name), SUDTInstance (udt_name, skv_list))
+        else
+          raise (Failure("Incorrect types used to instantiate " ^ udt_name))
+      else
+        raise (Failure("Incorrect ordering when instantiating " ^ udt_name))
+
   | Binop (e1, binop, e2) -> check_binop e1 binop e2 envs special_blocks
 
   | Unop (e, unop) -> 
-    let t, e' = check_expr e envs special_blocks in
+    let (t, e') = check_expr e envs special_blocks in
     if t <> Bool then
       raise (Failure ("Trying to do NOT on a non-boolean expression!"))
     else
-      (Bool, SUnop((t, e')))
+      (Bool, SUnop((t, e'), unop))
 
   | UnopSideEffect (id_name, side_effect_op) -> 
     let typ = find_var id_name envs.var_env in
-    if typ = Int | typ = Float then
+    if typ = Int || typ = Float then
       (typ, SUnopSideEffect (id_name, side_effect_op))
     else
       raise (Failure ("Trying to do increment/decrement on a non-numeric expression!"))
@@ -150,41 +182,31 @@ and check_expr expr envs special_blocks =
     let t = find_func func_name envs.func_env in (* t is return type of this function call *)
     (t.rtyp, SFunctionCall (func_name, sfunc_args))
 
-  | UDTInstance (udt_name, udt_members) -> 
-    let udt_def = find_udt udt_name envs.udt_env in (* udt_def is a (string * typ) list *)
-    let (def_names, _) = List.split udt_def in
-    let (instance_names, instance_exprs) = List.split udt_members in
-    if def_names = instance_names then (* this means the order of members in the instance must in the same order as definition *)
-      let sexpr_list = List.map (fun e -> check_expr e envs special_blocks) instance_exprs in
-      let skv_list = List.combine instance_names sexpr_list in
-      (UserType(udt_name), SUDTInstance (udt_name, skv_list))
-  else
-    raise (Failure("Incorrect instantiation of " ^ udt_name))
-
 
   | UDTAccess (id_name, udt_accessed_member) -> 
     let udt_typ = find_var id_name envs.var_env in
-    begin match StringMap.find_opt udt_typ envs.udt_env with
-    | Some(udt_def) ->
-    | None(_) -> 
-    
-    if find_udt udt_typ envs.udt_env then
-      begin match udt_accessed_member with
-      | UDTVariable member_name ->
-        if find_udt 
-          (new_type, SUDTAccess (id_name, SUDTVariable member_name))
-      | UDTFunction func_args ->
-          let sfunc_args = List.map (fun arg -> check_expr arg envs special_blocks) func_args in
-          (new_type, SUDTAccess (id_name, SUDTFunction sfunc_args))
+    let udt_def = find_udt (string_of_type udt_typ) envs.udt_env in
+    begin match udt_accessed_member with
+    | UDTVariable udt_var -> 
+      begin match (List.assoc_opt udt_var udt_def.members) with
+      | Some accessed_type -> (accessed_type, SUDTAccess (id_name, SUDTVariable udt_var))
+      | None -> raise (Failure(udt_var ^ "is not in " ^ string_of_type udt_typ))
       end
-    else  
-      begin match udt_accessed_member with
-      | UDTVariable member_name ->
-          (new_type, SUDTAccess (id_name, SUDTVariable member_name))
-      | UDTFunction func_args ->
-          let sfunc_args = List.map (fun arg -> check_expr arg envs special_blocks) func_args in
-          (new_type, SUDTAccess (id_name, SUDTFunction sfunc_args))
+    | UDTFunction udt_func -> 
+      begin match (List.find_opt (fun x -> x = fst udt_func) udt_def.methods) with
+      | Some _ -> 
+        let func_sig = find_func (fst udt_func) envs.func_env in
+        let _, def_arg_types = List.split func_sig.args in
+        let sexpr_list = List.map (fun e -> check_expr e envs special_blocks) (snd udt_func) in
+        let arg_types, _  = List.split sexpr_list in
+        if arg_types = def_arg_types then
+          (func_sig.rtyp, SUDTAccess (id_name, SUDTFunction (fst udt_func, sexpr_list)))
+        else
+          raise (Failure("Incorrect types passed to this method"))
+      | None -> raise (Failure((fst udt_func) ^ "is not a method bound to " ^ string_of_type udt_typ))
       end
+    end
+
 
   | UDTStaticAccess (udt_name, (func_name, args)) -> 
     let sfunc_args = List.map (fun arg -> check_expr arg envs special_blocks) args in
@@ -199,10 +221,7 @@ and check_expr expr envs special_blocks =
     let et2 = check_expr e2 envs special_blocks in
     (new_type, SIndex (et1, et2))
 
-  | List expr_list ->
-    let sexpr_list = List.map (fun e -> check_expr e envs special_blocks) expr_list in
-    let (typs, sexprs) = List.split sexpr_list in
-    (List list_type, SList sexprs)
+
 
   | Match (matched_expr, match_arms) -> 
     let s_matched = check_expr matched_expr envs special_blocks in
@@ -366,4 +385,4 @@ let check block_list =
    For example, a return is only allowed inside a function defintion and a break is only allowed inside a loop 
    I should really come up with a better name for this *)
   let special_blocks = StringSet.empty in
-  check_block_list initial_envs special_blocks in
+  check_block_list initial_envs special_blocks
