@@ -224,8 +224,8 @@ and check_expr expr envs special_blocks =
     end
 
   | EnumAccess (enum_name, variant) -> 
-    let t = find_enum enum_name envs.enum_env in
-    (t, SEnumAccess (enum_name, variant))
+    let _ = find_enum enum_name envs.enum_env in
+    (Int, SEnumAccess (enum_name, variant))
 
   | Index (e1, e2) -> 
     let et1 = check_expr e1 envs special_blocks in
