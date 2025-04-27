@@ -28,16 +28,30 @@ let _ =
   let token_list = get_token_list lexbuf in
   List.map pp_token token_list |> List.iter (printf "%s\n") *)
 
-type action = Scanner
+type action =
+  | Tokens
+  | Ast
+  | IR
+  | Code
 
-let act = ref Scanner
+let act = ref Code
 let set_action a () = act := a
-let speclist = [ "-s", Arg.Unit (set_action Scanner), "Scanner" ]
-let usg = "Usage: "
+
+let speclist =
+  [ "--tokens", Arg.Unit (set_action Tokens), "Print Tokens to stdout"
+  ; "--ast", Arg.Unit (set_action Ast), "Print Ast to stdout"
+  ; "--ir", Arg.Unit (set_action IR), "Print IR to stdout"
+  ]
+;;
+
+let usg = "Usage: ./fly <filename>.fly"
 
 let () =
   let channel = ref stdin in
   Arg.parse speclist (fun filename -> channel := open_in filename) usg;
   match !act with
-  | Scanner -> print_endline "scanning"
+  | Code -> print_endline "Coding"
+  | Tokens -> print_endline "scanning"
+  | Ast -> print_endline "Ast-ing"
+  | IR -> print_endline "IR-ing"
 ;;
