@@ -14,7 +14,7 @@ let tests =
   >::: [ ("test1"
           >:: fun _ ->
           let lexbuf = Lexing.from_string "" in
-          let actual = List.map print_token (to_list lexbuf) |> String.concat " " in
+          let actual = List.map string_of_token (to_list lexbuf) |> String.concat " " in
           let expected = "" in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("test2"
@@ -28,7 +28,7 @@ let tests =
                \t}\n\
                }\n"
           in
-          let actual = List.map print_token (to_list lexbuf) |> String.concat " " in
+          let actual = List.map string_of_token (to_list lexbuf) |> String.concat " " in
           let expected =
             "FUN ID(map) LPAREN ID(f) COLON FUN ID(a) ARROW ID(b) RPAREN ARROW FUN LIST \
              LT ID(a) GT ARROW LIST LT ID(b) GT LBRACE RETURN MATCH ID(l) LBRACE \
@@ -44,7 +44,7 @@ let tests =
               "let lst: list<int> = [0,1,2,3,4]; //map creates a new list so we don't \
                need mut here.\n"
           in
-          let actual = List.map print_token (to_list lexbuf) |> String.concat " " in
+          let actual = List.map string_of_token (to_list lexbuf) |> String.concat " " in
           let expected =
             "LET ID(lst) COLON LIST LT INT GT EQUAL LBRACKET LITERAL(0) COMMA LITERAL(1) \
              COMMA LITERAL(2) COMMA LITERAL(3) COMMA LITERAL(4) RBRACKET SEMI"
@@ -55,7 +55,7 @@ let tests =
           let lexbuf =
             Lexing.from_string "fun typecast(x: int) -> float {\n\treturn float(x);\n}\n"
           in
-          let actual = List.map print_token (to_list lexbuf) |> String.concat " " in
+          let actual = List.map string_of_token (to_list lexbuf) |> String.concat " " in
           let expected =
             "FUN ID(typecast) LPAREN ID(x) COLON INT RPAREN ARROW FLOAT LBRACE RETURN \
              FLOAT LPAREN ID(x) RPAREN SEMI RBRACE"
@@ -64,7 +64,7 @@ let tests =
        ; ("test5"
           >:: fun _ ->
           let lexbuf = Lexing.from_string "let float_lst := map(lst)(typecast);\n" in
-          let actual = List.map print_token (to_list lexbuf) |> String.concat " " in
+          let actual = List.map string_of_token (to_list lexbuf) |> String.concat " " in
           let expected =
             "LET ID(float_lst) WALRUS ID(map) LPAREN ID(lst) RPAREN LPAREN ID(typecast) \
              RPAREN SEMI"

@@ -1,8 +1,7 @@
 open Fly_lib.Parser
 open Fly_lib.Ast
-(* open Fly_lib.Sast *)
 
-let print_token = function
+let string_of_token = function
   | PLUS -> "PLUS" (* Basic arithmetic operations *)
   | MINUS -> "MINUS"
   | TIMES -> "TIMES"
@@ -76,6 +75,7 @@ let print_token = function
   | EOF -> "EOF"
 ;;
 
+(* Print functions for AST *)
 let rec string_of_type = function
   Int -> "int"
   | Bool -> "bool"
