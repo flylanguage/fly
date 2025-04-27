@@ -27,3 +27,17 @@ let _ =
   (* Debug Tokens *)
   let token_list = get_token_list lexbuf in
   List.map pp_token token_list |> List.iter (printf "%s\n") *)
+
+type action = Scanner
+
+let act = ref Scanner
+let set_action a () = act := a
+let speclist = [ "-s", Arg.Unit (set_action Scanner), "Scanner" ]
+let usg = "Usage: "
+
+let () =
+  let channel = ref stdin in
+  Arg.parse speclist (fun filename -> channel := open_in filename) usg;
+  match !act with
+  | Scanner -> print_endline "scanning"
+;;
