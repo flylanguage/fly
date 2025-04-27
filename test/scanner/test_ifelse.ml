@@ -17,7 +17,7 @@ let tests =
             Lexing.from_string
               "let x := 10;\nif (x > 5) {\n}\nelse if (x > 4) {\n}\nelse {\n}\n"
           in
-          let actual = List.map string_of_token (to_list lexbuf) |> String.concat " " in
+          let actual = string_of_tokens (to_list lexbuf) in 
           let expected =
             "LET ID(x) WALRUS LITERAL(10) SEMI IF LPAREN ID(x) GT LITERAL(5) RPAREN \
              LBRACE RBRACE ELSE IF LPAREN ID(x) GT LITERAL(4) RPAREN LBRACE RBRACE ELSE \

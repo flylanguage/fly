@@ -16,7 +16,7 @@ let tests =
           let lexbuf =
             Lexing.from_string "type Person {\n\tname: string,\n\tage: int\n}\n"
           in
-          let actual = List.map string_of_token (to_list lexbuf) |> String.concat " " in
+          let actual = string_of_tokens (to_list lexbuf) in 
           let expected =
             "TYPE ID(Person) LBRACE ID(name) COLON STRING COMMA ID(age) COLON INT RBRACE"
           in
@@ -26,7 +26,7 @@ let tests =
           let lexbuf =
             Lexing.from_string "let p1: Person = Person {name: \"John\", age: 12};\n"
           in
-          let actual = List.map string_of_token (to_list lexbuf) |> String.concat " " in
+          let actual = string_of_tokens (to_list lexbuf) in 
           let expected =
             "LET ID(p1) COLON ID(Person) EQUAL ID(Person) LBRACE ID(name) COLON \
              SLIT(John) COMMA ID(age) COLON LITERAL(12) RBRACE SEMI"
@@ -40,7 +40,7 @@ let tests =
                \treturn Person {name: name, age: age};\n\
                }\n"
           in
-          let actual = List.map string_of_token (to_list lexbuf) |> String.concat " " in
+          let actual = string_of_tokens (to_list lexbuf) in 
           let expected =
             "BIND ID(new) LT ID(Person) GT LPAREN ID(name) COLON STRING COMMA ID(age) \
              COLON INT RPAREN ARROW ID(Person) LBRACE RETURN ID(Person) LBRACE ID(name) \
@@ -55,7 +55,7 @@ let tests =
                \treturn self.name + \" \" + self.age;\n\
                }\n"
           in
-          let actual = List.map string_of_token (to_list lexbuf) |> String.concat " " in
+          let actual = string_of_tokens (to_list lexbuf) in 
           let expected =
             "BIND ID(info) LT ID(Person) GT LPAREN SELF RPAREN ARROW STRING LBRACE \
              RETURN SELF DOT ID(name) PLUS SLIT( ) PLUS SELF DOT ID(age) SEMI RBRACE"
@@ -68,7 +68,7 @@ let tests =
               "let p2 := Person::new(\"John\", 12);\n\
                let info: string = p.info(); // self references the object itself\n"
           in
-          let actual = List.map string_of_token (to_list lexbuf) |> String.concat " " in
+          let actual = string_of_tokens (to_list lexbuf) in 
           let expected =
             "LET ID(p2) WALRUS ID(Person) DCOLON ID(new) LPAREN SLIT(John) COMMA \
              LITERAL(12) RPAREN SEMI LET ID(info) COLON STRING EQUAL ID(p) DOT ID(info) \
