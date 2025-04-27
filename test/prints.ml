@@ -152,10 +152,7 @@ let rec string_of_expr = function
     udt_name ^ "{" ^ string_of_udt_instance udt_members ^ "}"
   | UDTAccess (udt_name, udt_access) -> udt_name ^ "." ^ string_of_udt_access udt_access
   | UDTStaticAccess (udt_name, udt_function) ->
-    udt_name
-    ^ "::"
-    ^ fst udt_function
-    ^ "("
+    udt_name ^ "::" ^ fst udt_function ^ "("
     ^ String.concat ", " (List.map string_of_expr (snd udt_function))
     ^ ")"
   | Index (indexed_expr, idx) ->
@@ -185,8 +182,7 @@ and string_of_case_list = function
     string_of_pattern (fst hd)
     ^ " -> "
     ^ string_of_expr (snd hd)
-    ^ ",\n"
-    ^ string_of_case_list tl
+    ^ ",\n" ^ string_of_case_list tl
 
 and string_of_udt_instance = function
   | [] -> ""
@@ -219,80 +215,47 @@ let rec string_of_block = function
   | Assign (e1, assign_op, e2) ->
     string_of_expr e1 ^ string_of_assign_op assign_op ^ string_of_expr e2 ^ ";\n"
   | FunctionDefinition (rtyp, func_name, func_args, func_body) ->
-    "fun "
-    ^ func_name
-    ^ "("
-    ^ string_of_func_args func_args
-    ^ ") -> "
-    ^ string_of_type rtyp
-    ^ " {\n"
+    "fun " ^ func_name ^ "(" ^ string_of_func_args func_args ^ ") -> "
+    ^ string_of_type rtyp ^ " {\n"
     ^ String.concat "" (List.map string_of_block func_body)
     ^ "\n}\n"
   | BoundFunctionDefinition (rtyp, func_name, func_args, func_body, bound_type) ->
-    "bind "
-    ^ func_name
-    ^ "<"
-    ^ string_of_type bound_type
-    ^ ">"
-    ^ "("
-    ^ string_of_func_args func_args
-    ^ ") -> "
-    ^ string_of_type rtyp
-    ^ " {\n"
+    "bind " ^ func_name ^ "<" ^ string_of_type bound_type ^ ">" ^ "("
+    ^ string_of_func_args func_args ^ ") -> " ^ string_of_type rtyp ^ " {\n"
     ^ String.concat "" (List.map string_of_block func_body)
     ^ "\n}\n"
   | UDTDef (udt_name, udt_members) ->
-    "type "
-    ^ udt_name
-    ^ "{\n"
+    "type " ^ udt_name ^ "{\n"
     ^ string_of_func_args
         udt_members (* Re-use string_of_func_args  as it generates name: type string*)
     ^ "\n}"
   | EnumDeclaration (enum_name, enum_variants) ->
-    "enum "
-    ^ enum_name
-    ^ " {\n"
+    "enum " ^ enum_name ^ " {\n"
     ^ String.concat ",\n" (List.map string_of_enum_variant enum_variants)
     ^ "\n}"
   | IfEnd (e, bl) ->
-    "if ("
-    ^ string_of_expr e
-    ^ ") {\n"
+    "if (" ^ string_of_expr e ^ ") {\n"
     ^ String.concat "\n" (List.map string_of_block bl)
     ^ "\n}"
   | IfNonEnd (e, bl, nbl) ->
-    "if ("
-    ^ string_of_expr e
-    ^ ") {\n"
+    "if (" ^ string_of_expr e ^ ") {\n"
     ^ String.concat "\n" (List.map string_of_block bl)
-    ^ "\n} "
-    ^ string_of_block nbl
+    ^ "\n} " ^ string_of_block nbl
   | ElifEnd (e, bl) ->
-    "else if ("
-    ^ string_of_expr e
-    ^ ") {\n"
+    "else if (" ^ string_of_expr e ^ ") {\n"
     ^ String.concat "\n" (List.map string_of_block bl)
     ^ "\n}"
   | ElifNonEnd (e, bl, nbl) ->
-    "else if ("
-    ^ string_of_expr e
-    ^ ") {\n"
+    "else if (" ^ string_of_expr e ^ ") {\n"
     ^ String.concat "\n" (List.map string_of_block bl)
-    ^ "\n} "
-    ^ string_of_block nbl
+    ^ "\n} " ^ string_of_block nbl
   | ElseEnd bl -> "else {\n" ^ String.concat "\n" (List.map string_of_block bl) ^ "\n}"
   | While (e, block_list) ->
-    "while ("
-    ^ string_of_expr e
-    ^ ") {\n"
+    "while (" ^ string_of_expr e ^ ") {\n"
     ^ String.concat "" (List.map string_of_block block_list)
     ^ "\n}"
   | For (idx, it, block_list) ->
-    "for "
-    ^ idx
-    ^ " := "
-    ^ string_of_expr it
-    ^ " {\n"
+    "for " ^ idx ^ " := " ^ string_of_expr it ^ " {\n"
     ^ String.concat "" (List.map string_of_block block_list)
     ^ "\n}"
   | Break -> "break;"
