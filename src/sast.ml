@@ -1,6 +1,7 @@
 open Ast
 
 type sexpr = typ * sx
+
 and sx =
   | SLiteral of int
   | SBoolLit of bool
@@ -23,6 +24,7 @@ and sx =
   | SMatch of sexpr * (pattern * sexpr) list
   | SWildcard
   | STypeCast of typ * sexpr
+
 and sfunc = string * sexpr list
 and skv_list = (string * sexpr) list (* for user defined types *)
 
