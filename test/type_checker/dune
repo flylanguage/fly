@@ -1,0 +1,7 @@
+(test
+  (name test_and)
+  (libraries fly_lib ounit2))
+
+(test
+  (name test_divide)
+  (libraries fly_lib ounit2))

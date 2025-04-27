@@ -1,5 +1,6 @@
 open Fly_lib.Parser
 open Fly_lib.Ast
+(* open Fly_lib.Sast *)
 
 let print_token = function
   | PLUS -> "PLUS" (* Basic arithmetic operations *)
