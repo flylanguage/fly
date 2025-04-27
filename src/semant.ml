@@ -25,19 +25,19 @@ type envs =
 
 let rec find_var var_name env =
   try StringMap.find var_name env with
-  | Not_found -> raise (Failure ("Undeclared variable " ^ var_name))
+  | Not_found -> raise (Failure ("Undeclared variable " ^ var_name ))
 
 and find_func func_name env =
   try StringMap.find func_name env with
-  | Not_found -> raise (Failure ("Undefined function " ^ func_name))
+  | Not_found -> raise (Failure ("Undefined function " ^ func_name ))
 
 and find_udt udt_name env =
   try StringMap.find udt_name env with
-  | Not_found -> raise (Failure ("Undefined user type " ^ udt_name))
+  | Not_found -> raise (Failure ("Undefined user type " ^ udt_name ))
 
 and find_enum enum_name env =
   try StringMap.find enum_name env with
-  | Not_found -> raise (Failure ("Undefined enum " ^ enum_name))
+  | Not_found -> raise (Failure ("Undefined enum " ^ enum_name ))
 
 (* Arguments: variable name, variable type, environments *)
 and var_dec_helper var_name t envs =
@@ -50,7 +50,7 @@ and var_dec_helper var_name t envs =
     ]
   in
   if List.exists (fun x -> x) env_checks
-  then raise (Failure (var_name ^ "already exists!"))
+  then raise (Failure (var_name ^ "already exists"))
   else StringMap.add var_name t envs.var_env
 
 and func_def_helper func_name args rtyp envs =
@@ -63,7 +63,7 @@ and func_def_helper func_name args rtyp envs =
     ]
   in
   if List.exists (fun x -> x) env_checks
-  then raise (Failure (func_name ^ "already exists!"))
+  then raise (Failure (func_name ^ "already exists"))
   else StringMap.add func_name { args; rtyp } envs.func_env
 
 and udt_def_helper udt_name udt_members envs =
@@ -76,7 +76,7 @@ and udt_def_helper udt_name udt_members envs =
     ]
   in
   if List.exists (fun x -> x) env_checks
-  then raise (Failure (udt_name ^ "already exists!"))
+  then raise (Failure (udt_name ^ "already exists"))
   else StringMap.add udt_name udt_members envs.udt_env
 
 and enum_dec_helper enum_name enum_variants envs =
@@ -89,7 +89,7 @@ and enum_dec_helper enum_name enum_variants envs =
     ]
   in
   if List.exists (fun x -> x) env_checks
-  then raise (Failure (enum_name ^ "already exists!"))
+  then raise (Failure (enum_name ^ "already exists"))
   else StringMap.add enum_name enum_variants envs.enum_env
 
 and add_func_args func_args envs =
@@ -106,8 +106,10 @@ and add_bound_func_def func_name udt_name envs =
   | Some udt_info ->
     let updated_udt_info = { udt_info with methods = func_name :: udt_info.methods } in
     StringMap.add udt_name updated_udt_info envs.udt_env
-  | None -> raise (Failure "Trying to bind to a non-existent type!")
+  | None -> raise (Failure ("Trying to bind to a non-existent type " ^ udt_name ))
 
+and format_ifelif_error expr t =
+  Printf.sprintf "Expression: \'%s\' has type: %s, but if/else if conditions must be bool" (string_of_expr expr) (string_of_type t)
 and check_binop expr e1 binop e2 envs special_blocks =
   let t1, e1' = check_expr e1 envs special_blocks in
   let t2, e2' = check_expr e2 envs special_blocks in
@@ -165,7 +167,7 @@ and check_expr expr envs special_blocks =
      | first_typ :: rest ->
        if List.for_all (fun x -> x = first_typ) rest
        then List first_typ, SList sexpr_list
-       else raise (Failure "Lists must only have 1 type!"))
+       else raise (Failure "Lists must only have 1 type"))
   | UDTInstance (udt_name, udt_members) ->
     let udt_def = find_udt udt_name envs.udt_env in
     (* udt_def is a (string * typ) list *)
@@ -182,19 +184,19 @@ and check_expr expr envs special_blocks =
       then (
         let skv_list = List.combine instance_names sexpr_list in
         UserType udt_name, SUDTInstance (udt_name, skv_list))
-      else raise (Failure ("Incorrect types used to instantiate " ^ udt_name)))
+      else raise (Failure ("Incorrect types used to instantiate " ^ udt_name )))
     else raise (Failure ("Incorrect ordering when instantiating " ^ udt_name))
   | Binop (e1, binop, e2) -> check_binop expr e1 binop e2 envs special_blocks
   | Unop (e, unop) ->
     let t, e' = check_expr e envs special_blocks in
     if t <> Bool
-    then raise (Failure "Trying to do NOT on a non-boolean expression!")
+    then raise (Failure "Trying to do NOT on a non-boolean expression")
     else Bool, SUnop ((t, e'), unop)
   | UnopSideEffect (id_name, side_effect_op) ->
     let typ = find_var id_name envs.var_env in
     if typ = Int || typ = Float
     then typ, SUnopSideEffect (id_name, side_effect_op)
-    else raise (Failure "Trying to do increment/decrement on a non-numeric expression!")
+    else raise (Failure "Trying to do increment/decrement on a non-numeric expression")
   | FunctionCall (func_name, func_args) ->
     let sfunc_args = List.map (fun arg -> check_expr arg envs special_blocks) func_args in
     let t = find_func func_name envs.func_env in
@@ -268,7 +270,7 @@ and check_expr expr envs special_blocks =
      | first_typ :: rest ->
        if List.for_all (fun x -> x = first_typ) rest
        then first_typ, SMatch (s_matched, checked_arms)
-       else raise (Failure "All match arms must return the same type!"))
+       else raise (Failure "All match arms must return the same type"))
   | Wildcard ->
     if StringSet.mem "wildcard" special_blocks
     then Unit, SWildcard
@@ -453,7 +455,7 @@ and check_block block envs special_blocks func_ret_type =
     let checked_condition = check_expr condition envs special_blocks in
     let t, _ = checked_condition in
     if t <> Bool
-    then raise (Failure "Condition must be a boolean!")
+    then raise (Failure (format_ifelif_error condition t))
     else (
       let checked_body = check_block_list body envs special_blocks func_ret_type in
       (
@@ -467,7 +469,7 @@ and check_block block envs special_blocks func_ret_type =
     let checked_condition = check_expr condition envs special_blocks in
     let t, _ = checked_condition in
     if t <> Bool
-    then raise (Failure "Condition must be a boolean!")
+    then raise (Failure (format_ifelif_error condition t))
     else (
       let checked_body = check_block_list body envs special_blocks func_ret_type in
       let _, _, _, checked_other_arm = check_block other_arm envs special_blocks func_ret_type in
@@ -482,7 +484,7 @@ and check_block block envs special_blocks func_ret_type =
     let checked_condition = check_expr condition envs special_blocks in
     let t, _ = checked_condition in
     if t <> Bool
-    then raise (Failure "Condition must be a boolean!")
+    then raise (Failure (format_ifelif_error condition t))
     else (
       let checked_body = check_block_list body envs special_blocks func_ret_type in
       let _, _, _, checked_other_arm = check_block other_arm envs special_blocks func_ret_type in
@@ -498,7 +500,7 @@ and check_block block envs special_blocks func_ret_type =
     let checked_condition = check_expr condition envs special_blocks in
     let t, _ = checked_condition in
     if t <> Bool
-    then raise (Failure "Condition must be a boolean!")
+    then raise (Failure (format_ifelif_error condition t))
     else (
       let checked_body = check_block_list body envs special_blocks func_ret_type in
       (
@@ -519,23 +521,27 @@ and check_block block envs special_blocks func_ret_type =
 
   | While (condition, body) ->
     let checked_condition = check_expr condition envs special_blocks in
-    let updated_special_blocks =
-      StringSet.add
-        "break"
-        (StringSet.add "continue" (StringSet.add "return" special_blocks))
-    in
-    let checked_body = check_block_list body envs updated_special_blocks func_ret_type in
-    (
-      envs,
-      updated_special_blocks,
-      func_ret_type,
-      SWhile (checked_condition, checked_body)
-    )
+    let t, _ = checked_condition in
+    if t <> Bool then
+      raise (Failure ("Expression: '" ^ string_of_expr condition ^ "' has type " ^ string_of_type t ^ ", but while loop conditions must be bool"))
+    else
+      let updated_special_blocks =
+        StringSet.add
+          "break"
+          (StringSet.add "continue" special_blocks)
+      in
+      let checked_body = check_block_list body envs updated_special_blocks func_ret_type in
+      (
+        envs,
+        updated_special_blocks,
+        func_ret_type,
+        SWhile (checked_condition, checked_body)
+      )
 
   | For (loop_var, iterable, body) ->
     (* Throw an error if the loop variable has been previously defined *)
     (match StringMap.find_opt loop_var envs.var_env with
-     | Some _ -> raise (Failure ("Loop variable " ^ loop_var ^ " previously defined!"))
+     | Some _ -> raise (Failure ("Loop variable " ^ loop_var ^ " previously defined"))
      | None -> ());
     let checked_iterable = check_expr iterable envs special_blocks in
     let t, _ = checked_iterable in
@@ -546,7 +552,7 @@ and check_block block envs special_blocks func_ret_type =
        let updated_special_blocks =
          StringSet.add
            "break"
-           (StringSet.add "continue" (StringSet.add "return" special_blocks))
+           (StringSet.add "continue" special_blocks)
        in
        let checked_body = check_block_list body updated_envs updated_special_blocks func_ret_type in
 
@@ -556,7 +562,7 @@ and check_block block envs special_blocks func_ret_type =
         func_ret_type,
         SFor (loop_var, checked_iterable, checked_body)
        )
-     | _ -> raise (Failure "Unable to iterate over a non-iterable!"))
+     | _ -> raise (Failure ("Expression '" ^ string_of_expr iterable ^ "' has type " ^ string_of_type t ^ " and is not iterable")))
 
   | Break ->
     if StringSet.mem "break" special_blocks
@@ -595,10 +601,10 @@ and check_block block envs special_blocks func_ret_type =
     begin match StringSet.find_opt "ReturnVal" special_blocks with
     | None -> raise (Failure "Unallowed return statement")
     | Some _ -> 
-      let t, e = check_expr return_expr envs special_blocks in
-      let checked_expr = (t, e) in
+      let checked_expr = check_expr return_expr envs special_blocks in
+      let t, _ = checked_expr in
       if t <> func_ret_type then
-        raise (Failure("Expected return type " ^ string_of_type func_ret_type ^ ", Got " ^ string_of_type t))
+        raise (Failure("Expression '" ^ string_of_expr return_expr ^ "' has type " ^ string_of_type t ^ "but expected " ^ string_of_type func_ret_type ))
       else
         (
           envs,
