@@ -14,7 +14,7 @@ let tests =
   >::: [ ("test1"
           >:: fun _ ->
           let lexbuf = Lexing.from_string "let x := 5;\nx -= 4; //fail\n" in
-          let actual = List.map string_of_token (to_list lexbuf) |> String.concat " " in
+          let actual = string_of_tokens (to_list lexbuf) in 
           let expected =
             "LET ID(x) WALRUS LITERAL(5) SEMI ID(x) MINUS_ASSIGN LITERAL(4) SEMI"
           in
@@ -22,7 +22,7 @@ let tests =
        ; ("test2"
           >:: fun _ ->
           let lexbuf = Lexing.from_string "let mut y := 4;\ny += 8;\n" in
-          let actual = List.map string_of_token (to_list lexbuf) |> String.concat " " in
+          let actual = string_of_tokens (to_list lexbuf) in 
           let expected =
             "LET MUT ID(y) WALRUS LITERAL(4) SEMI ID(y) PLUS_ASSIGN LITERAL(8) SEMI"
           in
@@ -34,7 +34,7 @@ let tests =
               "let mut lst := [1, 2, 3];\n\
                lst[0] -= 1;  // Should pass: list is mutable, can modify element\n"
           in
-          let actual = List.map string_of_token (to_list lexbuf) |> String.concat " " in
+          let actual = string_of_tokens (to_list lexbuf) in 
           let expected =
             "LET MUT ID(lst) WALRUS LBRACKET LITERAL(1) COMMA LITERAL(2) COMMA \
              LITERAL(3) RBRACKET SEMI ID(lst) LBRACKET LITERAL(0) RBRACKET MINUS_ASSIGN \
@@ -44,7 +44,7 @@ let tests =
        ; ("test4"
           >:: fun _ ->
           let lexbuf = Lexing.from_string "" in
-          let actual = List.map string_of_token (to_list lexbuf) |> String.concat " " in
+          let actual = string_of_tokens (to_list lexbuf) in 
           let expected = "" in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ]
