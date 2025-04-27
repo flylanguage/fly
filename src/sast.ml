@@ -38,9 +38,7 @@ type senum_variant =
 
 type sblock =
   | SMutDeclTyped of string * typ * sexpr
-  | SMutDeclInfer of string * sexpr
   | SDeclTyped of string * typ * sexpr
-  | SDeclInfer of string * sexpr
   | SAssign of sexpr * assign_op * sexpr
   | SFunctionDefinition of
       typ
