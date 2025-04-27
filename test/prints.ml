@@ -1,7 +1,7 @@
 open Fly_lib.Parser
 open Fly_lib.Ast
 
-let print_token = function
+let string_of_token = function
   | PLUS -> "PLUS" (* Basic arithmetic operations *)
   | MINUS -> "MINUS"
   | TIMES -> "TIMES"
