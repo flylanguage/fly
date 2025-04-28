@@ -6,7 +6,7 @@
  (name fly)
  (public_name fly)
  (modules fly)
- (libraries fly_lib))
+ (libraries fly_lib print_lib))
 
 
 (ocamllex scanner)

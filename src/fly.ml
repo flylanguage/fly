@@ -1,33 +1,3 @@
-(* open Printf
-
-let get_token_list lexbuf =
-  let rec work acc =
-    match Scanner.tokenize lexbuf with
-    | EOF -> acc
-    | t -> work (t :: acc)
-  in
-  List.rev (work [])
-;;
-
-let pp_token = function
-  | EQ -> "="
-  | DIVIDE -> "/"
-  | LITERAL i -> sprintf "%d" i
-  | ID v -> sprintf ":%s:" v
-  | SEMI -> ";"
-  | PLUS -> "+"
-  | MINUS -> "-"
-  | TIMES -> "*"
-  | EOF -> "EOF"
-  | _ -> "??"
-;;
-
-let _ =
-  let lexbuf = Lexing.from_channel stdin in
-  (* Debug Tokens *)
-  let token_list = get_token_list lexbuf in
-  List.map pp_token token_list |> List.iter (printf "%s\n") *)
-
 type action =
   | Tokens
   | Ast
@@ -46,12 +16,33 @@ let speclist =
 
 let usg = "Usage: ./fly <filename>.fly"
 
+let rec to_token_list lexbuf =
+  let tk = Fly_lib.Scanner.tokenize lexbuf in
+  match tk with
+  | EOF -> []
+  | t -> t :: to_token_list lexbuf
+;;
+
+let read_and_print_tokens channel =
+  try
+    while true do
+      let line = input_line channel in
+      let tokens = to_token_list (Lexing.from_string line) in
+      print_endline (Print_lib.Prints.string_of_tokens tokens)
+    done
+  with
+  | End_of_file -> close_in_noerr channel
+  | e ->
+    close_in_noerr channel;
+    raise e
+;;
+
 let () =
   let channel = ref stdin in
   Arg.parse speclist (fun filename -> channel := open_in filename) usg;
+  (* read !channel *)
+  (* let lexbuf = Lexing.from_channel !channel in *)
   match !act with
-  | Code -> print_endline "Coding"
-  | Tokens -> print_endline "scanning"
-  | Ast -> print_endline "Ast-ing"
-  | IR -> print_endline "IR-ing"
+  | Tokens -> read_and_print_tokens !channel
+  | _ -> raise (Failure "not implemented")
 ;;
