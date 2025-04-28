@@ -1,4 +1,12 @@
-(library (name fly_lib) (modules ast scanner parser semant sast))
-  (executable (name fly) (public_name fly) (modules fly) (libraries fly_lib))
-  (ocamllex scanner)
-  (ocamlyacc parser)
+(library 
+  (name fly_lib) 
+  (modules ast scanner parser semant sast))
+
+(executable 
+  (name fly) 
+  (public_name fly) 
+  (modules fly) 
+  (libraries fly_lib))
+
+(ocamllex scanner)
+(ocamlyacc parser)
