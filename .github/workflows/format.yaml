@@ -29,4 +29,5 @@ jobs:
         run: |
           eval $(opam env)
           # shopt -s globstar # allows **/*.ml to search nested subdirectories
+          find . -name "*.ml" -not -path "./_opam/*"
           ocamlformat --check $(find . -name "*.ml" -not -path "./_opam/*")
