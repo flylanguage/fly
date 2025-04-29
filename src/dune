@@ -1,6 +1,8 @@
+(include_subdirs unqualified)
+
 (library 
   (name fly_lib) 
-  (modules ast scanner parser semant sast))
+  (modules semant sast ast parser scanner prints utils))
 
 (executable 
   (name fly) 
