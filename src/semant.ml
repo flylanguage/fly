@@ -4,10 +4,7 @@ module StringMap = Map.Make (String)
 module StringSet = Set.Make (String)
 
 (* Type definitions for function signatures, user-defined types, and enums *)
-type func_sig =
-  { args : (string * typ) list
-  ; rtyp : typ
-  }
+type func_sig =  { args : (string * typ) list ; rtyp : typ }
 
 type udt_def =
   { members : (string * typ) list
