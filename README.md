@@ -29,7 +29,7 @@ You can also run the compiler using dune:
 ```bash
 ./_build/default/src/fly.exe
 # or 
-dune exec src/fly.exe
+dune exec fly
 ```
 
 
