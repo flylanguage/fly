@@ -1,6 +1,6 @@
 open OUnit2
 open Fly_lib
-open Fly_lib.Prints
+open Fly_lib.Utils
 
 let rec to_list lexbuf =
   let tk = Scanner.tokenize lexbuf in
@@ -17,7 +17,7 @@ let tests =
             Lexing.from_string
               "let x := 10;\nif (x > 5) {\n}\nelse if (x > 4) {\n}\nelse {\n}\n"
           in
-          let actual = string_of_tokens (to_list lexbuf) in 
+          let actual = string_of_tokens (to_list lexbuf) in
           let expected =
             "LET ID(x) WALRUS LITERAL(10) SEMI IF LPAREN ID(x) GT LITERAL(5) RPAREN \
              LBRACE RBRACE ELSE IF LPAREN ID(x) GT LITERAL(4) RPAREN LBRACE RBRACE ELSE \

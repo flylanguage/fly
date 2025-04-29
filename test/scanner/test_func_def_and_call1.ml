@@ -1,6 +1,6 @@
 open OUnit2
 open Fly_lib
-open Fly_lib.Prints
+open Fly_lib.Utils
 
 let rec to_list lexbuf =
   let tk = Scanner.tokenize lexbuf in

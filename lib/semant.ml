@@ -1,6 +1,6 @@
 open Ast
 open Sast
-open Prints
+open Utils
 module StringMap = Map.Make (String)
 module StringSet = Set.Make (String)
 
