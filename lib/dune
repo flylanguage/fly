@@ -1,0 +1,10 @@
+; Allows us to create submodules such as "utils/"
+; also allows us to omit specifying all modules inside of fly_lib
+(include_subdirs qualified)
+
+(library 
+  (name fly_lib)
+  (libraries llvm))
+
+(ocamllex scanner)
+(ocamlyacc parser)

@@ -1,6 +1,6 @@
 open OUnit2
 open Fly_lib
-open Print_lib.Prints
+open Fly_lib.Utils
 
 let rec to_list lexbuf =
   let tk = Scanner.tokenize lexbuf in
@@ -20,7 +20,7 @@ let tests =
                {5 -> let res := \"ok\"\n\
               \ _ -> let res := \"not ok\"};"
           in
-          let actual = List.map print_token (to_list lexbuf) |> String.concat " " in
+          let actual = string_of_tokens (to_list lexbuf) in
           let expected =
             "LET ID(a1) COLON INT EQUAL LITERAL(5) SEMI MATCH LPAREN ID(a1) RPAREN \
              LBRACE LITERAL(5) ARROW LET ID(res) WALRUS SLIT(ok) UNDERSCORE ARROW LET \
