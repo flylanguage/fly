@@ -28,6 +28,6 @@ jobs:
       - name: OCamlformat
         run: |
           eval $(opam env)
-          pwd
-          ls -al
-          ocamlformat --check **/*.ml
+          git branch
+          ls -al **/*.ml
+          ocamlformat --check src/**/*.ml test/**/*.ml
