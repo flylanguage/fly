@@ -28,6 +28,6 @@ jobs:
       - name: OCamlformat
         run: |
           eval $(opam env)
-          git branch
+          shopt -s globstar # allows **/*.ml to search nested subdirectories
           ls -al **/*.ml
-          ocamlformat --check src/**/*.ml test/**/*.ml
+          ocamlformat --check **/*.ml
