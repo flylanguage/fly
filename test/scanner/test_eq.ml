@@ -17,7 +17,7 @@ let tests =
             Lexing.from_string
               "let a1 := 5;\nlet b1 := 5;\nif (a1 == b1) {\n} else {\n}\n"
           in
-          let actual = string_of_tokens (to_list lexbuf) in 
+          let actual = string_of_tokens (to_list lexbuf) in
           let expected =
             "LET ID(a1) WALRUS LITERAL(5) SEMI LET ID(b1) WALRUS LITERAL(5) SEMI IF \
              LPAREN ID(a1) BEQ ID(b1) RPAREN LBRACE RBRACE ELSE LBRACE RBRACE"
