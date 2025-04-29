@@ -1,6 +1,6 @@
 open OUnit2
 open Fly_lib
-open Print_lib.Prints
+open Fly_lib.Utils
 
 let tests =
   "testing_func_def_and_call2"
