@@ -37,6 +37,12 @@ let read_and_print_tokens channel =
     raise e
 ;;
 
+let read_and_print_ast channel =
+  let lexbuf = Lexing.from_channel channel in
+  let ast = Fly_lib.Parser.program_rule Fly_lib.Scanner.tokenize lexbuf in
+  print_endline (Print_lib.Prints.string_of_program ast)
+;;
+
 let () =
   let channel = ref stdin in
   Arg.parse speclist (fun filename -> channel := open_in filename) usg;
@@ -44,5 +50,6 @@ let () =
   (* let lexbuf = Lexing.from_channel !channel in *)
   match !act with
   | Tokens -> read_and_print_tokens !channel
+  | Ast -> read_and_print_ast !channel
   | _ -> raise (Failure "not implemented")
 ;;
