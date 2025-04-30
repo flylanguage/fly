@@ -25,18 +25,14 @@ let tests =
           let mdl = Irgen.translate sast in
           let actual = L.string_of_llmodule mdl in
           let expected = "; ModuleID = 'Fly'\nsource_filename = \"Fly\"\n" in
-          (* let _ = Printf.printf "\nhave:\n%s\n" actual in *)
-          (* let _ = Printf.printf "\nwant:\n%s\n" expected in *)
-          assert_equal expected actual)
+          assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
        ; ("test1"
           >:: fun _ ->
           let sast = get_sast "let a := 5;" in
           let mdl = Irgen.translate sast in
           let actual = L.string_of_llmodule mdl in
           let expected = "; ModuleID = 'Fly'\nsource_filename = \"Fly\"\n" in
-          (* let _ = Printf.printf "\nhave:\n%s\n" actual in *)
-          (* let _ = Printf.printf "\nwant:\n%s\n" expected in *)
-          assert_equal expected actual)
+          assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
        ]
 ;;
 
