@@ -31,25 +31,30 @@ let translate blocks =
     let global = L.define_global var init the_module in
     StringMap.add var global vars
   in
-  let process_block block vars (curr_func : string option) =
+  (* Receives all func blocks after all functions have been declared and fills each func blocks' body *)
+  let process_func_blocks = () in
+  let process_block block vars (curr_func : string option) func_blocks =
     match block with
-    (* | SMutDeclTyped (_s, _t, _e) -> print_endline "SMutDeclTyped found" *)
     | SDeclTyped (id, typ, _expr) ->
       if Option.is_some curr_func
-      then add_local_val typ id vars, curr_func
-      else add_global_val typ id vars, curr_func
+      then add_local_val typ id vars, curr_func, func_blocks
+      else add_global_val typ id vars, curr_func, func_blocks
     | b ->
       raise (Failure (Printf.sprintf "not implemented: %s" (Utils.string_of_sblock b)))
   in
-  let rec process_blocks blocks vars (curr_func : string option) =
+  let rec process_blocks blocks vars (curr_func : string option) func_blocks =
     match blocks with
-    | [] -> ()
+    (* We've declared all objects, lets fill in all function bodies *)
+    | [] -> process_func_blocks
     | block :: rest ->
-      let updated_vars, updated_curr_func = process_block block vars curr_func in
-      process_blocks rest updated_vars updated_curr_func
+      let updated_vars, updated_curr_func, u_func_blocks =
+        process_block block vars curr_func func_blocks
+      in
+      process_blocks rest updated_vars updated_curr_func u_func_blocks
   in
   (* we start off in no function *)
   let curr_func = None in
-  process_blocks blocks local_vars curr_func;
+  let func_blocks = [] in
+  process_blocks blocks local_vars curr_func func_blocks;
   the_module
 ;;
