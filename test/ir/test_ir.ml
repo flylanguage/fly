@@ -74,6 +74,19 @@ let tests =
              }\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
+       ; ("empty_function_decl_ret_int_with_formals"
+          >:: fun _ ->
+          let sast = get_sast "fun function(num : int) -> int {}" in
+          let mdl = Irgen.translate sast in
+          let actual = L.string_of_llmodule mdl in
+          let expected =
+            "; ModuleID = 'Fly'\n\
+             source_filename = \"Fly\"\n\n\
+             define i32 @function(i32 %0) {\n\
+             entry:\n\
+             }\n"
+          in
+          assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
        ]
 ;;
 

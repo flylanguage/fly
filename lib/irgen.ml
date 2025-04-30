@@ -20,6 +20,11 @@ let ltype_of_typ = function
   | e -> raise (Failure (Printf.sprintf "not implemented: %s" (Utils.string_of_type e)))
 ;;
 
+let get_lformals_arr (formals : A.formal list) =
+  let lformal_list = List.map ltype_of_typ (List.map snd formals) in
+  Array.of_list lformal_list
+;;
+
 let translate blocks =
   let the_module = L.create_module context "Fly" in
   let local_vars = StringMap.empty in
@@ -33,20 +38,22 @@ let translate blocks =
     let global = L.define_global var init the_module in
     StringMap.add var global vars
   in
-  let declare_function typ id _formals _body _func_blocks =
+  let declare_function typ id (formals : A.formal list) _body _func_blocks =
     let lfunc =
-      L.define_function id (L.function_type (ltype_of_typ typ) [||]) the_module
+      L.define_function
+        id
+        (L.function_type (ltype_of_typ typ) (get_lformals_arr formals))
+        the_module
     in
     let _builder = L.builder_at_end context (L.entry_block lfunc) in
     (* Add function block in blocks-to-declare list *)
-    (lfunc, _formals, _body) :: _func_blocks
+    (lfunc, formals, _body) :: _func_blocks
   in
   (* Receives all func blocks after all functions have been declared and fills each func blocks' body *)
   let rec process_func_blocks func_blocks =
     match func_blocks with
     | [] -> ()
     | _blk :: rst ->
-      print_endline "processing block: ";
       process_func_blocks rst
   in
   let process_block block vars (curr_func : string option) func_blocks =
