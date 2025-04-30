@@ -87,6 +87,39 @@ let tests =
              }\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
+       ; ("multiple_functions_decls"
+          >:: fun _ ->
+          let sast =
+            get_sast
+              "fun function(num : int) -> int {}\n fun function2(num2 : float) -> float{}"
+          in
+          let mdl = Irgen.translate sast in
+          let actual = L.string_of_llmodule mdl in
+          let expected =
+            "; ModuleID = 'Fly'\n\
+             source_filename = \"Fly\"\n\n\
+             define i32 @function(i32 %0) {\n\
+             entry:\n\
+             }\n\n\
+             define float @function2(float %0) {\n\
+             entry:\n\
+             }\n"
+          in
+          assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
+       ; ("process_function_block"
+          >:: fun _ ->
+          let sast = get_sast "fun function(num : int) -> int {let b := 5;}" in
+          let mdl = Irgen.translate sast in
+          let actual = L.string_of_llmodule mdl in
+          let expected =
+            "; ModuleID = 'Fly'\n\
+             source_filename = \"Fly\"\n\n\
+             define i32 @function(i32 %0) {\n\
+             entry:\n\
+            \  %b = alloca i32, align 4\n\
+             }\n"
+          in
+          assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
        ]
 ;;
 
