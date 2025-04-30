@@ -17,10 +17,10 @@ bug-reports: "https://github.com/flylanguage/fly"
 license: "MIT"
 
 depends: [
-  "ocaml" {>= "5.2.0"}
+  "ocaml" {>= "4.14.2"}
   "dune" {>= "3.17.0"}
   "ounit2"
-  "llvm"
+  "llvm" {== "14.0.6"}
 ]
 
 build: [
