@@ -22,7 +22,6 @@ let translate blocks =
   let the_module = L.create_module context "Fly" in
   let local_vars = StringMap.empty in
   let add_local_val typ var vars =
-    print_endline "updated local var";
     let init = L.const_int (ltype_of_typ typ) 0
     in StringMap.add var (L.define_global var init the_module) vars
   in
