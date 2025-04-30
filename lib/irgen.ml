@@ -8,6 +8,7 @@ let context = L.global_context ()
 let l_int = L.i32_type context
 and l_bool = L.i1_type context
 and l_char = L.i8_type context
+and l_unit = L.void_type context
 and l_float = L.float_type context
 
 let ltype_of_typ = function
@@ -15,6 +16,7 @@ let ltype_of_typ = function
   | A.Bool -> l_bool
   | A.Float -> l_float
   (* | A.Char -> l_char *)
+  | A.Unit -> l_unit
   | e -> raise (Failure (Printf.sprintf "not implemented: %s" (Utils.string_of_type e)))
 ;;
 
@@ -31,21 +33,38 @@ let translate blocks =
     let global = L.define_global var init the_module in
     StringMap.add var global vars
   in
+  let declare_function typ id _formals _body _func_blocks =
+    let lfunc =
+      L.define_function id (L.function_type (ltype_of_typ typ) [||]) the_module
+    in
+    let _builder = L.builder_at_end context (L.entry_block lfunc) in
+    (* Add function block in blocks-to-declare list *)
+    (lfunc, _formals, _body) :: _func_blocks
+  in
   (* Receives all func blocks after all functions have been declared and fills each func blocks' body *)
-  let process_func_blocks = () in
+  let rec process_func_blocks func_blocks =
+    match func_blocks with
+    | [] -> ()
+    | _blk :: rst ->
+      print_endline "processing block: ";
+      process_func_blocks rst
+  in
   let process_block block vars (curr_func : string option) func_blocks =
     match block with
     | SDeclTyped (id, typ, _expr) ->
       if Option.is_some curr_func
       then add_local_val typ id vars, curr_func, func_blocks
       else add_global_val typ id vars, curr_func, func_blocks
+    | SFunctionDefinition (typ, id, formals, body) ->
+      let u_func_blocks = declare_function typ id formals body func_blocks in
+      vars, curr_func, u_func_blocks
     | b ->
       raise (Failure (Printf.sprintf "not implemented: %s" (Utils.string_of_sblock b)))
   in
   let rec process_blocks blocks vars (curr_func : string option) func_blocks =
     match blocks with
     (* We've declared all objects, lets fill in all function bodies *)
-    | [] -> process_func_blocks
+    | [] -> process_func_blocks func_blocks
     | block :: rest ->
       let updated_vars, updated_curr_func, u_func_blocks =
         process_block block vars curr_func func_blocks
