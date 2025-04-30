@@ -22,24 +22,34 @@ let translate blocks =
   let the_module = L.create_module context "Fly" in
   let local_vars = StringMap.empty in
   let add_local_val typ var vars =
-    let init = L.const_int (ltype_of_typ typ) 0
-    in StringMap.add var (L.define_global var init the_module) vars
+    let init = L.const_int (ltype_of_typ typ) 0 in
+    let local = L.define_global var init the_module in
+    StringMap.add var local vars
   in
-  let process_block block vars =
+  let add_global_val typ var vars =
+    let init = L.const_int (ltype_of_typ typ) 0 in
+    let global = L.define_global var init the_module in
+    StringMap.add var global vars
+  in
+  let process_block block vars (curr_func : string option) =
     match block with
-  (*   (* | SMutDeclTyped (_s, _t, _e) -> print_endline "SMutDeclTyped found" *) *)
-    | SDeclTyped (_s, _t, _e) ->
-             add_local_val _t _s vars
-  (*     (* print_endline "SDeclTyped found" *) *)
+    (* | SMutDeclTyped (_s, _t, _e) -> print_endline "SMutDeclTyped found" *)
+    | SDeclTyped (id, typ, _expr) ->
+      if Option.is_some curr_func
+      then add_local_val typ id vars, curr_func
+      else add_global_val typ id vars, curr_func
     | b ->
       raise (Failure (Printf.sprintf "not implemented: %s" (Utils.string_of_sblock b)))
   in
-
-  let rec process_blocks blocks vars = match blocks with 
+  let rec process_blocks blocks vars (curr_func : string option) =
+    match blocks with
     | [] -> ()
     | block :: rest ->
-      process_blocks rest (process_block block vars)
+      let updated_vars, updated_curr_func = process_block block vars curr_func in
+      process_blocks rest updated_vars updated_curr_func
   in
-  process_blocks blocks local_vars;
+  (* we start off in no function *)
+  let curr_func = None in
+  process_blocks blocks local_vars curr_func;
   the_module
 ;;
