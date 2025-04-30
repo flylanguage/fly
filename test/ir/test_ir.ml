@@ -120,6 +120,76 @@ let tests =
              }\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
+       ; ("process_nested_functions"
+          >:: fun _ ->
+          let sast = get_sast "fun function(num : int) -> int {fun nested() -> () {}}" in
+          let mdl = Irgen.translate sast in
+          let actual = L.string_of_llmodule mdl in
+          let expected =
+            "; ModuleID = 'Fly'\n\
+             source_filename = \"Fly\"\n\n\
+             define i32 @function(i32 %0) {\n\
+             entry:\n\
+             }\n\n\
+             define void @nested() {\n\
+             entry:\n\
+             }\n"
+          in
+          assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
+       ; ("return_unit_from_main"
+          >:: fun _ ->
+          let sast = get_sast "fun main() -> () {return;}" in
+          let mdl = Irgen.translate sast in
+          let actual = L.string_of_llmodule mdl in
+          let expected =
+            "; ModuleID = 'Fly'\n\
+             source_filename = \"Fly\"\n\n\
+             define void @main() {\n\
+             entry:\n\
+            \  ret void\n\
+             }\n"
+          in
+          assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
+         (* ; ("return_from_main" *)
+         (*    >:: fun _ -> *)
+         (*    let sast = get_sast "fun main() -> int {return 1;}" in *)
+         (*    let mdl = Irgen.translate sast in *)
+         (*    let actual = L.string_of_llmodule mdl in *)
+         (*    let expected = *)
+         (*      "; ModuleID = 'Fly'\n\ *)
+       (*       source_filename = \"Fly\"\n\n\ *)
+       (*       define i32 @function(i32 %0) {\n\ *)
+       (*       entry:\n\ *)
+       (*       }\n\n\ *)
+       (*       define void @nested() {\n\ *)
+       (*       entry:\n\ *)
+       (*       }\n" *)
+         (*    in *)
+         (*    assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n")) *)
+         (* TODO: THIS FAILS - we have to get back the outer function builder when leaving nested() *)
+         (* ; ("process_nested_functions_with_locals" *)
+         (*    >:: fun _ -> *)
+         (*    let sast = *)
+         (*      get_sast *)
+         (*        "fun function(num : int) -> int {\n\ *)
+       (*        \    let a := 5;\n\ *)
+       (*        \    fun nested() -> () {}\n\ *)
+       (*        \    let b := 1;\n\ *)
+       (*         }\n" *)
+         (*    in *)
+         (*    let mdl = Irgen.translate sast in *)
+         (*    let actual = L.string_of_llmodule mdl in *)
+         (*    let expected = *)
+         (*      "; ModuleID = 'Fly'\n\ *)
+       (*       source_filename = \"Fly\"\n\n\ *)
+       (*       define i32 @function(i32 %0) {\n\ *)
+       (*       entry:\n\ *)
+       (*       }\n\n\ *)
+       (*       define void @nested() {\n\ *)
+       (*       entry:\n\ *)
+       (*       }\n" *)
+         (*    in *)
+         (*    assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n")) *)
        ]
 ;;
 

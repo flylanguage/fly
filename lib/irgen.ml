@@ -17,7 +17,8 @@ let ltype_of_typ = function
   | A.Float -> l_float
   (* | A.Char -> l_char *)
   | A.Unit -> l_unit
-  | e -> raise (Failure (Printf.sprintf "not implemented: %s" (Utils.string_of_type e)))
+  | e ->
+    raise (Failure (Printf.sprintf "type not implemented: %s" (Utils.string_of_type e)))
 ;;
 
 let get_lformals_arr (formals : A.formal list) =
@@ -69,8 +70,18 @@ let translate blocks =
     | SFunctionDefinition (typ, id, formals, body) ->
       let u_func_blocks = declare_function typ id formals body func_blocks in
       vars, curr_func, u_func_blocks
+    | SReturnUnit ->
+      print_endline "returnUnit";
+      ignore (L.build_ret_void (Option.get builder));
+      vars, curr_func, func_blocks
+    | SReturnVal expr ->
+      let str = Utils.string_of_sexpr (snd expr) in
+      Printf.printf "returnVal: %s\n" str;
+      vars, curr_func, func_blocks
     | b ->
-      raise (Failure (Printf.sprintf "not implemented: %s" (Utils.string_of_sblock b)))
+      raise
+        (Failure
+           (Printf.sprintf "expression not implemented: %s" (Utils.string_of_sblock b)))
   and process_blocks blocks vars (curr_func : L.llvalue option) func_blocks _builder =
     match blocks with
     (* We've declared all objects, lets fill in all function bodies *)
