@@ -26,9 +26,18 @@ let get_lformals_arr (formals : A.formal list) =
   Array.of_list lformal_list
 ;;
 
-let build_expr expr =
+let lookup (vars : L.llvalue StringMap.t) var =
+  try StringMap.find var vars with
+  | Not_found ->
+    raise (Failure (Printf.sprintf "var lookup error: failed to find variable %s\n" var))
+;;
+
+let build_expr expr vars builder =
   match expr with
   | SLiteral l -> L.const_int l_int l
+  | SBoolLit b -> L.const_int l_bool (if b then 1 else 0)
+  | SFloatLit f -> L.const_float l_float f
+  | SId var -> L.build_load (lookup vars var) var builder
   | e ->
     raise (Failure (Printf.sprintf "expr not implemented: %s" (Utils.string_of_sexpr e)))
 ;;
@@ -36,14 +45,28 @@ let build_expr expr =
 let translate blocks =
   let the_module = L.create_module context "Fly" in
   let local_vars = StringMap.empty in
-  let add_local_val typ var vars builder =
-    let local = L.build_alloca (ltype_of_typ typ) var builder in
-    StringMap.add var local vars
+  let add_local_val typ var vars expr builder =
+    if fst expr != typ
+    then raise (Failure "Type mismatch. SAST should catch this!")
+    else (
+      match typ, snd expr with
+      | A.Int, SLiteral i ->
+        let local = L.build_alloca (ltype_of_typ typ) var builder in
+        let v = L.const_int l_int i in
+        ignore (L.build_store v local builder);
+        StringMap.add var local vars
+      | _, _ -> raise (Failure "assignment not completed"))
   in
-  let add_global_val typ var vars =
-    let init = L.const_int (ltype_of_typ typ) 0 in
-    let global = L.define_global var init the_module in
-    StringMap.add var global vars
+  let add_global_val typ var vars (expr : sexpr) =
+    if fst expr != typ
+    then raise (Failure "Type mismatch. SAST should catch this")
+    else (
+      match typ, snd expr with
+      | A.Int, SLiteral i ->
+        let init = L.const_int l_int i in
+        let global = L.define_global var init the_module in
+        StringMap.add var global vars
+      | _, _ -> raise (Failure "assignment not implemented"))
   in
   let declare_function typ id (formals : A.formal list) _body _func_blocks =
     let lfunc =
@@ -70,10 +93,10 @@ let translate blocks =
     process_blocks blocks vars curr_func [] (Some builder)
   and process_block block vars (curr_func : L.llvalue option) func_blocks builder =
     match block with
-    | SDeclTyped (id, typ, _expr) ->
+    | SDeclTyped (id, typ, expr) ->
       if Option.is_some curr_func
-      then add_local_val typ id vars (Option.get builder), curr_func, func_blocks
-      else add_global_val typ id vars, curr_func, func_blocks
+      then add_local_val typ id vars expr (Option.get builder), curr_func, func_blocks
+      else add_global_val typ id vars expr, curr_func, func_blocks
     | SFunctionDefinition (typ, id, formals, body) ->
       let u_func_blocks = declare_function typ id formals body func_blocks in
       vars, curr_func, u_func_blocks
@@ -81,25 +104,25 @@ let translate blocks =
       ignore (L.build_ret_void (Option.get builder));
       vars, curr_func, func_blocks
     | SReturnVal expr ->
-      let ret = build_expr (snd expr) in
+      let ret = build_expr (snd expr) vars (Option.get builder) in
       ignore (L.build_ret ret (Option.get builder));
       vars, curr_func, func_blocks
     | SExpr expr ->
-      ignore (build_expr (snd expr));
+      ignore (build_expr (snd expr) vars (Option.get builder));
       vars, curr_func, func_blocks
     | b ->
       raise
         (Failure
            (Printf.sprintf "expression not implemented: %s" (Utils.string_of_sblock b)))
-  and process_blocks blocks vars (curr_func : L.llvalue option) func_blocks _builder =
+  and process_blocks blocks vars (curr_func : L.llvalue option) func_blocks builder =
     match blocks with
     (* We've declared all objects, lets fill in all function bodies *)
     | [] -> process_func_blocks func_blocks vars
     | block :: rest ->
       let updated_vars, updated_curr_func, u_func_blocks =
-        process_block block vars curr_func func_blocks _builder
+        process_block block vars curr_func func_blocks builder
       in
-      process_blocks rest updated_vars updated_curr_func u_func_blocks None
+      process_blocks rest updated_vars updated_curr_func u_func_blocks builder
   in
   (* we start off in no function *)
   let curr_func = None in

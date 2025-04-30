@@ -38,7 +38,7 @@ let tests =
           let mdl = Irgen.translate sast in
           let actual = L.string_of_llmodule mdl in
           let expected =
-            "; ModuleID = 'Fly'\nsource_filename = \"Fly\"\n\n@a = global i32 0\n"
+            "; ModuleID = 'Fly'\nsource_filename = \"Fly\"\n\n@a = global i32 5\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
        ; ("empty_function_decl"
@@ -123,6 +123,7 @@ let tests =
              define i32 @function(i32 %0) {\n\
              entry:\n\
             \  %b = alloca i32, align 4\n\
+            \  store i32 5, i32* %b, align 4\n\
              }\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
@@ -157,7 +158,7 @@ let tests =
           in
           (* _write_to_file actual "test.out"; *)
           assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
-       ; ("return_from_main"
+       ; ("return_int_from_main"
           >:: fun _ ->
           let sast = get_sast "fun main() -> int {return 123;}" in
           let mdl = Irgen.translate sast in
@@ -171,6 +172,69 @@ let tests =
              }\n"
           in
           (* _write_to_file actual "test.out"; *)
+          assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
+       ; ("return_true_from_main"
+          >:: fun _ ->
+          let sast = get_sast "fun main() -> bool {return true;}" in
+          let mdl = Irgen.translate sast in
+          let actual = L.string_of_llmodule mdl in
+          let expected =
+            "; ModuleID = 'Fly'\n\
+             source_filename = \"Fly\"\n\n\
+             define i1 @main() {\n\
+             entry:\n\
+            \  ret i1 true\n\
+             }\n"
+          in
+          _write_to_file actual "test.out";
+          assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
+       ; ("return_false_from_main"
+          >:: fun _ ->
+          let sast = get_sast "fun main() -> bool {return false;}" in
+          let mdl = Irgen.translate sast in
+          let actual = L.string_of_llmodule mdl in
+          let expected =
+            "; ModuleID = 'Fly'\n\
+             source_filename = \"Fly\"\n\n\
+             define i1 @main() {\n\
+             entry:\n\
+            \  ret i1 false\n\
+             }\n"
+          in
+          (* _write_to_file actual "test.out"; *)
+          assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
+       ; ("return_float_from_func"
+          >:: fun _ ->
+          let sast = get_sast "fun function() -> float {return 10.5;}" in
+          let mdl = Irgen.translate sast in
+          let actual = L.string_of_llmodule mdl in
+          let expected =
+            "; ModuleID = 'Fly'\n\
+             source_filename = \"Fly\"\n\n\
+             define float @function() {\n\
+             entry:\n\
+            \  ret float 1.050000e+01\n\
+             }\n"
+          in
+          (* _write_to_file actual "test.out"; *)
+          assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
+       ; ("return_var_from_main"
+          >:: fun _ ->
+          let sast = get_sast "fun main() -> int {let a := 5; return a;}" in
+          let mdl = Irgen.translate sast in
+          let actual = L.string_of_llmodule mdl in
+          let expected =
+            "; ModuleID = 'Fly'\n\
+             source_filename = \"Fly\"\n\n\
+             define i32 @main() {\n\
+             entry:\n\
+            \  %a = alloca i32, align 4\n\
+            \  store i32 5, i32* %a, align 4\n\
+            \  %a1 = load i32, i32* %a, align 4\n\
+            \  ret i32 %a1\n\
+             }\n"
+          in
+          _write_to_file actual "test.out";
           assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
          (* TODO: THIS FAILS - we have to get back the outer function builder when leaving nested() *)
          (* ; ("process_nested_functions_with_locals" *)
