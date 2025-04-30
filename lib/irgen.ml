@@ -26,6 +26,13 @@ let get_lformals_arr (formals : A.formal list) =
   Array.of_list lformal_list
 ;;
 
+let build_expr expr =
+  match expr with
+  | SLiteral l -> L.const_int l_int l
+  | e ->
+    raise (Failure (Printf.sprintf "expr not implemented: %s" (Utils.string_of_sexpr e)))
+;;
+
 let translate blocks =
   let the_module = L.create_module context "Fly" in
   let local_vars = StringMap.empty in
@@ -71,12 +78,14 @@ let translate blocks =
       let u_func_blocks = declare_function typ id formals body func_blocks in
       vars, curr_func, u_func_blocks
     | SReturnUnit ->
-      print_endline "returnUnit";
       ignore (L.build_ret_void (Option.get builder));
       vars, curr_func, func_blocks
     | SReturnVal expr ->
-      let str = Utils.string_of_sexpr (snd expr) in
-      Printf.printf "returnVal: %s\n" str;
+      let ret = build_expr (snd expr) in
+      ignore (L.build_ret ret (Option.get builder));
+      vars, curr_func, func_blocks
+    | SExpr expr ->
+      ignore (build_expr (snd expr));
       vars, curr_func, func_blocks
     | b ->
       raise
