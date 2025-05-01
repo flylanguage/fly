@@ -403,6 +403,32 @@ let rec string_of_sblock = function
   | SExpr e -> string_of_sexpr (snd e) ^ ";\n"
 ;;
 
+let rec string_of_block_name = function
+  | MutDeclTyped (_, _, e) -> Printf.sprintf "MutDeclTyped (%s)" (string_of_expr e)
+  | MutDeclInfer (_, e) -> Printf.sprintf "MutDeclInfer (%s)" (string_of_expr e)
+  | DeclTyped (_, _, e) -> Printf.sprintf "DeclTyped (%s)" (string_of_expr e)
+  | DeclInfer (_, e) -> Printf.sprintf "DeclInfer (%s)" (string_of_expr e)
+  | Assign _ -> "Assign"
+  | FunctionDefinition _ -> "FunctionDefinition"
+  | BoundFunctionDefinition _ -> "BoundFunctionDefinition"
+  | UDTDef _ -> "UDTDef"
+  | EnumDeclaration _ -> "EnumDeclaration"
+  | IfEnd (e, _) -> Printf.sprintf "IfEnd (%s)" (string_of_expr e)
+  | IfNonEnd (e, _, b) ->
+    Printf.sprintf "IfNonEnd (%s) -> %s" (string_of_expr e) (string_of_block_name b)
+  | ElifEnd _ -> "ElifEnd"
+  | ElifNonEnd (e, _, b) ->
+    Printf.sprintf "ElifNonEnd (%s) -> %s" (string_of_expr e) (string_of_block_name b)
+  | ElseEnd _ -> "ElseEnd"
+  | While _ -> "While"
+  | For _ -> "For"
+  | Break -> "Break"
+  | Continue -> "Continue"
+  | ReturnUnit -> "ReturnUnit"
+  | ReturnVal _ -> "ReturnVal"
+  | Expr _ -> "Expr"
+;;
+
 let string_of_program fdecl = String.concat "" (List.map string_of_block fdecl.body)
 
 let string_of_sprogram (sfdecl : sprogram) =
