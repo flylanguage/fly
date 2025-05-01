@@ -121,21 +121,25 @@ let translate blocks =
     match block with
     | SDeclTyped (id, typ, expr) ->
       if Option.is_some curr_func
-      then add_local_val typ id vars expr (Option.get builder), curr_func, func_blocks
-      else add_global_val typ id vars expr the_module, curr_func, func_blocks
+      then
+        ( add_local_val typ id vars expr (Option.get builder)
+        , curr_func
+        , func_blocks
+        , builder )
+      else add_global_val typ id vars expr the_module, curr_func, func_blocks, builder
     | SFunctionDefinition (typ, id, formals, body) ->
       let u_func_blocks = declare_function typ id formals body func_blocks in
-      vars, curr_func, u_func_blocks
+      vars, curr_func, u_func_blocks, builder
     | SReturnUnit ->
       ignore (L.build_ret_void (Option.get builder));
-      vars, curr_func, func_blocks
+      vars, curr_func, func_blocks, builder
     | SReturnVal expr ->
       let ret = build_expr (snd expr) vars (Option.get builder) in
       ignore (L.build_ret ret (Option.get builder));
-      vars, curr_func, func_blocks
+      vars, curr_func, func_blocks, builder
     | SExpr expr ->
       ignore (build_expr (snd expr) vars (Option.get builder));
-      vars, curr_func, func_blocks
+      vars, curr_func, func_blocks, builder
     | SIfEnd (expr, _blks) ->
       print_endline "SIfEnd called";
 
@@ -155,14 +159,13 @@ let translate blocks =
       add_terminal (L.builder_at_end context _then_bb) build_br_end;
 
       ignore (L.build_cond_br _bool_val _then_bb _end_bb (Option.get builder));
-      let _new_builder = L.builder_at_end context _end_bb in
-      vars, curr_func, func_blocks
+      let u_builder = Some (L.builder_at_end context _end_bb) in
+      vars, curr_func, func_blocks, u_builder
     | SIfNonEnd (_expr, _blks, _end) ->
       (* expression should be bool *)
       sanitize_types (fst _expr) A.Bool;
 
-      print_endline "SIfNonEnd called";
-      vars, curr_func, func_blocks
+      vars, curr_func, func_blocks, builder
     | b ->
       raise
         (Failure
@@ -172,10 +175,10 @@ let translate blocks =
     (* We've declared all objects, lets fill in all function bodies *)
     | [] -> process_func_blocks func_blocks vars
     | block :: rest ->
-      let updated_vars, updated_curr_func, u_func_blocks =
+      let updated_vars, updated_curr_func, u_func_blocks, u_builder =
         process_block block vars curr_func func_blocks builder
       in
-      process_blocks rest updated_vars updated_curr_func u_func_blocks builder
+      process_blocks rest updated_vars updated_curr_func u_func_blocks u_builder
   in
 
   (* we start off in no function.. *)

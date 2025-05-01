@@ -261,11 +261,13 @@ let tests =
           let expected =
             "; ModuleID = 'Fly'\n\
              source_filename = \"Fly\"\n\n\
-             @a = global i32 5\n\n\
              define i32 @main() {\n\
              entry:\n\
-            \  %a = load i32, i32* @a, align 4\n\
-            \  ret i32 %a\n\
+            \  br i1 true, label %then, label %if_end\n\n\
+             then:                                             ; preds = %entry\n\
+            \  ret i32 1\n\n\
+             if_end:                                           ; preds = %entry\n\
+            \  ret i32 0\n\
              }\n"
           in
           (* _write_to_file actual "test.out"; *)
