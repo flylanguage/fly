@@ -83,6 +83,12 @@ let add_global_val typ var vars expr the_module =
   StringMap.add var global vars
 ;;
 
+let add_terminal builder instr =
+  match L.block_terminator (L.insertion_block builder) with
+  | Some _ -> ()
+  | None -> ignore (instr builder)
+;;
+
 let translate blocks =
   let the_module = L.create_module context "Fly" in
   let local_vars = StringMap.empty in
@@ -129,6 +135,33 @@ let translate blocks =
       vars, curr_func, func_blocks
     | SExpr expr ->
       ignore (build_expr (snd expr) vars (Option.get builder));
+      vars, curr_func, func_blocks
+    | SIfEnd (expr, _blks) ->
+      print_endline "SIfEnd called";
+
+      (* expression should be bool *)
+      sanitize_types (fst expr) A.Bool;
+      let _bool_val = build_expr (snd expr) vars (Option.get builder) in
+
+      (* We require curr_func to be Some - no if-else in global scope *)
+      let _then_bb = L.append_block context "then" (Option.get curr_func) in
+
+      let then_builder = Some (L.builder_at_end context _then_bb) in
+      ignore (process_blocks _blks vars curr_func func_blocks then_builder);
+
+      let _end_bb = L.append_block context "if_end" (Option.get curr_func) in
+
+      let build_br_end = L.build_br _end_bb in
+      add_terminal (L.builder_at_end context _then_bb) build_br_end;
+
+      ignore (L.build_cond_br _bool_val _then_bb _end_bb (Option.get builder));
+      let _new_builder = L.builder_at_end context _end_bb in
+      vars, curr_func, func_blocks
+    | SIfNonEnd (_expr, _blks, _end) ->
+      (* expression should be bool *)
+      sanitize_types (fst _expr) A.Bool;
+
+      print_endline "SIfNonEnd called";
       vars, curr_func, func_blocks
     | b ->
       raise
