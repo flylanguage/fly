@@ -161,11 +161,10 @@ let translate blocks =
       ignore (L.build_cond_br _bool_val _then_bb _end_bb (Option.get builder));
       let u_builder = Some (L.builder_at_end context _end_bb) in
       vars, curr_func, func_blocks, u_builder
-    | SIfNonEnd (_expr, _blks, _end) ->
-      (* expression should be bool *)
-      sanitize_types (fst _expr) A.Bool;
-
-      vars, curr_func, func_blocks, builder
+    (* | SIfNonEnd (_expr, _blks, _end) -> *)
+    (*   (* expression should be bool *) *)
+    (*   sanitize_types (fst _expr) A.Bool; *)
+    (*   vars, curr_func, func_blocks, builder *)
     | b ->
       raise
         (Failure
