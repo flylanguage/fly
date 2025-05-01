@@ -1,3 +1,5 @@
 version = 0.27.0
 profile = janestreet
 break-infix = wrap  
+
+sequence-blank-line = preserve-one

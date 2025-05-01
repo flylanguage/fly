@@ -186,7 +186,7 @@ let tests =
             \  ret i1 true\n\
              }\n"
           in
-          _write_to_file actual "test.out";
+          (* _write_to_file actual "test.out"; *)
           assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
        ; ("return_false_from_main"
           >:: fun _ ->
@@ -232,6 +232,23 @@ let tests =
             \  store i32 5, i32* %a, align 4\n\
             \  %a1 = load i32, i32* %a, align 4\n\
             \  ret i32 %a1\n\
+             }\n"
+          in
+          (* _write_to_file actual "test.out"; *)
+          assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
+       ; ("return_global_var_from_main"
+          >:: fun _ ->
+          let sast = get_sast "let a := 5; fun main() -> int {return a;}" in
+          let mdl = Irgen.translate sast in
+          let actual = L.string_of_llmodule mdl in
+          let expected =
+            "; ModuleID = 'Fly'\n\
+             source_filename = \"Fly\"\n\n\
+             @a = global i32 5\n\n\
+             define i32 @main() {\n\
+             entry:\n\
+            \  %a = load i32, i32* @a, align 4\n\
+            \  ret i32 %a\n\
              }\n"
           in
           _write_to_file actual "test.out";

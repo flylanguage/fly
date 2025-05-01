@@ -42,43 +42,63 @@ let build_expr expr vars builder =
     raise (Failure (Printf.sprintf "expr not implemented: %s" (Utils.string_of_sexpr e)))
 ;;
 
+let sanitize_types typ1 typ2 =
+  if typ1 != typ2
+  then
+    raise
+      (Failure
+         (Printf.sprintf
+            "Type mismatch. SAST should catch this! (%s vs %s)"
+            (Utils.string_of_type typ1)
+            (Utils.string_of_type typ2)))
+;;
+
+let add_local_val typ var vars expr builder =
+  let etyp = fst expr in
+  sanitize_types etyp typ;
+
+  let local =
+    match typ, snd expr with
+    | A.Int, SLiteral i ->
+      let local = L.build_alloca (ltype_of_typ typ) var builder in
+      let v = L.const_int l_int i in
+      ignore (L.build_store v local builder);
+      local
+    | _, _ -> raise (Failure "assignment not completed")
+  in
+  StringMap.add var local vars
+;;
+
+let add_global_val typ var vars expr the_module =
+  let etyp = fst expr in
+  sanitize_types etyp typ;
+
+  let global =
+    match typ, snd expr with
+    | A.Int, SLiteral i ->
+      let init = L.const_int l_int i in
+      L.define_global var init the_module
+    | _, _ -> raise (Failure "assignment not implemented")
+  in
+  StringMap.add var global vars
+;;
+
 let translate blocks =
   let the_module = L.create_module context "Fly" in
   let local_vars = StringMap.empty in
-  let add_local_val typ var vars expr builder =
-    if fst expr != typ
-    then raise (Failure "Type mismatch. SAST should catch this!")
-    else (
-      match typ, snd expr with
-      | A.Int, SLiteral i ->
-        let local = L.build_alloca (ltype_of_typ typ) var builder in
-        let v = L.const_int l_int i in
-        ignore (L.build_store v local builder);
-        StringMap.add var local vars
-      | _, _ -> raise (Failure "assignment not completed"))
-  in
-  let add_global_val typ var vars (expr : sexpr) =
-    if fst expr != typ
-    then raise (Failure "Type mismatch. SAST should catch this")
-    else (
-      match typ, snd expr with
-      | A.Int, SLiteral i ->
-        let init = L.const_int l_int i in
-        let global = L.define_global var init the_module in
-        StringMap.add var global vars
-      | _, _ -> raise (Failure "assignment not implemented"))
-  in
-  let declare_function typ id (formals : A.formal list) _body _func_blocks =
+
+  let declare_function typ id (formals : A.formal list) body func_blocks =
     let lfunc =
       L.define_function
         id
         (L.function_type (ltype_of_typ typ) (get_lformals_arr formals))
         the_module
     in
-    let _builder = L.builder_at_end context (L.entry_block lfunc) in
+    ignore (L.builder_at_end context (L.entry_block lfunc));
     (* Add function block in blocks-to-declare list *)
-    (lfunc, formals, _body) :: _func_blocks
+    (lfunc, formals, body) :: func_blocks
   in
+
   (* Receives all func blocks after all functions have been declared and fills each func blocks' body *)
   let rec process_func_blocks func_blocks vars =
     match func_blocks with
@@ -96,7 +116,7 @@ let translate blocks =
     | SDeclTyped (id, typ, expr) ->
       if Option.is_some curr_func
       then add_local_val typ id vars expr (Option.get builder), curr_func, func_blocks
-      else add_global_val typ id vars expr, curr_func, func_blocks
+      else add_global_val typ id vars expr the_module, curr_func, func_blocks
     | SFunctionDefinition (typ, id, formals, body) ->
       let u_func_blocks = declare_function typ id formals body func_blocks in
       vars, curr_func, u_func_blocks
@@ -124,10 +144,12 @@ let translate blocks =
       in
       process_blocks rest updated_vars updated_curr_func u_func_blocks builder
   in
-  (* we start off in no function *)
+
+  (* we start off in no function.. *)
   let curr_func = None in
+  (* ..and have come across no functions.. *)
   let func_blocks = [] in
-  (* We start off with no builder *)
+  (* ..and start off with no builder.. *)
   let builder = None in
   process_blocks blocks local_vars curr_func func_blocks builder;
   the_module
