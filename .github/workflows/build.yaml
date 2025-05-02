@@ -26,7 +26,7 @@ jobs:
         with:
           ocaml-compiler: 4
 
-      - name: Install dune
+      - name: Install deps
         run: |
           opam install . --deps-only --yes
 
