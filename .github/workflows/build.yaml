@@ -19,7 +19,7 @@ jobs:
       - name: Install LLVM 
         uses: KyleMayes/install-llvm-action@v2
         with:
-          version: "14.0.6"
+          version: "14"
      
       - name: Setup OCaml
         uses: ocaml/setup-ocaml@v3
