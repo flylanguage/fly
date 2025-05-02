@@ -64,7 +64,7 @@ Mac (homebrew):
 To install all dependencies:
 
 ```bash
-❯ opam install --deps-only -y
+❯ opam install . --deps-only -y
 ```
 
 This project is built using [`dune`](https://dune.readthedocs.io/en/stable/index.html) v3.17.
