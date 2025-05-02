@@ -140,31 +140,50 @@ let translate blocks =
     | SExpr expr ->
       ignore (build_expr (snd expr) vars (Option.get builder));
       vars, curr_func, func_blocks, builder
-    | SIfEnd (expr, _blks) ->
-      print_endline "SIfEnd called";
-
+    | SIfEnd (expr, blks) ->
       (* expression should be bool *)
       sanitize_types (fst expr) A.Bool;
-      let _bool_val = build_expr (snd expr) vars (Option.get builder) in
+      let bool_val = build_expr (snd expr) vars (Option.get builder) in
 
       (* We require curr_func to be Some - no if-else in global scope *)
-      let _then_bb = L.append_block context "then" (Option.get curr_func) in
+      let then_bb = L.append_block context "then" (Option.get curr_func) in
+      let then_builder = Some (L.builder_at_end context then_bb) in
+      ignore (process_blocks blks vars curr_func func_blocks then_builder);
 
-      let then_builder = Some (L.builder_at_end context _then_bb) in
-      ignore (process_blocks _blks vars curr_func func_blocks then_builder);
+      let end_bb = L.append_block context "if_end" (Option.get curr_func) in
+      let build_br_end = L.build_br end_bb in
+      add_terminal (L.builder_at_end context then_bb) build_br_end;
 
-      let _end_bb = L.append_block context "if_end" (Option.get curr_func) in
-
-      let build_br_end = L.build_br _end_bb in
-      add_terminal (L.builder_at_end context _then_bb) build_br_end;
-
-      ignore (L.build_cond_br _bool_val _then_bb _end_bb (Option.get builder));
-      let u_builder = Some (L.builder_at_end context _end_bb) in
+      ignore (L.build_cond_br bool_val then_bb end_bb (Option.get builder));
+      let u_builder = Some (L.builder_at_end context end_bb) in
       vars, curr_func, func_blocks, u_builder
-    (* | SIfNonEnd (_expr, _blks, _end) -> *)
-    (*   (* expression should be bool *) *)
-    (*   sanitize_types (fst _expr) A.Bool; *)
-    (*   vars, curr_func, func_blocks, builder *)
+    | SIfNonEnd (expr, blks, else_blk) ->
+      (* expression should be bool *)
+      sanitize_types (fst expr) A.Bool;
+
+      let bool_val = build_expr (snd expr) vars (Option.get builder) in
+
+      let then_bb = L.append_block context "then" (Option.get curr_func) in
+      let then_builder = Some (L.builder_at_end context then_bb) in
+      ignore (process_blocks blks vars curr_func func_blocks then_builder);
+
+      let end_bb = L.append_block context "if_end" (Option.get curr_func) in
+
+      (* We won't deal with this "if_end" basic block here, 
+         either ElseEnd or ElifEnd will have to process it *)
+      let else_bb = L.append_block context "else" (Option.get curr_func) in
+      let else_builder = Some (L.builder_at_end context else_bb) in
+      ignore (L.build_cond_br bool_val then_bb else_bb (Option.get builder));
+
+      let u_builder =
+        process_elseifs vars else_blk end_bb curr_func func_blocks else_builder
+      in
+
+      let build_br_end = L.build_br end_bb in
+      add_terminal (L.builder_at_end context then_bb) build_br_end;
+      add_terminal (L.builder_at_end context else_bb) build_br_end;
+
+      vars, curr_func, func_blocks, u_builder
     | b ->
       raise
         (Failure
@@ -178,6 +197,53 @@ let translate blocks =
         process_block block vars curr_func func_blocks builder
       in
       process_blocks rest updated_vars updated_curr_func u_func_blocks u_builder
+  and process_elseifs vars block end_bb curr_func func_blocks builder =
+    match block with
+    | SElseEnd blks ->
+      ignore (process_blocks blks vars curr_func func_blocks builder);
+
+      (* TODO: Throw an error or warning if the code is unreachable? *)
+      let u_builder = Some (L.builder_at_end context end_bb) in
+      u_builder
+    | SElifEnd (expr, blks) ->
+      sanitize_types (fst expr) A.Bool;
+
+      let bool_val = build_expr (snd expr) vars (Option.get builder) in
+
+      let then_bb = L.append_block context "then" (Option.get curr_func) in
+      let then_builder = Some (L.builder_at_end context then_bb) in
+      ignore (process_blocks blks vars curr_func func_blocks then_builder);
+
+      let build_br_end = L.build_br end_bb in
+      add_terminal (L.builder_at_end context then_bb) build_br_end;
+
+      ignore (L.build_cond_br bool_val then_bb end_bb (Option.get builder));
+
+      let u_builder = Some (L.builder_at_end context end_bb) in
+      u_builder
+    | SElifNonEnd (expr, blks, else_blk) ->
+      sanitize_types (fst expr) A.Bool;
+
+      let bool_val = build_expr (snd expr) vars (Option.get builder) in
+
+      let then_bb = L.append_block context "then" (Option.get curr_func) in
+      let then_builder = Some (L.builder_at_end context then_bb) in
+      ignore (process_blocks blks vars curr_func func_blocks then_builder);
+
+      let build_br_end = L.build_br end_bb in
+      add_terminal (L.builder_at_end context then_bb) build_br_end;
+
+      let else_bb = L.append_block context "else" (Option.get curr_func) in
+      let else_builder = Some (L.builder_at_end context else_bb) in
+      ignore (L.build_cond_br bool_val then_bb else_bb (Option.get builder));
+
+      (* We haven't reached the End - let's keep going *)
+      let u_builder =
+        process_elseifs vars else_blk end_bb curr_func func_blocks else_builder
+      in
+
+      u_builder
+    | _ -> raise (Failure "Only SElseEnd, SElifEnd and SElifNonEnd can follow SIfNonEnd")
   in
 
   (* we start off in no function.. *)
