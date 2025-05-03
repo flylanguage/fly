@@ -1,0 +1,7 @@
+(test 
+  (name test_ir)
+  (libraries fly_lib ounit2))
+
+(test
+  (name test_cond)
+  (libraries fly_lib ounit2))

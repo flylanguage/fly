@@ -1,4 +1,5 @@
 open Parser
+open Sast
 open Ast
 
 let string_of_token = function
@@ -265,4 +266,171 @@ let rec string_of_block = function
   | Expr e -> string_of_expr e ^ ";\n"
 ;;
 
+let rec string_of_sexpr = function
+  | SLiteral l -> string_of_int l
+  | SBoolLit true -> "true"
+  | SBoolLit false -> "false"
+  | SFloatLit f -> string_of_float f
+  | SCharLit c -> Printf.sprintf "\'%s\'" (String.make 1 c)
+  | SStringLit s -> Printf.sprintf "\"%s\"" s
+  | SUnit -> "()"
+  | SId id -> id
+  | SBinop (e1, o, e2) ->
+    string_of_sexpr (snd e1) ^ " " ^ string_of_op o ^ " " ^ string_of_sexpr (snd e2)
+  | SUnopSideEffect (id, op) ->
+    (match op with
+     | Preincr | Predecr -> string_of_op op ^ "" ^ id
+     | Postincr | Postdecr -> id ^ "" ^ string_of_op op
+     | _ -> raise (Failure "Invalid operation in UnopSideEffect"))
+  | SUnop (e, op) -> string_of_op op ^ "" ^ string_of_sexpr (snd e)
+  | SList elems ->
+    "[" ^ String.concat ", " (List.map string_of_sexpr (List.map snd elems)) ^ "]"
+  | STuple elems ->
+    "(" ^ String.concat ", " (List.map string_of_sexpr (List.map snd elems)) ^ ")"
+  | SFunctionCall (func_name, func_args) ->
+    func_name ^ "("
+    ^ String.concat ", " (List.map string_of_sexpr (List.map snd func_args))
+    ^ ")"
+  | SUDTInstance (udt_name, udt_members) ->
+    udt_name ^ "{" ^ string_of_sudt_instance udt_members ^ "}"
+  | SUDTAccess (udt_name, udt_access) -> udt_name ^ "." ^ string_of_udt_access udt_access
+  | SUDTStaticAccess (udt_name, udt_function) ->
+    udt_name ^ "::" ^ fst udt_function ^ "("
+    ^ String.concat ", " (List.map string_of_sexpr (List.map snd (snd udt_function)))
+    ^ ")"
+  | SIndex (indexed_expr, idx) ->
+    string_of_sexpr (snd indexed_expr) ^ "[" ^ string_of_sexpr (snd idx) ^ "]"
+  | SMatch (e1, case_list) ->
+    "match (" ^ string_of_sexpr (snd e1) ^ ") {\n" ^ string_of_scase_list case_list ^ "}"
+  | SWildcard -> "_"
+  | SEnumAccess (enum_name, enum_variant) -> enum_name ^ "::" ^ enum_variant
+  | STypeCast (type_name, e) ->
+    string_of_sexpr (snd e) ^ " as " ^ string_of_type type_name
+
+and string_of_scase_list = function
+  | [] -> "" (* empty case *)
+  | hd :: tl ->
+    string_of_pattern (fst hd)
+    ^ " -> "
+    ^ string_of_sexpr (snd (snd hd))
+    ^ ",\n" ^ string_of_scase_list tl
+
+and string_of_sudt_instance = function
+  | [] -> ""
+  | hd :: tl ->
+    fst hd ^ ": " ^ string_of_sexpr (snd (snd hd)) ^ ", " ^ string_of_sudt_instance tl
+
+and string_of_udt_access = function
+  | SUDTVariable udt_var -> udt_var
+  | SUDTFunction udt_func ->
+    fst udt_func ^ "("
+    ^ String.concat ", " (List.map string_of_sexpr (List.map snd (snd udt_func)))
+    ^ ")"
+;;
+
+let rec string_of_sblock = function
+  | SMutDeclTyped (id, typ, e) ->
+    "let mut " ^ id ^ ": " ^ string_of_type typ ^ " = " ^ string_of_sexpr (snd e) ^ ";\n"
+  (* | SMutDeclInfer (id, e) -> "let mut " ^ id ^ " := " ^ string_of_sexpr (snd e) ^ ";\n" *)
+  | SDeclTyped (id, typ, e) ->
+    "let " ^ id ^ ": " ^ string_of_type typ ^ " = " ^ string_of_sexpr (snd e) ^ ";\n"
+  (* | SDeclInfer (id, e) -> "let " ^ id ^ " := " ^ string_of_sexpr e ^ ";\n" *)
+  | SAssign (e1, assign_op, e2) ->
+    string_of_sexpr (snd e1)
+    ^ string_of_assign_op assign_op
+    ^ string_of_sexpr (snd e2)
+    ^ ";\n"
+  | SFunctionDefinition (rtyp, func_name, func_args, func_body) ->
+    "fun " ^ func_name ^ "(" ^ string_of_func_args func_args ^ ") -> "
+    ^ string_of_type rtyp ^ " {\n"
+    ^ String.concat "" (List.map string_of_sblock func_body)
+    ^ "\n}\n"
+  | SBoundFunctionDefinition (rtyp, func_name, func_args, func_body, bound_type) ->
+    "bind " ^ func_name ^ "<" ^ string_of_type bound_type ^ ">" ^ "("
+    ^ string_of_func_args func_args ^ ") -> " ^ string_of_type rtyp ^ " {\n"
+    ^ String.concat "" (List.map string_of_sblock func_body)
+    ^ "\n}\n"
+  | SUDTDef (udt_name, udt_members) ->
+    "type " ^ udt_name ^ "{\n"
+    ^ string_of_func_args
+        udt_members (* Re-use string_of_func_args  as it generates name: type string*)
+    ^ "\n}"
+  | SEnumDeclaration (enum_name, enum_variants) ->
+    "enum " ^ enum_name ^ " {\n"
+    ^ String.concat ",\n" (List.map string_of_enum_variant enum_variants)
+    ^ "\n}"
+  | SIfEnd (e, bl) ->
+    "if ("
+    ^ string_of_sexpr (snd e)
+    ^ ") {\n"
+    ^ String.concat "\n" (List.map string_of_sblock bl)
+    ^ "\n}"
+  | SIfNonEnd (e, bl, nbl) ->
+    "if ("
+    ^ string_of_sexpr (snd e)
+    ^ ") {\n"
+    ^ String.concat "\n" (List.map string_of_sblock bl)
+    ^ "\n} " ^ string_of_sblock nbl
+  | SElifEnd (e, bl) ->
+    "else if ("
+    ^ string_of_sexpr (snd e)
+    ^ ") {\n"
+    ^ String.concat "\n" (List.map string_of_sblock bl)
+    ^ "\n}"
+  | SElifNonEnd (e, bl, nbl) ->
+    "else if ("
+    ^ string_of_sexpr (snd e)
+    ^ ") {\n"
+    ^ String.concat "\n" (List.map string_of_sblock bl)
+    ^ "\n} " ^ string_of_sblock nbl
+  | SElseEnd bl -> "else {\n" ^ String.concat "\n" (List.map string_of_sblock bl) ^ "\n}"
+  | SWhile (e, block_list) ->
+    "while ("
+    ^ string_of_sexpr (snd e)
+    ^ ") {\n"
+    ^ String.concat "" (List.map string_of_sblock block_list)
+    ^ "\n}"
+  | SFor (idx, it, block_list) ->
+    "for " ^ idx ^ " := "
+    ^ string_of_sexpr (snd it)
+    ^ " {\n"
+    ^ String.concat "" (List.map string_of_sblock block_list)
+    ^ "\n}"
+  | SBreak -> "break;"
+  | SContinue -> "continue;"
+  | SReturnUnit -> "return;\n"
+  | SReturnVal e -> "return " ^ string_of_sexpr (snd e) ^ ";\n"
+  | SExpr e -> string_of_sexpr (snd e) ^ ";\n"
+;;
+
+let rec string_of_block_name = function
+  | MutDeclTyped (_, _, e) -> Printf.sprintf "MutDeclTyped (%s)" (string_of_expr e)
+  | MutDeclInfer (_, e) -> Printf.sprintf "MutDeclInfer (%s)" (string_of_expr e)
+  | DeclTyped (_, _, e) -> Printf.sprintf "DeclTyped (%s)" (string_of_expr e)
+  | DeclInfer (_, e) -> Printf.sprintf "DeclInfer (%s)" (string_of_expr e)
+  | Assign _ -> "Assign"
+  | FunctionDefinition _ -> "FunctionDefinition"
+  | BoundFunctionDefinition _ -> "BoundFunctionDefinition"
+  | UDTDef _ -> "UDTDef"
+  | EnumDeclaration _ -> "EnumDeclaration"
+  | IfEnd (e, _) -> Printf.sprintf "IfEnd (%s)" (string_of_expr e)
+  | IfNonEnd (e, _, b) ->
+    Printf.sprintf "IfNonEnd (%s) -> %s" (string_of_expr e) (string_of_block_name b)
+  | ElifEnd _ -> "ElifEnd"
+  | ElifNonEnd (e, _, b) ->
+    Printf.sprintf "ElifNonEnd (%s) -> %s" (string_of_expr e) (string_of_block_name b)
+  | ElseEnd _ -> "ElseEnd"
+  | While _ -> "While"
+  | For _ -> "For"
+  | Break -> "Break"
+  | Continue -> "Continue"
+  | ReturnUnit -> "ReturnUnit"
+  | ReturnVal _ -> "ReturnVal"
+  | Expr _ -> "Expr"
+;;
+
 let string_of_program fdecl = String.concat "" (List.map string_of_block fdecl.body)
+
+let string_of_sprogram (sfdecl : sprogram) =
+  String.concat "" (List.map string_of_sblock sfdecl.body)
+;;

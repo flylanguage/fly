@@ -41,14 +41,11 @@ type sblock =
   | SDeclTyped of string * typ * sexpr
   | SAssign of sexpr * assign_op * sexpr
   | SFunctionDefinition of
-      typ
-      * string
-      * (string * typ) list
-      * sblock list (* rtyp, func_name, func_args, func_body *)
+      typ * string * formal list * sblock list (* rtyp, func_name, func_args, func_body *)
   | SBoundFunctionDefinition of
       typ
       * string
-      * (string * typ) list
+      * formal list
       * sblock list
       * typ (* rtyp, func_name, func_args, func_body, bound_type *)
   | SEnumDeclaration of string * enum_variant list
