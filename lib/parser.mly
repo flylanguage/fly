@@ -31,7 +31,7 @@ open Ast
 %%
 
 program_rule:
-  block_list EOF { { body = $1} } (* mirror PyN *)
+  block_list EOF { { body = $1} } /* mirror PyN */
 
 block_list:
   /* empty */       {[]}
@@ -39,7 +39,7 @@ block_list:
 
 
 literal:
-    LITERAL                           { Literal($1)  } (* base types *)
+    LITERAL                           { Literal($1)  } /* base types */
   | BLIT                              { BoolLit($1)  }
   | FLIT                              { FloatLit($1) }
   | CLIT                              { CharLit($1)  }
@@ -47,8 +47,8 @@ literal:
 
 literal_expr:
   | literal                           { $1 }
-  | list                              { $1 } (* list literal declaration *)
-  | tuple                             { $1 } (* tuple literal declaration *)
+  | list                              { $1 } /* list literal declaration */
+  | tuple                             { $1 } /* tuple literal declaration */
 
 side_effect_expr:
   | ID INCR                           { UnopSideEffect($1, Postincr) }
@@ -116,8 +116,8 @@ expr9:
  | literal_expr                              { $1 }
  | side_effect_expr                          { $1 }
  | access_expr                               { $1 }
- | udt_instance                              { $1 } (* Instantiating a user defined type *)
- | match_expr                                { $1 } (* match is an expression and should evaluate to something *)
+ | udt_instance                              { $1 } /* Instantiating a user defined type */
+ | match_expr                                { $1 } /* match is an expression and should evaluate to something */
  | func_call                                 { FunctionCall($1) }
  | expr9 AS typ                              { TypeCast($3, $1) }
  | parens_expr                               { $1 }
@@ -159,22 +159,22 @@ declaration:
   | enum_decl                              { $1 }
 
 var_decl:
-  | LET MUT ID COLON typ EQUAL expr SEMI    { MutDeclTyped($3, $5, $7) }  (* let mut x: int = 5; *)
-  | LET MUT ID WALRUS expr SEMI             { MutDeclInfer($3, $5) }      (* let mut x := 5; *)
-  | LET ID COLON typ EQUAL expr SEMI        { DeclTyped($2, $4, $6) }     (* let x: int = 5; *)
-  | LET ID WALRUS expr SEMI                 { DeclInfer($2, $4) }         (* let x := 5; *)
+  | LET MUT ID COLON typ EQUAL expr SEMI    { MutDeclTyped($3, $5, $7) }  /* let mut x: int = 5; */
+  | LET MUT ID WALRUS expr SEMI             { MutDeclInfer($3, $5) }      /* let mut x := 5; */
+  | LET ID COLON typ EQUAL expr SEMI        { DeclTyped($2, $4, $6) }     /* let x: int = 5; */
+  | LET ID WALRUS expr SEMI                 { DeclInfer($2, $4) }         /* let x := 5; */
 
 func_decl:
   FUN ID LPAREN formals_opt RPAREN ARROW typ LBRACE block_list RBRACE
   {
     FunctionDefinition($7, $2, $4 , $9)
   }
-| FUN ID LPAREN formals_opt RPAREN LBRACE block_list RBRACE (* Unspecified return type defaults to Unit. The semantic checker will check if this holds. All other return types must be specified *)
+| FUN ID LPAREN formals_opt RPAREN LBRACE block_list RBRACE /* Unspecified return type defaults to Unit. The semantic checker will check if this holds. All other return types must be specified */
   {
     FunctionDefinition(Unit, $2, $4, $7)
   }
-  (* first argument to bound function must be self *)
-  (* Need to differentiate between bound static and non-static functions*)
+  /* first argument to bound function must be self */
+  /* Need to differentiate between bound static and non-static functions*/
 | BIND ID LT typ GT LPAREN SELF RPAREN ARROW typ LBRACE block_list RBRACE
   {
     BoundFunctionDefinition($10, $2, [("self", $4)], $12, $4)
@@ -183,15 +183,15 @@ func_decl:
   {
     BoundFunctionDefinition($12, $2, ("self", $4) :: $9, $14, $4)
   }
-| BIND ID LT typ GT LPAREN SELF RPAREN LBRACE block_list RBRACE (* Unit return type bound function*)
+| BIND ID LT typ GT LPAREN SELF RPAREN LBRACE block_list RBRACE /* Unit return type bound function*/
   {
     BoundFunctionDefinition(Unit, $2, [("self", $4)], $10, $4)
   }
-| BIND ID LT typ GT LPAREN SELF COMMA formals RPAREN LBRACE block_list RBRACE (* Unit return type bound function*)
+| BIND ID LT typ GT LPAREN SELF COMMA formals RPAREN LBRACE block_list RBRACE /* Unit return type bound function*/
   {
     BoundFunctionDefinition(Unit, $2, ("self", $4) :: $9, $12, $4)
   }
-| BIND ID LT typ GT LPAREN formals_opt RPAREN ARROW typ LBRACE block_list RBRACE (* This is a static function *)
+| BIND ID LT typ GT LPAREN formals_opt RPAREN ARROW typ LBRACE block_list RBRACE /* This is a static function */
   {
     BoundFunctionDefinition($4, $2, $7, $12, $4)
   }
@@ -240,17 +240,17 @@ assign_op:
 
 
 func_call:
-  ID LPAREN list_elements_opt RPAREN   { ($1, $3) } (* Function call *)
+  ID LPAREN list_elements_opt RPAREN   { ($1, $3) } /* Function call */
 
 case_list:
-  | case_item                 {[$1]} (* Base case *)
+  | case_item                 {[$1]} /* Base case */
   | case_item COMMA case_list { $1 :: $3 }
 
 case_item:
   pattern ARROW expr { ($1, $3) }
 
-(* Only literals allowed here. TBH, this really needs discussion *)
-(* Added P to indicate these are patterns *)
+/* Only literals allowed here. TBH, this really needs discussion */
+/* Added P to indicate these are patterns */
 pattern:
   | LITERAL                     { PLiteral($1)  }
   | BLIT                        { PBoolLit($1)  }
@@ -311,7 +311,7 @@ elif_stmt:
 while_loop:
   WHILE LPAREN expr RPAREN LBRACE block_list RBRACE     { While($3, $6) }
 
-(* Currently allow only list or variable as iterators *)
+/* Currently allow only list or variable as iterators */
 for_loop:
   | FOR ID WALRUS list LBRACE block_list RBRACE           { For($2, $4, $6) }
   | FOR ID WALRUS ID LBRACE block_list RBRACE             { For($2, Id($4), $6) }

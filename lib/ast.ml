@@ -79,6 +79,8 @@ and udt_access =
   | UDTVariable of string
   | UDTFunction of func
 
+type formal = string * typ
+
 type enum_variant =
   | EnumVariantDefault of string
   | EnumVariantExplicit of string * int
@@ -90,14 +92,11 @@ type block =
   | DeclInfer of string * expr
   | Assign of expr * assign_op * expr
   | FunctionDefinition of
-      typ
-      * string
-      * (string * typ) list
-      * block list (* rtyp, func_name, func_args, func_body *)
+      typ * string * formal list * block list (* rtyp, func_name, func_args, func_body *)
   | BoundFunctionDefinition of
       typ
       * string
-      * (string * typ) list
+      * formal list
       * block list
       * typ (* rtyp, func_name, func_args, func_body, bound_type *)
   | EnumDeclaration of string * enum_variant list
