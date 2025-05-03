@@ -2,6 +2,41 @@
 
 This repository holds the source code for the Fly compiler
 
+## Usage
+
+The fly compiler processes a `.fly` file provided in the program arguments, or reads a fly program through stdin if no file is provided.
+
+By default, the fly compiler produces a `fly.out` executable from the given program.
+However, that behaviour is changed with the following flags:
+
+- `--tokens`: prints the program's tokens to stdout
+- `--ast`: prints the program's ast to stdout
+- `--ir`: prints the program's llvm IR to stdout
+
+### Example
+
+```bash
+❯ ./fly --help
+Usage: ./fly <filename>.fly
+  --tokens Print Tokens to stdout
+  --ast Print Ast to stdout
+  --ir Print IR to stdout
+  -help  Display this list of options
+  --help  Display this list of options
+
+# produce a "fly.out" executable from the program
+❯ ./fly main.fly
+
+# produce the program's tokens to stdout
+❯ ./fly --tokens main.fly
+
+# produce the program's ast to stdout
+❯ ./fly --ast main.fly
+
+# produce the program's llvm IR to stdout
+❯ ./fly --ir main.fly
+```
+
 ## Building
 
 ### Environment Setup
@@ -12,7 +47,7 @@ If you don't have opam, we recommend installing it through homebrew (Mac).
 Mac (homebrew):
 
 ```bash
-brew install opam
+❯ brew install opam
 ```
 
 Also, the project requires `llvm@14` on your machine.

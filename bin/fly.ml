@@ -19,6 +19,7 @@ let speclist =
 ;;
 
 let usg = "Usage: ./fly <filename>.fly"
+let exe_name = "fly.out"
 
 let rec to_token_list lexbuf =
   let tk = Fly_lib.Scanner.tokenize lexbuf in
@@ -79,7 +80,7 @@ let read_and_compile channel =
   let asmstr = Llvm.MemoryBuffer.as_string asmbuf in
 
   (* Compile asm to an executable using gcc - reading the asm from stdin *)
-  let argv = [ "gcc"; "-x"; "assembler"; "/dev/stdin"; "-o"; "a.out" ] in
+  let argv = [ "gcc"; "-x"; "assembler"; "/dev/stdin"; "-o"; exe_name] in
   let cmd = String.concat " " argv in
   let child_stdout, child_stdin = Unix.open_process cmd in
 
