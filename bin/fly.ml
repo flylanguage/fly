@@ -7,6 +7,7 @@ type action =
   | IR
   | Code
 
+(* By default, generate code *)
 let act = ref Code
 let set_action a () = act := a
 
