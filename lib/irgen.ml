@@ -17,8 +17,8 @@ let ltype_of_typ = function
   | A.Float -> l_float
   (* | A.Char -> l_char *)
   | A.Unit -> l_unit
-  | e ->
-    raise (Failure (Printf.sprintf "type not implemented: %s" (Utils.string_of_type e)))
+  | t ->
+    raise (Failure (Printf.sprintf "type not implemented: %s" (Utils.string_of_type t)))
 ;;
 
 let get_lformals_arr (formals : A.formal list) =
@@ -61,10 +61,21 @@ let add_local_val typ var vars expr builder =
     match typ, snd expr with
     | A.Int, SLiteral i ->
       let local = L.build_alloca (ltype_of_typ typ) var builder in
-      let v = L.const_int l_int i in
+      let v = L.const_int (ltype_of_typ typ) i in
       ignore (L.build_store v local builder);
       local
-    | _, _ -> raise (Failure "assignment not completed")
+    | A.Bool, SBoolLit b ->
+      let local = L.build_alloca (ltype_of_typ typ) var builder in
+      let v = L.const_int (ltype_of_typ typ) (if b then 1 else 0) in
+      ignore (L.build_store v local builder);
+      local
+    | t, e ->
+      raise
+        (Failure
+           (Printf.sprintf
+              "local assignment not completed: typ: %s, expr: %s"
+              (Utils.string_of_type t)
+              (Utils.string_of_sexpr e)))
   in
   StringMap.add var local vars
 ;;
@@ -78,7 +89,19 @@ let add_global_val typ var vars expr the_module =
     | A.Int, SLiteral i ->
       let init = L.const_int l_int i in
       L.define_global var init the_module
-    | _, _ -> raise (Failure "assignment not implemented")
+    | A.Bool, SBoolLit b ->
+      let init = L.const_int l_bool (if b then 1 else 0) in
+      L.define_global var init the_module
+    | A.Float, SFloatLit f ->
+      let init = L.const_float l_float f in
+      L.define_global var init the_module
+    | t, e ->
+      raise
+        (Failure
+           (Printf.sprintf
+              "global assignment not completed: typ: %s, expr: %s"
+              (Utils.string_of_type t)
+              (Utils.string_of_sexpr e)))
   in
   StringMap.add var global vars
 ;;
