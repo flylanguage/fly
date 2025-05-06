@@ -11,15 +11,22 @@ and l_char = L.i8_type context
 and l_unit = L.void_type context
 and l_float = L.float_type context
 
+let l_str = L.pointer_type l_char
+
 let ltype_of_typ = function
   | A.Int -> l_int
   | A.Bool -> l_bool
   | A.Float -> l_float
-  (* | A.Char -> l_char *)
+  | A.Char -> l_char
   | A.Unit -> l_unit
+  | A.String -> l_str
   | t ->
     raise (Failure (Printf.sprintf "type not implemented: %s" (Utils.string_of_type t)))
 ;;
+
+let l_printf : L.lltype = L.var_arg_function_type l_int [| L.pointer_type l_char |]
+let print_func the_module : L.llvalue = L.declare_function "printf" l_printf the_module
+let int_format_str builder = L.build_global_stringptr "%d\n" "fmt" builder
 
 let get_lformals_arr (formals : A.formal list) =
   let lformal_list = List.map ltype_of_typ (List.map snd formals) in
@@ -32,12 +39,25 @@ let lookup (vars : L.llvalue StringMap.t) var =
     raise (Failure (Printf.sprintf "var lookup error: failed to find variable %s\n" var))
 ;;
 
-let build_expr expr vars builder =
+let build_expr expr vars the_module builder =
   match expr with
   | SLiteral l -> L.const_int l_int l
   | SBoolLit b -> L.const_int l_bool (if b then 1 else 0)
   | SFloatLit f -> L.const_float l_float f
   | SId var -> L.build_load (lookup vars var) var builder
+  | SFunctionCall func ->
+    let func_name = fst func in
+    if func_name <> print_func_name
+    then raise (Failure (Printf.sprintf "funccall: %s" (fst func)))
+    else (
+      let _res =
+        L.build_call
+          (print_func the_module)
+          [| int_format_str builder; L.const_int l_int 4 |]
+          "printf" (* LLVM IR knows what "printf" is *)
+          builder
+      in
+      _res (* raise (Failure "funccall")) *))
   | e ->
     raise (Failure (Printf.sprintf "expr not implemented: %s" (Utils.string_of_sexpr e)))
 ;;
@@ -99,6 +119,9 @@ let add_global_val typ var vars expr the_module =
       L.define_global var init the_module
     | A.Float, SFloatLit f ->
       let init = L.const_float l_float f in
+      L.define_global var init the_module
+    | A.Char, SCharLit c ->
+      let init = L.const_stringz context (String.make 1 c) in
       L.define_global var init the_module
     | t, e ->
       raise
@@ -162,16 +185,16 @@ let translate blocks =
       ignore (L.build_ret_void (Option.get builder));
       vars, curr_func, func_blocks, builder
     | SReturnVal expr ->
-      let ret = build_expr (snd expr) vars (Option.get builder) in
+      let ret = build_expr (snd expr) vars the_module (Option.get builder) in
       ignore (L.build_ret ret (Option.get builder));
       vars, curr_func, func_blocks, builder
     | SExpr expr ->
-      ignore (build_expr (snd expr) vars (Option.get builder));
+      ignore (build_expr (snd expr) vars the_module (Option.get builder));
       vars, curr_func, func_blocks, builder
     | SIfEnd (expr, blks) ->
       (* expression should be bool *)
       sanitize_types (fst expr) A.Bool;
-      let bool_val = build_expr (snd expr) vars (Option.get builder) in
+      let bool_val = build_expr (snd expr) vars the_module (Option.get builder) in
 
       (* We require curr_func to be Some - no if-else in global scope *)
       let then_bb = L.append_block context "then" (Option.get curr_func) in
@@ -189,7 +212,7 @@ let translate blocks =
       (* expression should be bool *)
       sanitize_types (fst expr) A.Bool;
 
-      let bool_val = build_expr (snd expr) vars (Option.get builder) in
+      let bool_val = build_expr (snd expr) vars the_module (Option.get builder) in
 
       let then_bb = L.append_block context "then" (Option.get curr_func) in
       let then_builder = Some (L.builder_at_end context then_bb) in
@@ -236,7 +259,7 @@ let translate blocks =
     | SElifEnd (expr, blks) ->
       sanitize_types (fst expr) A.Bool;
 
-      let bool_val = build_expr (snd expr) vars (Option.get builder) in
+      let bool_val = build_expr (snd expr) vars the_module (Option.get builder) in
 
       let then_bb = L.append_block context "then" (Option.get curr_func) in
       let then_builder = Some (L.builder_at_end context then_bb) in
@@ -252,7 +275,7 @@ let translate blocks =
     | SElifNonEnd (expr, blks, else_blk) ->
       sanitize_types (fst expr) A.Bool;
 
-      let bool_val = build_expr (snd expr) vars (Option.get builder) in
+      let bool_val = build_expr (snd expr) vars the_module (Option.get builder) in
 
       let then_bb = L.append_block context "then" (Option.get curr_func) in
       let then_builder = Some (L.builder_at_end context then_bb) in
