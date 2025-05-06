@@ -69,6 +69,11 @@ let add_local_val typ var vars expr builder =
       let v = L.const_int (ltype_of_typ typ) (if b then 1 else 0) in
       ignore (L.build_store v local builder);
       local
+    | A.Float, SFloatLit f ->
+      let local = L.build_alloca (ltype_of_typ typ) var builder in
+      let v = L.const_float (ltype_of_typ typ) f in
+      ignore (L.build_store v local builder);
+      local
     | t, e ->
       raise
         (Failure

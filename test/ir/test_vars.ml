@@ -111,6 +111,39 @@ let tests =
              }\n"
           in
           assert_equal expected actual ~printer)
+       ; ("local_var_float"
+          >:: fun _ ->
+          let sast = get_sast "fun function() -> () {let a := 10.5;}" in
+          let mdl = Irgen.translate sast in
+          let actual = L.string_of_llmodule mdl in
+          let expected =
+            "; ModuleID = 'Fly'\n\
+             source_filename = \"Fly\"\n\n\
+             define void @function() {\n\
+             entry:\n\
+            \  %a = alloca float, align 4\n\
+            \  store float 1.050000e+01, float* %a, align 4\n\
+             }\n"
+          in
+          assert_equal expected actual ~printer)
+         (* ; ("local_var_char" *)
+         (*    >:: fun _ -> *)
+         (*    let sast = get_sast "fun function() -> () {let a := 'a';}" in *)
+         (*    let mdl = Irgen.translate sast in *)
+         (*    let actual = L.string_of_llmodule mdl in *)
+         (*    let expected = *)
+         (*      "; ModuleID = 'Fly'\nsource_filename = \"Fly\"\n\n@a = global i1 true\n" *)
+         (*    in *)
+         (*    assert_equal expected actual ~printer) *)
+         (* ; ("local_var_string" *)
+         (*    >:: fun _ -> *)
+         (*    let sast = get_sast "fun function() -> () {let a := \"abcd\";}" in *)
+         (*    let mdl = Irgen.translate sast in *)
+         (*    let actual = L.string_of_llmodule mdl in *)
+         (*    let expected = *)
+         (*      "; ModuleID = 'Fly'\nsource_filename = \"Fly\"\n\n@a = global i1 true\n" *)
+         (*    in *)
+         (*    assert_equal expected actual ~printer) *)
        ]
 ;;
 
