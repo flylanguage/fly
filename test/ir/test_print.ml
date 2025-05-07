@@ -62,6 +62,25 @@ let tests =
           in
           _write_to_file actual "test.out";
           assert_equal expected actual ~printer)
+       ; ("print_float"
+          >:: fun _ ->
+          let sast = get_sast "fun main() -> int {print(1.23); return 0;}" in
+          let mdl = Irgen.translate sast in
+          let actual = L.string_of_llmodule mdl in
+          let expected =
+            "; ModuleID = 'Fly'\n\
+             source_filename = \"Fly\"\n\n\
+             @float_fmt = private unnamed_addr constant [4 x i8] c\"%f\\0A\\00\", align 1\n\n\
+             define i32 @main() {\n\
+             entry:\n\
+            \  %printf = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x \
+             i8], [4 x i8]* @float_fmt, i32 0, i32 0), float 0x3FF3AE1480000000)\n\
+            \  ret i32 0\n\
+             }\n\n\
+             declare i32 @printf(i8*, ...)\n"
+          in
+          _write_to_file actual "test.out";
+          assert_equal expected actual ~printer)
        ; ("print_bool"
           >:: fun _ ->
           let sast = get_sast "fun main() -> int {print(true); return 0;}" in
