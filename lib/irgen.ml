@@ -28,6 +28,7 @@ let l_printf : L.lltype = L.var_arg_function_type l_int [| L.pointer_type l_char
 let print_func the_module : L.llvalue = L.declare_function "printf" l_printf the_module
 let int_format_str builder = L.build_global_stringptr "%d\n" "fmt" builder
 let str_format_str builder = L.build_global_stringptr "%s\n" "fmt" builder
+let float_format_str builder = L.build_global_stringptr "%f\n" "fmt" builder
 
 let get_lformals_arr (formals : A.formal list) =
   let lformal_list = List.map ltype_of_typ (List.map snd formals) in
@@ -94,6 +95,9 @@ let rec build_expr expr vars the_module builder =
               builder
           in
           [| str_format_str builder; bool_str |]
+        | A.Float, e ->
+          let lexpr = build_expr e vars the_module builder in
+          [| float_format_str builder; lexpr |]
         | _, _ -> failwith "Incorrect call to print"
       in
       let _res =
