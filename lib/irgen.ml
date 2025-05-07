@@ -240,6 +240,7 @@ let translate blocks =
     | SIfEnd (expr, blks) ->
       (* expression should be bool *)
       assert_types (fst expr) A.Bool;
+
       let bool_val = build_expr expr vars (Option.get builder) in
 
       (* We require curr_func to be Some - no if-else in global scope *)
