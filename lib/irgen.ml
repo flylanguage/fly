@@ -98,7 +98,7 @@ let rec build_expr expr vars builder =
             (Utils.string_of_type typ)))
       se1
       se2
-      "tmp"
+      ("tmp_" ^ Utils.string_of_type typ)
       builder
   | e ->
     raise (Failure (Printf.sprintf "expr not implemented: %s" (Utils.string_of_sexpr e)))
