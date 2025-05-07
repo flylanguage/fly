@@ -42,64 +42,63 @@ let rec build_expr expr vars builder =
     let typ = fst e1 in
     let se1 = build_expr (snd e1) vars builder in
     let se2 = build_expr (snd e2) vars builder in
-    (match typ with
-     | A.Int ->
-       (match op with
-        | A.Add -> L.build_add
-        | A.Sub -> L.build_sub
-        | A.Mult -> L.build_mul
-        | A.Div -> L.build_sdiv
-        | A.Mod -> L.build_srem
-        | A.Equal -> L.build_icmp L.Icmp.Eq
-        | A.Neq -> L.build_icmp L.Icmp.Ne
-        | A.Less -> L.build_icmp L.Icmp.Slt
-        | A.Leq -> L.build_icmp L.Icmp.Sle
-        | A.Greater -> L.build_icmp L.Icmp.Sgt
-        | A.Geq -> L.build_icmp L.Icmp.Sge
-        | _ ->
-          failwith
-            (Printf.sprintf
-               "Integer binary operator %s not yet implemented"
-               (Utils.string_of_op op)))
-     | A.Float ->
-       (match op with
-        | A.Add -> L.build_fadd
-        | A.Sub -> L.build_fsub
-        | A.Mult -> L.build_fmul
-        | A.Div -> L.build_fdiv
-        | A.Mod -> L.build_frem
-        | A.Equal -> L.build_fcmp L.Fcmp.Oeq
-        | A.Neq -> L.build_fcmp L.Fcmp.One
-        | A.Less -> L.build_fcmp L.Fcmp.Olt
-        | A.Leq -> L.build_fcmp L.Fcmp.Ole
-        | A.Greater -> L.build_fcmp L.Fcmp.Ogt
-        | A.Geq -> L.build_fcmp L.Fcmp.Oge
-        | _ ->
-          failwith
-            (Printf.sprintf
-               "Float binary operator %s not yet implemented"
-               (Utils.string_of_op op)))
-     | A.Bool ->
-       (match op with
-        | A.And -> L.build_and
-        | A.Or -> L.build_or
-        | A.Equal -> L.build_icmp L.Icmp.Eq
-        | A.Neq -> L.build_icmp L.Icmp.Ne
-        | _ ->
-          failwith
-            (Printf.sprintf
-               "Boolean binary operator %s not yet implemented"
-               (Utils.string_of_op op)))
-     | _ ->
-       failwith
-         (Printf.sprintf
-            "Binary operator %s not yet implemented for type %s"
-            (Utils.string_of_op op)
-            (Utils.string_of_type typ)))
-      se1
-      se2
-      ("tmp_" ^ Utils.string_of_type typ)
-      builder
+    let lval =
+      match typ with
+      | A.Int ->
+        (match op with
+         | A.Add -> L.build_add
+         | A.Sub -> L.build_sub
+         | A.Mult -> L.build_mul
+         | A.Div -> L.build_sdiv
+         | A.Mod -> L.build_srem
+         | A.Equal -> L.build_icmp L.Icmp.Eq
+         | A.Neq -> L.build_icmp L.Icmp.Ne
+         | A.Less -> L.build_icmp L.Icmp.Slt
+         | A.Leq -> L.build_icmp L.Icmp.Sle
+         | A.Greater -> L.build_icmp L.Icmp.Sgt
+         | A.Geq -> L.build_icmp L.Icmp.Sge
+         | _ ->
+           failwith
+             (Printf.sprintf
+                "Integer binary operator %s not yet implemented"
+                (Utils.string_of_op op)))
+      | A.Float ->
+        (match op with
+         | A.Add -> L.build_fadd
+         | A.Sub -> L.build_fsub
+         | A.Mult -> L.build_fmul
+         | A.Div -> L.build_fdiv
+         | A.Mod -> L.build_frem
+         | A.Equal -> L.build_fcmp L.Fcmp.Oeq
+         | A.Neq -> L.build_fcmp L.Fcmp.One
+         | A.Less -> L.build_fcmp L.Fcmp.Olt
+         | A.Leq -> L.build_fcmp L.Fcmp.Ole
+         | A.Greater -> L.build_fcmp L.Fcmp.Ogt
+         | A.Geq -> L.build_fcmp L.Fcmp.Oge
+         | _ ->
+           failwith
+             (Printf.sprintf
+                "Float binary operator %s not yet implemented"
+                (Utils.string_of_op op)))
+      | A.Bool ->
+        (match op with
+         | A.And -> L.build_and
+         | A.Or -> L.build_or
+         | A.Equal -> L.build_icmp L.Icmp.Eq
+         | A.Neq -> L.build_icmp L.Icmp.Ne
+         | _ ->
+           failwith
+             (Printf.sprintf
+                "Boolean binary operator %s not yet implemented"
+                (Utils.string_of_op op)))
+      | _ ->
+        failwith
+          (Printf.sprintf
+             "Binary operator %s not yet implemented for type %s"
+             (Utils.string_of_op op)
+             (Utils.string_of_type typ))
+    in
+    lval se1 se2 ("tmp_" ^ Utils.string_of_type typ) builder
   | e ->
     raise (Failure (Printf.sprintf "expr not implemented: %s" (Utils.string_of_sexpr e)))
 ;;
