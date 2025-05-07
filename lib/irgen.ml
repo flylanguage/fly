@@ -115,8 +115,8 @@ let assert_types typ1 typ2 =
 ;;
 
 let add_local_val typ var vars (expr : A.typ * Sast.sx) builder =
-  let actual_expr_typ, _ = expr in
-  assert_types actual_expr_typ typ;
+  let expr_type = fst expr in
+  assert_types expr_type typ;
 
   let local_var_allocation : L.llvalue = L.build_alloca (ltype_of_typ typ) var builder in
   let sx = snd expr in
