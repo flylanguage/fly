@@ -49,11 +49,12 @@ let rec build_expr expr vars the_module builder =
   | SFunctionCall func ->
     let func_name = fst func in
 
-    (* TODO: print with no args should print new line *)
-    if List.length (snd func) != 1
+    if func_name <> print_func_name
+    then
+      raise (Failure (Printf.sprintf "funccall: %s" func_name))
+      (* TODO: print with no args should print new line *)
+    else if List.length (snd func) != 1
     then failwith "Incorrect number of args to print: expected 1"
-    else if func_name <> print_func_name
-    then raise (Failure (Printf.sprintf "funccall: %s" func_name))
     else (
       let func_arg = List.hd (snd func) in
       let arr =
@@ -82,6 +83,10 @@ let rec build_expr expr vars the_module builder =
 
           L.position_at_end merge_block builder;
 
+          (* phi changes behavior dependent on which branch we arrived from 
+             if we arrived from true_block, use true_str
+             if we arrived from false_block, use false_str
+          *)
           let bool_str =
             L.build_phi
               [ true_str, true_block; false_str, false_block ]
@@ -95,10 +100,10 @@ let rec build_expr expr vars the_module builder =
         L.build_call
           (print_func the_module)
           arr
-          "printf" (* LLVM IR knows what "printf" is *)
+          "printf" (* call the LLVM IR "printf" function *)
           builder
       in
-      _res (* raise (Failure "funccall")) *))
+      _res)
   | e ->
     raise (Failure (Printf.sprintf "expr not implemented: %s" (Utils.string_of_sexpr e)))
 ;;
