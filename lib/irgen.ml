@@ -33,15 +33,56 @@ let lookup (vars : L.llvalue StringMap.t) var =
 ;;
 
 let rec build_expr expr vars builder =
-  match expr with
+  let sx = snd expr in
+  match sx with
   | SLiteral l -> L.const_int l_int l
   | SBoolLit b -> L.const_int l_bool (if b then 1 else 0)
   | SFloatLit f -> L.const_float l_float f
   | SId var -> L.build_load (lookup vars var) var builder
+  | SUnop (e, op) ->
+    let llval = build_expr e vars builder in
+    let typ = fst e in
+    (match op with
+     | A.Not ->
+       (match typ with
+        | A.Bool -> L.build_not llval "tmp_not" builder
+        | _ -> failwith ("Unary Not not supported for type " ^ Utils.string_of_type typ))
+     | _ -> failwith ("Unary operator not supported for type " ^ Utils.string_of_type typ))
+  | SUnopSideEffect (var, op) ->
+    let typ = fst expr in
+    let ll_ptr = lookup vars var in
+    let ll_original_val = L.build_load ll_ptr var builder in
+    let ll_one =
+      match typ with
+      | A.Int -> L.const_int l_int 1
+      | A.Float -> L.const_float l_float 1.0
+      | _ -> failwith "todo"
+    in
+    let ll_new_val =
+      match op with
+      | A.Postincr | A.Preincr ->
+        (match typ with
+         | A.Int -> L.build_add ll_original_val ll_one "incr_val" builder
+         | A.Float -> L.build_fadd ll_original_val ll_one "incr_val" builder
+         | _ -> failwith "Post/Preincr failed")
+      | A.Postdecr | A.Predecr ->
+        (match typ with
+         | A.Int -> L.build_sub ll_original_val ll_one "incr_val" builder
+         | A.Float -> L.build_fsub ll_original_val ll_one "incr_val" builder
+         | _ -> failwith "Post/Predecr failed")
+      | _ -> failwith ("Operand " ^ Utils.string_of_op op ^ " Not found")
+    in
+
+    ignore (L.build_store ll_new_val ll_ptr builder);
+
+    (match op with
+     | A.Postincr | A.Postdecr -> ll_original_val
+     | A.Preincr | A.Predecr -> ll_new_val
+     | _ -> failwith "Could apply SideEffect to variable")
   | SBinop (e1, op, e2) ->
     let typ = fst e1 in
-    let se1 = build_expr (snd e1) vars builder in
-    let se2 = build_expr (snd e2) vars builder in
+    let se1 = build_expr e1 vars builder in
+    let se2 = build_expr e2 vars builder in
     let lval =
       match typ with
       | A.Int ->
@@ -118,9 +159,7 @@ let add_local_val typ var vars (expr : A.typ * Sast.sx) builder =
   assert_types expr_type typ;
 
   let local_var_allocation : L.llvalue = L.build_alloca (ltype_of_typ typ) var builder in
-  let sx = snd expr in
-
-  let ll_initializer_value : L.llvalue = build_expr sx vars builder in
+  let ll_initializer_value : L.llvalue = build_expr expr vars builder in
 
   ignore (L.build_store ll_initializer_value local_var_allocation builder);
 
@@ -192,16 +231,16 @@ let translate blocks =
       ignore (L.build_ret_void (Option.get builder));
       vars, curr_func, func_blocks, builder
     | SReturnVal expr ->
-      let ret = build_expr (snd expr) vars (Option.get builder) in
+      let ret = build_expr expr vars (Option.get builder) in
       ignore (L.build_ret ret (Option.get builder));
       vars, curr_func, func_blocks, builder
     | SExpr expr ->
-      ignore (build_expr (snd expr) vars (Option.get builder));
+      ignore (build_expr expr vars (Option.get builder));
       vars, curr_func, func_blocks, builder
     | SIfEnd (expr, blks) ->
       (* expression should be bool *)
       assert_types (fst expr) A.Bool;
-      let bool_val = build_expr (snd expr) vars (Option.get builder) in
+      let bool_val = build_expr expr vars (Option.get builder) in
 
       (* We require curr_func to be Some - no if-else in global scope *)
       let then_bb = L.append_block context "then" (Option.get curr_func) in
@@ -219,7 +258,7 @@ let translate blocks =
       (* expression should be bool *)
       assert_types (fst expr) A.Bool;
 
-      let bool_val = build_expr (snd expr) vars (Option.get builder) in
+      let bool_val = build_expr expr vars (Option.get builder) in
 
       let then_bb = L.append_block context "then" (Option.get curr_func) in
       let then_builder = Some (L.builder_at_end context then_bb) in
@@ -266,7 +305,7 @@ let translate blocks =
     | SElifEnd (expr, blks) ->
       assert_types (fst expr) A.Bool;
 
-      let bool_val = build_expr (snd expr) vars (Option.get builder) in
+      let bool_val = build_expr expr vars (Option.get builder) in
 
       let then_bb = L.append_block context "then" (Option.get curr_func) in
       let then_builder = Some (L.builder_at_end context then_bb) in
@@ -282,7 +321,7 @@ let translate blocks =
     | SElifNonEnd (expr, blks, else_blk) ->
       assert_types (fst expr) A.Bool;
 
-      let bool_val = build_expr (snd expr) vars (Option.get builder) in
+      let bool_val = build_expr expr vars (Option.get builder) in
 
       let then_bb = L.append_block context "then" (Option.get curr_func) in
       let then_builder = Some (L.builder_at_end context then_bb) in
