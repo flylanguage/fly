@@ -44,7 +44,10 @@ let tests =
           >:: fun _ ->
           let lexbuf =
             Lexing.from_string
-              "let b3 := false;\nif (b3 || false) {\n\tlet result4 := \"executed\";\n\n}\n"
+              "let b3 := false;\n\
+               if (b3 || false) {\n\
+               \tlet result4 := \"executed\";\n\n\
+               }\n"
           in
           let program = Parser.program_rule Scanner.tokenize lexbuf in
           let actual = string_of_program program in

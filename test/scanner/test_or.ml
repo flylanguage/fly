@@ -20,7 +20,7 @@ let tests =
           let actual = string_of_tokens (to_list lexbuf) in
           let expected =
             "LET ID(a1) WALRUS BLIT(true) SEMI LET ID(b1) WALRUS BLIT(false) SEMI LET \
-            ID(result1) WALRUS ID(a1) OR ID(b1) SEMI"
+             ID(result1) WALRUS ID(a1) OR ID(b1) SEMI"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("test2"
