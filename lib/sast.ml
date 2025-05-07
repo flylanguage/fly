@@ -63,6 +63,7 @@ type sblock =
   | SReturnVal of sexpr
   | SExpr of sexpr
 
+(* Name of our print function *)
 let print_func_name = "print"
 
 type sprogram = { body : sblock list }

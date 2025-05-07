@@ -27,6 +27,7 @@ let ltype_of_typ = function
 let l_printf : L.lltype = L.var_arg_function_type l_int [| L.pointer_type l_char |]
 let print_func the_module : L.llvalue = L.declare_function "printf" l_printf the_module
 let int_format_str builder = L.build_global_stringptr "%d\n" "fmt" builder
+let str_format_str builder = L.build_global_stringptr "%s\n" "fmt" builder
 
 let get_lformals_arr (formals : A.formal list) =
   let lformal_list = List.map ltype_of_typ (List.map snd formals) in
@@ -39,7 +40,7 @@ let lookup (vars : L.llvalue StringMap.t) var =
     raise (Failure (Printf.sprintf "var lookup error: failed to find variable %s\n" var))
 ;;
 
-let build_expr expr vars the_module builder =
+let rec build_expr expr vars the_module builder =
   match expr with
   | SLiteral l -> L.const_int l_int l
   | SBoolLit b -> L.const_int l_bool (if b then 1 else 0)
@@ -47,13 +48,53 @@ let build_expr expr vars the_module builder =
   | SId var -> L.build_load (lookup vars var) var builder
   | SFunctionCall func ->
     let func_name = fst func in
-    if func_name <> print_func_name
-    then raise (Failure (Printf.sprintf "funccall: %s" (fst func)))
+
+    (* TODO: print with no args should print new line *)
+    if List.length (snd func) != 1
+    then failwith "Incorrect number of args to print: expected 1"
+    else if func_name <> print_func_name
+    then raise (Failure (Printf.sprintf "funccall: %s" func_name))
     else (
+      let func_arg = List.hd (snd func) in
+      let arr =
+        match func_arg with
+        | A.Int, e ->
+          let lexpr = build_expr e vars the_module builder in
+          [| int_format_str builder; lexpr |]
+        | A.Bool, e ->
+          let lexpr = build_expr e vars the_module builder in
+
+          let parent_block = L.insertion_block builder in
+          let the_function = L.block_parent parent_block in
+          let true_block = L.append_block context "true_case" the_function in
+          let false_block = L.append_block context "false_case" the_function in
+          let merge_block = L.append_block context "merge" the_function in
+          ignore (L.build_cond_br lexpr true_block false_block builder);
+
+          (* Build true block *)
+          L.position_at_end true_block builder;
+          let true_str = L.build_global_stringptr "true" "true_str" builder in
+          ignore (L.build_br merge_block builder);
+
+          L.position_at_end false_block builder;
+          let false_str = L.build_global_stringptr "false" "false_str" builder in
+          ignore (L.build_br merge_block builder);
+
+          L.position_at_end merge_block builder;
+
+          let bool_str =
+            L.build_phi
+              [ true_str, true_block; false_str, false_block ]
+              "bool_str"
+              builder
+          in
+          [| str_format_str builder; bool_str |]
+        | _, _ -> failwith "Incorrect call to print"
+      in
       let _res =
         L.build_call
           (print_func the_module)
-          [| int_format_str builder; L.const_int l_int 4 |]
+          arr
           "printf" (* LLVM IR knows what "printf" is *)
           builder
       in
