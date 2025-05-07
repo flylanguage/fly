@@ -152,6 +152,33 @@ and get_binop_return_type expr t1 binop t2 =
      | _, _ -> raise (Failure (format_binop_error expr t1 t2)))
   | _ -> raise (Failure "Invalid binary operator")
 
+and check_pattern pattern envs =
+  match pattern with
+  | PLiteral i -> PLiteral i
+  | PBoolLit b -> PBoolLit b
+  | PFloatLit f -> PFloatLit f
+  | PCharLit c -> PCharLit c
+  | PStringLit s -> PStringLit s
+  | PId id -> PId id
+  | PWildcard -> PWildcard
+  | PEmptyList -> PEmptyList
+  | PCons (p1, p2) -> PCons (check_pattern p1 envs, check_pattern p2 envs)
+  | PEnumAccess (enum_name, variant_name) ->
+    let enum_variants =
+      try StringMap.find enum_name envs.enum_env with
+      | Not_found -> raise (Failure ("Undefined enum " ^ enum_name))
+    in
+    let variant_exists =
+      List.exists
+        (function
+          | EnumVariantDefault n | EnumVariantExplicit (n, _) -> n = variant_name)
+        enum_variants
+    in
+    if not variant_exists
+    then
+      raise (Failure (Printf.sprintf "Enum %s has no variant %s" enum_name variant_name));
+    PEnumAccess (enum_name, variant_name)
+
 and check_expr expr envs special_blocks =
   match expr with
   | Literal i -> Int, SLiteral i
@@ -247,19 +274,20 @@ and check_expr expr envs special_blocks =
        else raise (Failure "Incorrect types passed to this method")
      | None -> raise (Failure (func_name ^ "is not a method bound to " ^ udt_name)))
   | EnumAccess (enum_name, variant) ->
-    let enum_variants = 
-      try StringMap.find enum_name envs.enum_env
-      with Not_found -> raise (Failure ("Undefined enum " ^ enum_name))
+    let enum_variants =
+      try StringMap.find enum_name envs.enum_env with
+      | Not_found -> raise (Failure ("Undefined enum " ^ enum_name))
     in
-    let variant_exists = 
-      List.exists (function
-        | EnumVariantDefault name -> name = variant
-        | EnumVariantExplicit (name, _) -> name = variant) enum_variants
+    let variant_exists =
+      List.exists
+        (function
+          | EnumVariantDefault name -> name = variant
+          | EnumVariantExplicit (name, _) -> name = variant)
+        enum_variants
     in
     if not variant_exists
     then raise (Failure ("Undefined variant " ^ variant ^ " in enum " ^ enum_name))
     else Int, SEnumAccess (enum_name, variant)
-      
   | Index (e1, e2) ->
     let t1, e1' = check_expr e1 envs special_blocks in
     let t2, e2' = check_expr e2 envs special_blocks in
@@ -276,9 +304,10 @@ and check_expr expr envs special_blocks =
     let checked_arms =
       List.map
         (fun (pattern, arm_expr) ->
+           let checked_pattern = check_pattern pattern envs in
            let updated_special_blocks = StringSet.add "wildcard" special_blocks in
            let s_arm_expr = check_expr arm_expr envs updated_special_blocks in
-           pattern, s_arm_expr)
+           checked_pattern, s_arm_expr)
         match_arms
     in
     let _, sexpr_list = List.split checked_arms in

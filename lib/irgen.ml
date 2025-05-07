@@ -32,7 +32,7 @@ let lookup (vars : L.llvalue StringMap.t) var =
     raise (Failure (Printf.sprintf "var lookup error: failed to find variable %s\n" var))
 ;;
 
-let build_expr expr vars builder =
+let rec build_expr expr vars builder =
   match expr with
   | SLiteral l -> L.const_int l_int l
   | SBoolLit b -> L.const_int l_bool (if b then 1 else 0)
@@ -40,10 +40,27 @@ let build_expr expr vars builder =
   | SId var -> L.build_load (lookup vars var) var builder
   | SEnumAccess (enum_name, variant_name) ->
     let key = enum_name ^ "::" ^ variant_name in
-    if not (StringMap.mem key vars) then
-      raise (Failure (Printf.sprintf "Enum variant %s not found in enum %s" variant_name enum_name))
-    else
-      lookup vars key
+    if not (StringMap.mem key vars)
+    then
+      raise
+        (Failure
+           (Printf.sprintf "Enum variant %s not found in enum %s" variant_name enum_name))
+    else lookup vars key
+  | SBinop ((_, e1), op, (_, e2)) ->
+    let lhs = build_expr e1 vars builder in
+    let rhs = build_expr e2 vars builder in
+    (match op with
+     | Ast.Equal -> L.build_icmp L.Icmp.Eq lhs rhs "eqtmp" builder
+     | Ast.Neq -> L.build_icmp L.Icmp.Ne lhs rhs "neqtmp" builder
+     | Ast.Less -> L.build_icmp L.Icmp.Slt lhs rhs "lttmp" builder
+     | Ast.Leq -> L.build_icmp L.Icmp.Sle lhs rhs "leqtmp" builder
+     | Ast.Greater -> L.build_icmp L.Icmp.Sgt lhs rhs "gttmp" builder
+     | Ast.Geq -> L.build_icmp L.Icmp.Sge lhs rhs "geqtmp" builder
+     | Ast.Add -> L.build_add lhs rhs "addtmp" builder
+     | Ast.Sub -> L.build_sub lhs rhs "subtmp" builder
+     | Ast.Mult -> L.build_mul lhs rhs "multmp" builder
+     | Ast.Div -> L.build_sdiv lhs rhs "divtmp" builder
+     | _ -> raise (Failure "binop not implemented"))
   | e ->
     raise (Failure (Printf.sprintf "expr not implemented: %s" (Utils.string_of_sexpr e)))
 ;;
@@ -68,6 +85,11 @@ let add_local_val typ var vars expr builder =
     | A.Int, SLiteral i ->
       let local = L.build_alloca (ltype_of_typ typ) var builder in
       let v = L.const_int l_int i in
+      ignore (L.build_store v local builder);
+      local
+    | A.Int, SEnumAccess (enum_name, variant_name) ->
+      let local = L.build_alloca (ltype_of_typ typ) var builder in
+      let v = build_expr (SEnumAccess (enum_name, variant_name)) vars builder in
       ignore (L.build_store v local builder);
       local
     | _, _ -> raise (Failure "assignment not completed")
@@ -198,11 +220,11 @@ let translate blocks =
         match variants with
         | [] -> []
         | SEnumVariantDefault n :: rest ->
-            let curr = (id ^ "::" ^ n, L.const_int l_int last_value) in
-            curr :: assign_enum_values rest (last_value + 1)
+          let curr = id ^ "::" ^ n, L.const_int l_int last_value in
+          curr :: assign_enum_values rest (last_value + 1)
         | SEnumVariantExplicit (n, v) :: rest ->
-            let curr = (id ^ "::" ^ n, L.const_int l_int v) in
-            curr :: assign_enum_values rest (v + 1)
+          let curr = id ^ "::" ^ n, L.const_int l_int v in
+          curr :: assign_enum_values rest (v + 1)
       in
       let vars =
         assign_enum_values variants 0

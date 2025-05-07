@@ -176,6 +176,7 @@ and string_of_pattern = function
   | PEmptyList -> "[]"
   | PCons (pattern1, pattern2) ->
     string_of_pattern pattern1 ^ "::" ^ string_of_pattern pattern2
+  | PEnumAccess (enum_name, variant_name) -> enum_name ^ "::" ^ variant_name
 
 and string_of_case_list = function
   | [] -> "" (* empty case *)

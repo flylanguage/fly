@@ -36,8 +36,8 @@ let tests =
           let lexbuf = Lexing.from_string "if (a1 == Color::Red) {\n} else {\n}\n" in
           let actual = string_of_tokens (to_list lexbuf) in
           let expected =
-            "IF LPAREN ID(a1) BEQ ID(Color) DCOLON ID(Red) RPAREN LBRACE RBRACE ELSE LBRACE \
-             RBRACE"
+            "IF LPAREN ID(a1) BEQ ID(Color) DCOLON ID(Red) RPAREN LBRACE RBRACE ELSE \
+             LBRACE RBRACE"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("test4"
@@ -72,9 +72,9 @@ let tests =
           in
           let actual = string_of_tokens (to_list lexbuf) in
           let expected =
-            "MATCH LPAREN ID(c1) RPAREN LBRACE ID(Color) DCOLON ID(Red) ARROW LBRACE RBRACE \
-             ID(Color) DCOLON ID(Green) ARROW LBRACE RBRACE ID(Color) DCOLON ID(Blue) ARROW \
-             LBRACE RBRACE UNDERSCORE ARROW LBRACE RBRACE RBRACE"
+            "MATCH LPAREN ID(c1) RPAREN LBRACE ID(Color) DCOLON ID(Red) ARROW LBRACE \
+             RBRACE ID(Color) DCOLON ID(Green) ARROW LBRACE RBRACE ID(Color) DCOLON \
+             ID(Blue) ARROW LBRACE RBRACE UNDERSCORE ARROW LBRACE RBRACE RBRACE"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("test7"
@@ -82,7 +82,8 @@ let tests =
           let lexbuf = Lexing.from_string "let a3 := 5;\na3 := Color::Red;\n" in
           let actual = string_of_tokens (to_list lexbuf) in
           let expected =
-            "LET ID(a3) WALRUS LITERAL(5) SEMI ID(a3) WALRUS ID(Color) DCOLON ID(Red) SEMI"
+            "LET ID(a3) WALRUS LITERAL(5) SEMI ID(a3) WALRUS ID(Color) DCOLON ID(Red) \
+             SEMI"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("test8"
@@ -90,7 +91,8 @@ let tests =
           let lexbuf = Lexing.from_string "let a4 := Color::Red + Color::Green;\n" in
           let actual = string_of_tokens (to_list lexbuf) in
           let expected =
-            "LET ID(a4) WALRUS ID(Color) DCOLON ID(Red) PLUS ID(Color) DCOLON ID(Green) SEMI"
+            "LET ID(a4) WALRUS ID(Color) DCOLON ID(Red) PLUS ID(Color) DCOLON ID(Green) \
+             SEMI"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("test9"
