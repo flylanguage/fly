@@ -32,7 +32,7 @@ let lookup (vars : L.llvalue StringMap.t) var =
     raise (Failure (Printf.sprintf "var lookup error: failed to find variable %s\n" var))
 ;;
 
-let rec build_expr expr vars builder =
+let build_expr expr vars builder =
   match expr with
   | SLiteral l -> L.const_int l_int l
   | SBoolLit b -> L.const_int l_bool (if b then 1 else 0)
