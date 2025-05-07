@@ -247,8 +247,19 @@ and check_expr expr envs special_blocks =
        else raise (Failure "Incorrect types passed to this method")
      | None -> raise (Failure (func_name ^ "is not a method bound to " ^ udt_name)))
   | EnumAccess (enum_name, variant) ->
-    let _ = find_enum enum_name envs.enum_env in
-    Int, SEnumAccess (enum_name, variant)
+    let enum_variants = 
+      try StringMap.find enum_name envs.enum_env
+      with Not_found -> raise (Failure ("Undefined enum " ^ enum_name))
+    in
+    let variant_exists = 
+      List.exists (function
+        | EnumVariantDefault name -> name = variant
+        | EnumVariantExplicit (name, _) -> name = variant) enum_variants
+    in
+    if not variant_exists
+    then raise (Failure ("Undefined variant " ^ variant ^ " in enum " ^ enum_name))
+    else Int, SEnumAccess (enum_name, variant)
+      
   | Index (e1, e2) ->
     let t1, e1' = check_expr e1 envs special_blocks in
     let t2, e2' = check_expr e2 envs special_blocks in
@@ -399,10 +410,15 @@ and check_block block envs special_blocks func_ret_type =
   | EnumDeclaration (enum_name, enum_variants) ->
     let new_enum_env = enum_dec_helper enum_name enum_variants envs in
     let updated_envs = { envs with enum_env = new_enum_env } in
+    let convert_enum_variant = function
+      | EnumVariantDefault name -> SEnumVariantDefault name
+      | EnumVariantExplicit (name, value) -> SEnumVariantExplicit (name, value)
+    in
+    let senum_variants = List.map convert_enum_variant enum_variants in
     ( updated_envs
     , special_blocks
     , func_ret_type
-    , SEnumDeclaration (enum_name, enum_variants) )
+    , SEnumDeclaration (enum_name, senum_variants) )
   | UDTDef (udt_name, udt_members) ->
     let initial_udt_def = { members = udt_members; methods = [] } in
     (* follow type definition udt_def above *)

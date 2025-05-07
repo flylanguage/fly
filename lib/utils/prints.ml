@@ -201,6 +201,12 @@ let string_of_enum_variant = function
     variant_name ^ " = " ^ string_of_int variant_num
 ;;
 
+let string_of_senum_variant = function
+  | SEnumVariantDefault variant_name -> variant_name
+  | SEnumVariantExplicit (variant_name, variant_num) ->
+    variant_name ^ " = " ^ string_of_int variant_num
+;;
+
 let rec string_of_func_args = function
   | [] -> ""
   | hd :: tl -> fst hd ^ ": " ^ string_of_type (snd hd) ^ ", " ^ string_of_func_args tl
@@ -357,7 +363,7 @@ let rec string_of_sblock = function
     ^ "\n}"
   | SEnumDeclaration (enum_name, enum_variants) ->
     "enum " ^ enum_name ^ " {\n"
-    ^ String.concat ",\n" (List.map string_of_enum_variant enum_variants)
+    ^ String.concat ",\n" (List.map string_of_senum_variant enum_variants)
     ^ "\n}"
   | SIfEnd (e, bl) ->
     "if ("
