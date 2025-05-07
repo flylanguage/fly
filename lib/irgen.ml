@@ -46,21 +46,6 @@ let rec build_expr expr vars builder =
         (Failure
            (Printf.sprintf "Enum variant %s not found in enum %s" variant_name enum_name))
     else lookup vars key
-  | SBinop ((_, e1), op, (_, e2)) ->
-    let lhs = build_expr e1 vars builder in
-    let rhs = build_expr e2 vars builder in
-    (match op with
-     | Ast.Equal -> L.build_icmp L.Icmp.Eq lhs rhs "eqtmp" builder
-     | Ast.Neq -> L.build_icmp L.Icmp.Ne lhs rhs "neqtmp" builder
-     | Ast.Less -> L.build_icmp L.Icmp.Slt lhs rhs "lttmp" builder
-     | Ast.Leq -> L.build_icmp L.Icmp.Sle lhs rhs "leqtmp" builder
-     | Ast.Greater -> L.build_icmp L.Icmp.Sgt lhs rhs "gttmp" builder
-     | Ast.Geq -> L.build_icmp L.Icmp.Sge lhs rhs "geqtmp" builder
-     | Ast.Add -> L.build_add lhs rhs "addtmp" builder
-     | Ast.Sub -> L.build_sub lhs rhs "subtmp" builder
-     | Ast.Mult -> L.build_mul lhs rhs "multmp" builder
-     | Ast.Div -> L.build_sdiv lhs rhs "divtmp" builder
-     | _ -> raise (Failure "binop not implemented"))
   | e ->
     raise (Failure (Printf.sprintf "expr not implemented: %s" (Utils.string_of_sexpr e)))
 ;;
