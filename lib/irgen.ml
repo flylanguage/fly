@@ -32,46 +32,69 @@ let lookup (vars : L.llvalue StringMap.t) var =
     raise (Failure (Printf.sprintf "var lookup error: failed to find variable %s\n" var))
 ;;
 
-let build_expr expr vars builder =
+let rec build_expr expr vars builder =
   match expr with
   | SLiteral l -> L.const_int l_int l
   | SBoolLit b -> L.const_int l_bool (if b then 1 else 0)
   | SFloatLit f -> L.const_float l_float f
   | SId var -> L.build_load (lookup vars var) var builder
+  | SBinop (e1, op, e2) ->
+    let typ = fst e1 in
+    let se1 = build_expr (snd e1) vars builder in
+    let se2 = build_expr (snd e2) vars builder in
+    (match typ with
+     | A.Int ->
+       (match op with
+        | A.Add -> L.build_add
+        | A.Sub -> L.build_sub
+        | A.Mult -> L.build_mul
+        | A.Div -> L.build_sdiv (* Signed division *)
+        | A.Mod -> L.build_srem (* Signed remainder *)
+        | A.Equal -> L.build_icmp L.Icmp.Eq
+        | A.Neq -> L.build_icmp L.Icmp.Ne
+        | A.Less -> L.build_icmp L.Icmp.Slt
+        | A.Leq -> L.build_icmp L.Icmp.Sle
+        | A.Greater -> L.build_icmp L.Icmp.Sgt
+        | A.Geq -> L.build_icmp L.Icmp.Sge
+        | _ -> L.build_add)
+     | A.Bool -> failwith "todo"
+     | A.Float -> failwith "todo"
+     | _ -> failwith "todo")
+      se1
+      se2
+      "tmp_int"
+      builder
   | e ->
     raise (Failure (Printf.sprintf "expr not implemented: %s" (Utils.string_of_sexpr e)))
 ;;
 
-let sanitize_types typ1 typ2 =
+let assert_types typ1 typ2 =
   if typ1 != typ2
   then
-    raise
-      (Failure
-         (Printf.sprintf
-            "Type mismatch. SAST should catch this! (%s vs %s)"
-            (Utils.string_of_type typ1)
-            (Utils.string_of_type typ2)))
+    failwith
+      (Printf.sprintf
+         "Type mismatch. SAST should catch this! (%s vs %s)"
+         (Utils.string_of_type typ1)
+         (Utils.string_of_type typ2))
 ;;
 
-let add_local_val typ var vars expr builder =
-  let etyp = fst expr in
-  sanitize_types etyp typ;
+let add_local_val typ var vars (expr : A.typ * Sast.sx) builder =
+  let actual_expr_typ, _ = expr in
+  assert_types actual_expr_typ typ;
 
-  let local =
-    match typ, snd expr with
-    | A.Int, SLiteral i ->
-      let local = L.build_alloca (ltype_of_typ typ) var builder in
-      let v = L.const_int l_int i in
-      ignore (L.build_store v local builder);
-      local
-    | _, _ -> raise (Failure "assignment not completed")
-  in
-  StringMap.add var local vars
+  let local_var_allocation : L.llvalue = L.build_alloca (ltype_of_typ typ) var builder in
+  let sx = snd expr in
+
+  let ll_initializer_value : L.llvalue = build_expr sx vars builder in
+
+  ignore (L.build_store ll_initializer_value local_var_allocation builder);
+
+  StringMap.add var local_var_allocation vars
 ;;
 
 let add_global_val typ var vars expr the_module =
   let etyp = fst expr in
-  sanitize_types etyp typ;
+  assert_types etyp typ;
 
   let global =
     match typ, snd expr with
@@ -142,7 +165,7 @@ let translate blocks =
       vars, curr_func, func_blocks, builder
     | SIfEnd (expr, blks) ->
       (* expression should be bool *)
-      sanitize_types (fst expr) A.Bool;
+      assert_types (fst expr) A.Bool;
       let bool_val = build_expr (snd expr) vars (Option.get builder) in
 
       (* We require curr_func to be Some - no if-else in global scope *)
@@ -159,7 +182,7 @@ let translate blocks =
       vars, curr_func, func_blocks, u_builder
     | SIfNonEnd (expr, blks, else_blk) ->
       (* expression should be bool *)
-      sanitize_types (fst expr) A.Bool;
+      assert_types (fst expr) A.Bool;
 
       let bool_val = build_expr (snd expr) vars (Option.get builder) in
 
@@ -206,7 +229,7 @@ let translate blocks =
       let u_builder = Some (L.builder_at_end context end_bb) in
       u_builder
     | SElifEnd (expr, blks) ->
-      sanitize_types (fst expr) A.Bool;
+      assert_types (fst expr) A.Bool;
 
       let bool_val = build_expr (snd expr) vars (Option.get builder) in
 
@@ -222,7 +245,7 @@ let translate blocks =
       let u_builder = Some (L.builder_at_end context end_bb) in
       u_builder
     | SElifNonEnd (expr, blks, else_blk) ->
-      sanitize_types (fst expr) A.Bool;
+      assert_types (fst expr) A.Bool;
 
       let bool_val = build_expr (snd expr) vars (Option.get builder) in
 
