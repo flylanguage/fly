@@ -115,7 +115,7 @@ let string_of_op = function
   | Greater -> ">"
   | Geq -> ">="
   | And -> "&&"
-  | Or -> "|"
+  | Or -> "||"
   | Not -> "!"
   | Cons -> "::"
 ;;

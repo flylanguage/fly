@@ -108,56 +108,98 @@ let rec build_expr expr vars the_module builder =
           builder
       in
       _res)
+  | SBinop (e1, op, e2) ->
+    let typ = fst e1 in
+    let se1 = build_expr (snd e1) vars the_module builder in
+    let se2 = build_expr (snd e2) vars the_module builder in
+    let lval =
+      match typ with
+      | A.Int ->
+        (match op with
+         | A.Add -> L.build_add
+         | A.Sub -> L.build_sub
+         | A.Mult -> L.build_mul
+         | A.Div -> L.build_sdiv
+         | A.Mod -> L.build_srem
+         | A.Equal -> L.build_icmp L.Icmp.Eq
+         | A.Neq -> L.build_icmp L.Icmp.Ne
+         | A.Less -> L.build_icmp L.Icmp.Slt
+         | A.Leq -> L.build_icmp L.Icmp.Sle
+         | A.Greater -> L.build_icmp L.Icmp.Sgt
+         | A.Geq -> L.build_icmp L.Icmp.Sge
+         | _ ->
+           failwith
+             (Printf.sprintf
+                "Integer binary operator %s not yet implemented"
+                (Utils.string_of_op op)))
+      | A.Float ->
+        (match op with
+         | A.Add -> L.build_fadd
+         | A.Sub -> L.build_fsub
+         | A.Mult -> L.build_fmul
+         | A.Div -> L.build_fdiv
+         | A.Mod -> L.build_frem
+         | A.Equal -> L.build_fcmp L.Fcmp.Oeq
+         | A.Neq -> L.build_fcmp L.Fcmp.One
+         | A.Less -> L.build_fcmp L.Fcmp.Olt
+         | A.Leq -> L.build_fcmp L.Fcmp.Ole
+         | A.Greater -> L.build_fcmp L.Fcmp.Ogt
+         | A.Geq -> L.build_fcmp L.Fcmp.Oge
+         | _ ->
+           failwith
+             (Printf.sprintf
+                "Float binary operator %s not yet implemented"
+                (Utils.string_of_op op)))
+      | A.Bool ->
+        (match op with
+         | A.And -> L.build_and
+         | A.Or -> L.build_or
+         | A.Equal -> L.build_icmp L.Icmp.Eq
+         | A.Neq -> L.build_icmp L.Icmp.Ne
+         | _ ->
+           failwith
+             (Printf.sprintf
+                "Boolean binary operator %s not yet implemented"
+                (Utils.string_of_op op)))
+      | _ ->
+        failwith
+          (Printf.sprintf
+             "Binary operator %s not yet implemented for type %s"
+             (Utils.string_of_op op)
+             (Utils.string_of_type typ))
+    in
+    lval se1 se2 ("tmp_" ^ Utils.string_of_type typ) builder
   | e ->
     raise (Failure (Printf.sprintf "expr not implemented: %s" (Utils.string_of_sexpr e)))
 ;;
 
-let sanitize_types typ1 typ2 =
+let assert_types typ1 typ2 =
   if typ1 != typ2
   then
-    raise
-      (Failure
-         (Printf.sprintf
-            "Type mismatch. SAST should catch this! (%s vs %s)"
-            (Utils.string_of_type typ1)
-            (Utils.string_of_type typ2)))
+    failwith
+      (Printf.sprintf
+         "Type mismatch. SAST should catch this! (%s vs %s)"
+         (Utils.string_of_type typ1)
+         (Utils.string_of_type typ2))
 ;;
 
-let add_local_val typ var vars expr builder =
-  let etyp = fst expr in
-  sanitize_types etyp typ;
+let add_local_val typ var vars (expr : A.typ * Sast.sx) the_module builder =
+  let expr_type = fst expr in
+  assert_types expr_type typ;
 
-  let local =
-    match typ, snd expr with
-    | A.Int, SLiteral i ->
-      let local = L.build_alloca (ltype_of_typ typ) var builder in
-      let v = L.const_int (ltype_of_typ typ) i in
-      ignore (L.build_store v local builder);
-      local
-    | A.Bool, SBoolLit b ->
-      let local = L.build_alloca (ltype_of_typ typ) var builder in
-      let v = L.const_int (ltype_of_typ typ) (if b then 1 else 0) in
-      ignore (L.build_store v local builder);
-      local
-    | A.Float, SFloatLit f ->
-      let local = L.build_alloca (ltype_of_typ typ) var builder in
-      let v = L.const_float (ltype_of_typ typ) f in
-      ignore (L.build_store v local builder);
-      local
-    | t, e ->
-      raise
-        (Failure
-           (Printf.sprintf
-              "local assignment not completed: typ: %s, expr: %s"
-              (Utils.string_of_type t)
-              (Utils.string_of_sexpr e)))
-  in
-  StringMap.add var local vars
+  let local_var_allocation : L.llvalue = L.build_alloca (ltype_of_typ typ) var builder in
+  let sx = snd expr in
+
+  let ll_initializer_value : L.llvalue = build_expr sx vars the_module builder in
+
+  ignore (L.build_store ll_initializer_value local_var_allocation builder);
+
+  StringMap.add var local_var_allocation vars
 ;;
 
 let add_global_val typ var vars expr the_module =
   let etyp = fst expr in
-  sanitize_types etyp typ;
+  assert_types etyp typ;
 
   let global =
     match typ, snd expr with
@@ -223,7 +265,7 @@ let translate blocks =
     | SDeclTyped (id, typ, expr) ->
       if Option.is_some curr_func
       then
-        ( add_local_val typ id vars expr (Option.get builder)
+        ( add_local_val typ id vars expr the_module (Option.get builder)
         , curr_func
         , func_blocks
         , builder )
@@ -243,7 +285,6 @@ let translate blocks =
       vars, curr_func, func_blocks, builder
     | SIfEnd (expr, blks) ->
       (* expression should be bool *)
-      sanitize_types (fst expr) A.Bool;
       let bool_val = build_expr (snd expr) vars the_module (Option.get builder) in
 
       (* We require curr_func to be Some - no if-else in global scope *)
@@ -260,7 +301,7 @@ let translate blocks =
       vars, curr_func, func_blocks, u_builder
     | SIfNonEnd (expr, blks, else_blk) ->
       (* expression should be bool *)
-      sanitize_types (fst expr) A.Bool;
+      assert_types (fst expr) A.Bool;
 
       let bool_val = build_expr (snd expr) vars the_module (Option.get builder) in
 
@@ -307,7 +348,7 @@ let translate blocks =
       let u_builder = Some (L.builder_at_end context end_bb) in
       u_builder
     | SElifEnd (expr, blks) ->
-      sanitize_types (fst expr) A.Bool;
+      assert_types (fst expr) A.Bool;
 
       let bool_val = build_expr (snd expr) vars the_module (Option.get builder) in
 
@@ -323,7 +364,7 @@ let translate blocks =
       let u_builder = Some (L.builder_at_end context end_bb) in
       u_builder
     | SElifNonEnd (expr, blks, else_blk) ->
-      sanitize_types (fst expr) A.Bool;
+      assert_types (fst expr) A.Bool;
 
       let bool_val = build_expr (snd expr) vars the_module (Option.get builder) in
 
