@@ -15,19 +15,19 @@ let tests =
           >:: fun _ ->
           let lexbuf =
             Lexing.from_string
-              "let a1 := true;\nlet b1 := false;\nlet result1 := a1 | b1;\n"
+              "let a1 := true;\nlet b1 := false;\nlet result1 := a1 || b1;\n"
           in
           let actual = string_of_tokens (to_list lexbuf) in
           let expected =
             "LET ID(a1) WALRUS BLIT(true) SEMI LET ID(b1) WALRUS BLIT(false) SEMI LET \
-             ID(result1) WALRUS ID(a1) OR ID(b1) SEMI"
+            ID(result1) WALRUS ID(a1) OR ID(b1) SEMI"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("test2"
           >:: fun _ ->
           let lexbuf =
             Lexing.from_string
-              "let a2 := false;\nlet b2 := false;\nlet result2 := a2 | b2;\n"
+              "let a2 := false;\nlet b2 := false;\nlet result2 := a2 || b2;\n"
           in
           let actual = string_of_tokens (to_list lexbuf) in
           let expected =
@@ -39,7 +39,7 @@ let tests =
           >:: fun _ ->
           let lexbuf =
             Lexing.from_string
-              "let a3 := true;\nif (a3 | false) {\n\tlet result3 := \"executed\";\n}\n"
+              "let a3 := true;\nif (a3 || false) {\n\tlet result3 := \"executed\";\n}\n"
           in
           let actual = string_of_tokens (to_list lexbuf) in
           let expected =
@@ -51,7 +51,7 @@ let tests =
           >:: fun _ ->
           let lexbuf =
             Lexing.from_string
-              "let b3 := false;\nif (b3 | false) {\n\tlet result4 := \"executed\";\n}\n"
+              "let b3 := false;\nif (b3 || false) {\n\tlet result4 := \"executed\";\n}\n"
           in
           let actual = string_of_tokens (to_list lexbuf) in
           let expected =
@@ -63,7 +63,7 @@ let tests =
           >:: fun _ ->
           let lexbuf =
             Lexing.from_string
-              "let a4 := true;\nlet b4 := false;\nlet result5 := (a4 | b4) | false;\n"
+              "let a4 := true;\nlet b4 := false;\nlet result5 := (a4 || b4) || false;\n"
           in
           let actual = string_of_tokens (to_list lexbuf) in
           let expected =
@@ -73,7 +73,7 @@ let tests =
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("test6"
           >:: fun _ ->
-          let lexbuf = Lexing.from_string "let a5 := 5;\nlet result6 := a5 | true;\n" in
+          let lexbuf = Lexing.from_string "let a5 := 5;\nlet result6 := a5 || true;\n" in
           let actual = string_of_tokens (to_list lexbuf) in
           let expected =
             "LET ID(a5) WALRUS LITERAL(5) SEMI LET ID(result6) WALRUS ID(a5) OR \
@@ -85,7 +85,7 @@ let tests =
           let lexbuf =
             Lexing.from_string
               "let b5 := false;\n\
-               while (b5 | true) {\n\
+               while (b5 || true) {\n\
                \tlet result7 := \"looping\";\n\
                \tbreak;\n\
                }\n"
@@ -98,7 +98,7 @@ let tests =
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("test8"
           >:: fun _ ->
-          let lexbuf = Lexing.from_string "let b6 := true;\nlet result9 := b6 | b6;\n" in
+          let lexbuf = Lexing.from_string "let b6 := true;\nlet result9 := b6 || b6;\n" in
           let actual = string_of_tokens (to_list lexbuf) in
           let expected =
             "LET ID(b6) WALRUS BLIT(true) SEMI LET ID(result9) WALRUS ID(b6) OR ID(b6) \
@@ -109,7 +109,7 @@ let tests =
           >:: fun _ ->
           let lexbuf =
             Lexing.from_string
-              "let a7 := false;\nlet b7 := true;\nlet result10 := (a7 | b7) | false;\n"
+              "let a7 := false;\nlet b7 := true;\nlet result10 := (a7 || b7) || false;\n"
           in
           let actual = string_of_tokens (to_list lexbuf) in
           let expected =
