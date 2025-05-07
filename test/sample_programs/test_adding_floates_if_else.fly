@@ -1,0 +1,9 @@
+fun main() -> int {
+    let a: float = 1.8 + 1.8;
+
+    if (a > 3.0) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
