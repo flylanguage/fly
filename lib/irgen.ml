@@ -17,7 +17,7 @@ let ltype_of_typ = function
   | A.Int -> l_int
   | A.Bool -> l_bool
   | A.Float -> l_float
-  | A.Char -> l_char
+  (* | A.Char -> l_char *)
   | A.Unit -> l_unit
   | A.String -> l_str
   | t ->
@@ -50,64 +50,9 @@ let rec build_expr expr vars the_module builder =
   | SFunctionCall func ->
     let func_name = fst func in
 
-    if func_name <> print_func_name
-    then
-      raise (Failure (Printf.sprintf "funccall: %s" func_name))
-      (* TODO: print with no args should print new line *)
-    else if List.length (snd func) != 1
-    then failwith "Incorrect number of args to print: expected 1"
-    else (
-      let func_arg = List.hd (snd func) in
-      let arr =
-        match func_arg with
-        | A.Int, e ->
-          let lexpr = build_expr e vars the_module builder in
-          [| int_format_str builder; lexpr |]
-        | A.Bool, e ->
-          let lexpr = build_expr e vars the_module builder in
-
-          let parent_block = L.insertion_block builder in
-          let the_function = L.block_parent parent_block in
-          let true_block = L.append_block context "true_case" the_function in
-          let false_block = L.append_block context "false_case" the_function in
-          let merge_block = L.append_block context "merge" the_function in
-          ignore (L.build_cond_br lexpr true_block false_block builder);
-
-          (* Build true block *)
-          L.position_at_end true_block builder;
-          let true_str = L.build_global_stringptr "true" "true_str" builder in
-          ignore (L.build_br merge_block builder);
-
-          L.position_at_end false_block builder;
-          let false_str = L.build_global_stringptr "false" "false_str" builder in
-          ignore (L.build_br merge_block builder);
-
-          L.position_at_end merge_block builder;
-
-          (* phi changes behavior dependent on which branch we arrived from 
-             if we arrived from true_block, use true_str
-             if we arrived from false_block, use false_str
-          *)
-          let bool_str =
-            L.build_phi
-              [ true_str, true_block; false_str, false_block ]
-              "bool_str"
-              builder
-          in
-          [| str_format_str builder; bool_str |]
-        | A.Float, e ->
-          let lexpr = build_expr e vars the_module builder in
-          [| float_format_str builder; lexpr |]
-        | _, _ -> failwith "Incorrect call to print"
-      in
-      let _res =
-        L.build_call
-          (print_func the_module)
-          arr
-          "printf" (* call the LLVM IR "printf" function *)
-          builder
-      in
-      _res)
+    if func_name = print_func_name
+    then print func vars the_module builder
+    else raise (Failure "function calls not implemented")
   | SBinop (e1, op, e2) ->
     let typ = fst e1 in
     let se1 = build_expr (snd e1) vars the_module builder in
@@ -171,6 +116,64 @@ let rec build_expr expr vars the_module builder =
     lval se1 se2 ("tmp_" ^ Utils.string_of_type typ) builder
   | e ->
     raise (Failure (Printf.sprintf "expr not implemented: %s" (Utils.string_of_sexpr e)))
+
+(* This is the "print" prelude function, it is a special function that exists within fly
+
+   Preferrably this function should exist somewhere else, but it needs to be defined with build_expr
+*)
+and print (func : sfunc) vars the_module builder =
+  if List.length (snd func) != 1
+  then failwith "Incorrect number of args to print: expected 1"
+  else (
+    let func_arg = List.hd (snd func) in
+    let arr =
+      match func_arg with
+      | A.Int, e ->
+        let lexpr = build_expr e vars the_module builder in
+        [| int_format_str builder; lexpr |]
+      | A.Bool, e ->
+        let lexpr = build_expr e vars the_module builder in
+
+        (* For bool prints, we actually print a string: "true" for true, and "false" for false 
+           This is pretty tricky, requiring us to create branches and use a phi conditional (some IR stuff) 
+           to determine which one to print
+        *)
+        let parent_block = L.insertion_block builder in
+        let the_function = L.block_parent parent_block in
+        let true_block = L.append_block context "true_case" the_function in
+        let false_block = L.append_block context "false_case" the_function in
+        let merge_block = L.append_block context "merge" the_function in
+        ignore (L.build_cond_br lexpr true_block false_block builder);
+
+        (* Build true block *)
+        L.position_at_end true_block builder;
+        let true_str = L.build_global_stringptr "true" "true_str" builder in
+        ignore (L.build_br merge_block builder);
+
+        L.position_at_end false_block builder;
+        let false_str = L.build_global_stringptr "false" "false_str" builder in
+        ignore (L.build_br merge_block builder);
+
+        L.position_at_end merge_block builder;
+
+        (* phi changes behavior dependent on which branch we arrived from 
+             if we arrived from true_block, use true_str
+             if we arrived from false_block, use false_str
+        *)
+        let bool_str =
+          L.build_phi [ true_str, true_block; false_str, false_block ] "bool_str" builder
+        in
+        [| str_format_str builder; bool_str |]
+      | A.Float, e ->
+        let lexpr = build_expr e vars the_module builder in
+        [| float_format_str builder; lexpr |]
+      | _, _ -> failwith "print not implemented for type"
+    in
+    L.build_call
+      (print_func the_module)
+      arr
+      "printf" (* call the LLVM IR "printf" function *)
+      builder)
 ;;
 
 let assert_types typ1 typ2 =
