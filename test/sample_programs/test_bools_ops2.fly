@@ -1,0 +1,8 @@
+fun main() -> int {
+    let a: bool = true == false;
+
+    if (a) {
+        return 1;
+    }
+    return 0;
+}
