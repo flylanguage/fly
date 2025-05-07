@@ -209,15 +209,6 @@ let add_global_val typ var vars expr the_module =
     | A.Int, SLiteral i ->
       let init = L.const_int l_int i in
       L.define_global var init the_module
-    | A.Bool, SBoolLit b ->
-      let init = L.const_int l_bool (if b then 1 else 0) in
-      L.define_global var init the_module
-    | A.Float, SFloatLit f ->
-      let init = L.const_float l_float f in
-      L.define_global var init the_module
-    | A.Char, SCharLit c ->
-      let init = L.const_stringz context (String.make 1 c) in
-      L.define_global var init the_module
     | t, e ->
       raise
         (Failure
