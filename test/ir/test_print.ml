@@ -60,7 +60,6 @@ let tests =
              }\n\n\
              declare i32 @printf(i8*, ...)\n"
           in
-          _write_to_file actual "test.out";
           assert_equal expected actual ~printer)
        ; ("print_float"
           >:: fun _ ->
@@ -70,7 +69,8 @@ let tests =
           let expected =
             "; ModuleID = 'Fly'\n\
              source_filename = \"Fly\"\n\n\
-             @float_fmt = private unnamed_addr constant [4 x i8] c\"%f\\0A\\00\", align 1\n\n\
+             @float_fmt = private unnamed_addr constant [4 x i8] c\"%f\\0A\\00\", align \
+             1\n\n\
              define i32 @main() {\n\
              entry:\n\
             \  %printf = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x \
@@ -79,7 +79,6 @@ let tests =
              }\n\n\
              declare i32 @printf(i8*, ...)\n"
           in
-          _write_to_file actual "test.out";
           assert_equal expected actual ~printer)
        ; ("print_bool"
           >:: fun _ ->
@@ -112,8 +111,6 @@ let tests =
              }\n\n\
              declare i32 @printf(i8*, ...)\n"
           in
-          _write_to_file actual "got.out";
-          _write_to_file expected "expected.out";
           assert_equal expected actual ~printer)
          (* ; ("print_string" *)
          (*    >:: fun _ -> *)
