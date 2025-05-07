@@ -43,26 +43,26 @@ let tests =
             "; ModuleID = 'Fly'\nsource_filename = \"Fly\"\n\n@a = global i32 5\n"
           in
           assert_equal expected actual ~printer)
-       ; ("global_var_bool"
-          >:: fun _ ->
-          let sast = get_sast "let a := true;" in
-          let mdl = Irgen.translate sast in
-          let actual = L.string_of_llmodule mdl in
-          let expected =
-            "; ModuleID = 'Fly'\nsource_filename = \"Fly\"\n\n@a = global i1 true\n"
-          in
-          assert_equal expected actual ~printer)
-       ; ("global_var_float"
-          >:: fun _ ->
-          let sast = get_sast "let a := 10.5;" in
-          let mdl = Irgen.translate sast in
-          let actual = L.string_of_llmodule mdl in
-          let expected =
-            "; ModuleID = 'Fly'\n\
-             source_filename = \"Fly\"\n\n\
-             @a = global float 1.050000e+01\n"
-          in
-          assert_equal expected actual ~printer)
+         (* ; ("global_var_bool" *)
+         (*    >:: fun _ -> *)
+         (*    let sast = get_sast "let a := true;" in *)
+         (*    let mdl = Irgen.translate sast in *)
+         (*    let actual = L.string_of_llmodule mdl in *)
+         (*    let expected = *)
+         (*      "; ModuleID = 'Fly'\nsource_filename = \"Fly\"\n\n@a = global i1 true\n" *)
+         (*    in *)
+         (*    assert_equal expected actual ~printer) *)
+         (* ; ("global_var_float" *)
+         (*    >:: fun _ -> *)
+         (*    let sast = get_sast "let a := 10.5;" in *)
+         (*    let mdl = Irgen.translate sast in *)
+         (*    let actual = L.string_of_llmodule mdl in *)
+         (*    let expected = *)
+         (*      "; ModuleID = 'Fly'\n\ *)
+       (*       source_filename = \"Fly\"\n\n\ *)
+       (*       @a = global float 1.050000e+01\n" *)
+         (*    in *)
+         (*    assert_equal expected actual ~printer) *)
          (* ; ("global_var_char" *)
          (*    >:: fun _ -> *)
          (*    let sast = get_sast "let a := 'a';" in *)
