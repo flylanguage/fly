@@ -54,7 +54,7 @@ rule tokenize = parse
   | '<' { LT }
   | '>' { GT }
   | "&&" { AND }
-  | '|' { OR }
+  | "||" { OR }
   | '!' { NOT }
   | "++" { INCR }
   | "--" { DECR }
