@@ -56,7 +56,7 @@ let rec build_expr expr vars builder =
       match typ with
       | A.Int -> L.const_int l_int 1
       | A.Float -> L.const_float l_float 1.0
-      | _ -> failwith "todo"
+      | _ -> failwith (Utils.string_of_type typ ^ " does not support unary incr or decr")
     in
     let ll_new_val =
       match op with
@@ -78,7 +78,7 @@ let rec build_expr expr vars builder =
     (match op with
      | A.Postincr | A.Postdecr -> ll_original_val
      | A.Preincr | A.Predecr -> ll_new_val
-     | _ -> failwith "Could apply SideEffect to variable")
+     | _ -> failwith "Could apply incr/decr to variable")
   | SBinop (e1, op, e2) ->
     let typ = fst e1 in
     let se1 = build_expr e1 vars builder in
