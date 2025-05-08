@@ -408,6 +408,13 @@ let rec string_of_sblock = function
   | SReturnUnit -> "return;\n"
   | SReturnVal e -> "return " ^ string_of_sexpr (snd e) ^ ";\n"
   | SExpr e -> string_of_sexpr (snd e) ^ ";\n"
+
+and string_of_sfunc (sfunc : sfunc) =
+  let sexprs = List.map (fun sexpr -> snd sexpr) (snd sfunc) in
+  Printf.sprintf
+    "func: %s -> %s"
+    (fst sfunc)
+    (String.concat ", " (List.map string_of_sexpr sexprs))
 ;;
 
 let rec string_of_block_name = function
