@@ -38,6 +38,14 @@ let rec build_expr expr vars builder =
   | SBoolLit b -> L.const_int l_bool (if b then 1 else 0)
   | SFloatLit f -> L.const_float l_float f
   | SId var -> L.build_load (lookup vars var) var builder
+  | SEnumAccess (enum_name, variant_name) ->
+    let key = enum_name ^ "::" ^ variant_name in
+    if not (StringMap.mem key vars)
+    then
+      raise
+        (Failure
+           (Printf.sprintf "Enum variant %s not found in enum %s" variant_name enum_name))
+    else lookup vars key
   | SBinop (e1, op, e2) ->
     let typ = fst e1 in
     let se1 = build_expr (snd e1) vars builder in
@@ -242,6 +250,25 @@ let translate blocks =
       add_terminal (L.builder_at_end context else_bb) build_br_end;
 
       vars, curr_func, func_blocks, u_builder
+    | SEnumDeclaration (id, variants) ->
+      let enum_type = L.named_struct_type context id in
+      let fields = Array.of_list (List.map (fun _ -> L.i32_type context) variants) in
+      ignore (L.struct_set_body enum_type fields true);
+      let rec assign_enum_values variants last_value =
+        match variants with
+        | [] -> []
+        | SEnumVariantDefault n :: rest ->
+          let curr = id ^ "::" ^ n, L.const_int l_int last_value in
+          curr :: assign_enum_values rest (last_value + 1)
+        | SEnumVariantExplicit (n, v) :: rest ->
+          let curr = id ^ "::" ^ n, L.const_int l_int v in
+          curr :: assign_enum_values rest (v + 1)
+      in
+      let vars =
+        assign_enum_values variants 0
+        |> List.fold_left (fun acc (name, value) -> StringMap.add name value acc) vars
+      in
+      vars, curr_func, func_blocks, builder
     | b ->
       raise
         (Failure
