@@ -261,6 +261,7 @@ pattern:
   | UNDERSCORE                  { PWildcard }
   | LBRACKET RBRACKET           { PEmptyList }
   | pattern DCOLON pattern      { PCons($1, $3) }
+  | ID DCOLON ID                { PEnumAccess($1, $3) }
 
 list_elements_opt:
   /* empty */                 { [] }
