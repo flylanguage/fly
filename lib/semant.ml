@@ -6,9 +6,10 @@ module StringSet = Set.Make (String)
 
 (* Type definitions for variables, function signatures, user-defined types, and enums *)
 
-type var_info = 
+type var_info =
   { var_type : typ
-  ; value   : int option (* This value is only set if the variable is an integer and is constant. We need this for compile time evaluation *)
+  ; value : int option
+    (* This value is only set if the variable is an integer and is constant. We need this for compile time evaluation *)
   }
 
 type func_sig =
@@ -49,20 +50,15 @@ and find_enum enum_name env =
 (* Arguments: variable name, variable type, environments *)
 and var_dec_helper var_name t optional_value envs =
   let open StringMap in
-  let env_checks = (* we don't check if it exists in var_env because we allow redeclaration *)
-    [ mem var_name envs.func_env 
-    ; mem var_name envs.udt_env
-    ; mem var_name envs.enum_env
-    ]
+  let env_checks =
+    (* we don't check if it exists in var_env because we allow redeclaration *)
+    [ mem var_name envs.func_env; mem var_name envs.udt_env; mem var_name envs.enum_env ]
   in
   if List.exists (fun x -> x) env_checks
   then raise (Failure (var_name ^ "already exists"))
-  else
-    let info = {
-      var_type = t;
-      value = optional_value;
-    } in
-    StringMap.add var_name info envs.var_env
+  else (
+    let info = { var_type = t; value = optional_value } in
+    StringMap.add var_name info envs.var_env)
 
 and func_def_helper func_name args rtyp envs =
   let open StringMap in
@@ -161,34 +157,40 @@ and get_binop_return_type expr t1 binop t2 =
      | t1', List t2' when t1' = t2' -> List t1'
      | _, _ -> raise (Failure (format_binop_error expr t1 t2)))
   | _ -> raise (Failure "Invalid binary operator")
-and pow base exp = 
-  if exp = 0 then 1
-  else base * pow base (exp - 1)
-and eval_const_expr e envs = (* Assume that e is the output of check_expr, so we have access to SAST nodes*)
+
+and pow base exp = if exp = 0 then 1 else base * pow base (exp - 1)
+
+and eval_const_expr e envs =
+  (* Assume that e is the output of check_expr, so we have access to SAST nodes*)
   match e with
   | SLiteral i -> Some i
-  | SId var_name -> 
+  | SId var_name ->
     let info = find_var var_name envs.var_env in
     info.value
-  | SBinop ((_, e1), binop, (_,e2)) ->
-    begin match binop with
-    | Add -> 
-      (* Code below is slight complicated, but if eval_const_expr e1 returns a Some, run eval_const_expr e2
+  | SBinop ((_, e1), binop, (_, e2)) ->
+    (match binop with
+     | Add ->
+       (* Code below is slight complicated, but if eval_const_expr e1 returns a Some, run eval_const_expr e2
         If eval_const_expr e2 returns Some, then run v1 op v2
-      *)
-      Option.bind (eval_const_expr e1 envs) (fun v1 -> Option.map (fun v2 -> v1 + v2) (eval_const_expr e2 envs))
-    | Sub -> 
-      Option.bind (eval_const_expr e1 envs) (fun v1 -> Option.map (fun v2 -> v1 - v2) (eval_const_expr e2 envs))
-    | Mult ->
-      Option.bind (eval_const_expr e1 envs) (fun v1 -> Option.map (fun v2 -> v1 * v2) (eval_const_expr e2 envs))
-    | Div -> 
-      Option.bind (eval_const_expr e1 envs) (fun v1 -> Option.map (fun v2 -> v1 / v2) (eval_const_expr e2 envs))
-    | Mod -> 
-      Option.bind (eval_const_expr e1 envs) (fun v1 -> Option.map (fun v2 -> v1 mod v2) (eval_const_expr e2 envs))
-    | Exp -> 
-      Option.bind (eval_const_expr e1 envs) (fun v1 -> Option.map (fun v2 -> pow v1 v2) (eval_const_expr e2 envs))
-    | _ -> None
-    end
+       *)
+       Option.bind (eval_const_expr e1 envs) (fun v1 ->
+         Option.map (fun v2 -> v1 + v2) (eval_const_expr e2 envs))
+     | Sub ->
+       Option.bind (eval_const_expr e1 envs) (fun v1 ->
+         Option.map (fun v2 -> v1 - v2) (eval_const_expr e2 envs))
+     | Mult ->
+       Option.bind (eval_const_expr e1 envs) (fun v1 ->
+         Option.map (fun v2 -> v1 * v2) (eval_const_expr e2 envs))
+     | Div ->
+       Option.bind (eval_const_expr e1 envs) (fun v1 ->
+         Option.map (fun v2 -> v1 / v2) (eval_const_expr e2 envs))
+     | Mod ->
+       Option.bind (eval_const_expr e1 envs) (fun v1 ->
+         Option.map (fun v2 -> v1 mod v2) (eval_const_expr e2 envs))
+     | Exp ->
+       Option.bind (eval_const_expr e1 envs) (fun v1 ->
+         Option.map (fun v2 -> pow v1 v2) (eval_const_expr e2 envs))
+     | _ -> None)
   | _ -> None
 
 and check_pattern matched_expr_type pattern envs =
@@ -206,7 +208,7 @@ and check_pattern matched_expr_type pattern envs =
     let new_var_env2 = var_dec_helper s2 (List matched_expr_type) None envs in
     let updated_envs2 = { updated_envs1 with var_env = new_var_env2 } in
     updated_envs2, PCons (s1, s2)
-  (* | PEnumAccess (enum_name, variant_name) ->
+(* | PEnumAccess (enum_name, variant_name) ->
     let enum_variants =
       try StringMap.find enum_name envs.enum_env with
       | Not_found -> raise (Failure ("Undefined enum " ^ enum_name))
@@ -303,7 +305,8 @@ and check_expr expr envs special_blocks =
           else raise (Failure "Incorrect types passed to this method")
         | None ->
           raise
-            (Failure (fst udt_func ^ "is not a method bound to " ^ string_of_type info.var_type))))
+            (Failure
+               (fst udt_func ^ "is not a method bound to " ^ string_of_type info.var_type))))
   | UDTStaticAccess (udt_name, (func_name, args)) ->
     let udt_typ = find_udt udt_name envs.udt_env in
     (match List.find_opt (fun x -> x = func_name) udt_typ.methods with
@@ -334,31 +337,32 @@ and check_expr expr envs special_blocks =
   | Index (e1, e2) ->
     let t1, e1' = check_expr e1 envs special_blocks in
     let t2, e2' = check_expr e2 envs special_blocks in
-    if t2 <> Int then
-      raise (Failure "You must use an int to index!")
-    else
-      begin match t1 with
+    if t2 <> Int
+    then raise (Failure "You must use an int to index!")
+    else (
+      match t1 with
       | List x -> x, SIndex ((t1, e1'), (t2, e2'))
-      | Tuple typ_list -> ( (* Tuple indexing is hard because we need to get the value of the index *)
-          match eval_const_expr e2' envs with
-          | Some idx ->
-              if idx < 0 || idx >= List.length typ_list then
-                raise (Failure "Tuple index out of bounds")
-              else
-                let ty = List.nth typ_list idx in
-                ty, SIndex ((t1, e1'), (t2, e2'))
-          | None ->
-              raise (Failure "Tuple indexing requires a compile-time constant integer")
-        )
-      | _ -> raise (Failure "Trying to index into a non-indexable expression")
-    end
+      | Tuple typ_list ->
+        (* Tuple indexing is hard because we need to get the value of the index *)
+        (match eval_const_expr e2' envs with
+         | Some idx ->
+           if idx < 0 || idx >= List.length typ_list
+           then raise (Failure "Tuple index out of bounds")
+           else (
+             let ty = List.nth typ_list idx in
+             ty, SIndex ((t1, e1'), (t2, e2')))
+         | None ->
+           raise (Failure "Tuple indexing requires a compile-time constant integer"))
+      | _ -> raise (Failure "Trying to index into a non-indexable expression"))
   | Match (matched_expr, match_arms) ->
     let s_matched = check_expr matched_expr envs special_blocks in
     let matched_expr_type, _ = s_matched in
     let checked_arms =
       List.map
         (fun (pattern, arm_expr) ->
-           let updated_envs, checked_pattern = check_pattern matched_expr_type pattern envs in
+           let updated_envs, checked_pattern =
+             check_pattern matched_expr_type pattern envs
+           in
            let s_arm_expr = check_expr arm_expr updated_envs special_blocks in
            checked_pattern, s_arm_expr)
         match_arms
@@ -366,8 +370,7 @@ and check_expr expr envs special_blocks =
     let _, sexpr_list = List.split checked_arms in
     let typs, _ = List.split sexpr_list in
     (match typs with
-     | [] ->
-       raise (Failure "Cannot infer type on empty match expression")
+     | [] -> raise (Failure "Cannot infer type on empty match expression")
      | first_typ :: rest ->
        if List.for_all (fun x -> x = first_typ) rest
        then first_typ, SMatch (s_matched, checked_arms)
@@ -433,11 +436,11 @@ and check_block block envs special_blocks func_ret_type =
       | None -> None
     in
     if typ <> t
-      then
-        raise
-          (Failure
-            (var_name ^ " is supposed to have type " ^ string_of_type t
-            ^ " but expression has type " ^ string_of_type typ))
+    then
+      raise
+        (Failure
+           (var_name ^ " is supposed to have type " ^ string_of_type t
+          ^ " but expression has type " ^ string_of_type typ))
     else (
       let new_var_env = var_dec_helper var_name t e_value envs in
       let updated_envs = { envs with var_env = new_var_env } in

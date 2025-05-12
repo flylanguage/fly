@@ -30,7 +30,7 @@ type pattern =
   | PWildcard
   | PEmptyList
   | PCons of string * string
-  (* | PEnumAccess of string * string *)
+(* | PEnumAccess of string * string *)
 
 (* type assign_op =
   | IdentityAssign
@@ -48,7 +48,7 @@ type typ =
   | List of typ
   | Tuple of typ list
   | Unit
-  | UserType of string * (typ list)
+  | UserType of string * typ list
 
 type expr =
   | Literal of int
