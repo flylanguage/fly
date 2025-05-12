@@ -94,7 +94,7 @@ let rec string_of_type = function
   | List t -> "list<" ^ string_of_type t ^ ">"
   | Tuple t_list -> "tuple<" ^ String.concat ", " (List.map string_of_type t_list) ^ ">"
   | Unit -> "()"
-  | UserType udt_name -> udt_name
+  | UserType (udt_name, _) -> udt_name
 ;;
 
 let string_of_op = function

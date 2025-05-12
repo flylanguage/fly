@@ -254,7 +254,7 @@ and check_expr expr envs special_blocks =
     let instance_names, instance_exprs = List.split udt_members in
     if def_names = instance_names
     then (
-      (* this means the order of members in the instance must in the same order as definition *)
+      (* this means the order of members in the instance must be in the same order as definition *)
       let sexpr_list =
         List.map (fun e -> check_expr e envs special_blocks) instance_exprs
       in
@@ -262,7 +262,7 @@ and check_expr expr envs special_blocks =
       if def_types = instance_types
       then (
         let skv_list = List.combine instance_names sexpr_list in
-        UserType udt_name, SUDTInstance (udt_name, skv_list))
+        UserType (udt_name, instance_types), SUDTInstance (udt_name, skv_list))
       else raise (Failure ("Incorrect types used to instantiate " ^ udt_name)))
     else raise (Failure ("Incorrect ordering when instantiating " ^ udt_name))
   | Binop (e1, binop, e2) -> check_binop expr e1 binop e2 envs special_blocks

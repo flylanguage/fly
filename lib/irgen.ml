@@ -13,13 +13,21 @@ and l_float = L.float_type context
 
 let l_str = L.pointer_type l_char
 
-let ltype_of_typ = function
+let void_t = L.void_type context
+
+let rec ltype_of_typ = function
   | A.Int -> l_int
   | A.Bool -> l_bool
   | A.Float -> l_float
   (* | A.Char -> l_char *)
-  | A.Unit -> l_unit
+  | A.Unit -> void_t
   | A.String -> l_str
+  | A.List t -> L.pointer_type (ltype_of_typ t)
+  | A.Tuple t_list -> L.struct_type context (Array.of_list (List.map (ltype_of_typ) t_list))
+  | A.UserType (_, typ_list) ->
+    let llvm_fields = List.map (ltype_of_typ) typ_list in
+    L.struct_type context (Array.of_list llvm_fields)
+  
   | t ->
     raise (Failure (Printf.sprintf "type not implemented: %s" (Utils.string_of_type t)))
 ;;
@@ -122,6 +130,21 @@ let rec build_expr expr vars the_module builder =
              (Utils.string_of_type typ))
     in
     lval se1 se2 ("tmp_" ^ Utils.string_of_type typ) builder
+  | SList sexprs -> 
+    let (element_type, _) = 
+      match sexprs with 
+      | (t, _) :: _ -> (ltype_of_typ t, ())
+      | [] -> failwith "Cannot create list with no elements" in
+    let _, sx_list = List.split sexprs in
+    let elems = List.map (fun se -> build_expr se vars the_module builder) sx_list in (* Build LLVM values for each element *)
+    let arr = L.build_array_malloc element_type (L.const_int l_int (List.length elems)) "arr" builder in (* Allocate space for array *)
+    (* Store each element in the array *)
+    List.iteri (
+      fun ind item ->
+        let ind' = L.build_in_bounds_gep arr [| L.const_int l_int ind |] "ind" builder in
+        ignore (L.build_store item ind' builder)
+    ) elems; 
+    arr
   | e ->
     raise (Failure (Printf.sprintf "expr not implemented: %s" (Utils.string_of_sexpr e)))
 

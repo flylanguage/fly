@@ -146,7 +146,7 @@ typ:
   | LPAREN RPAREN         { Unit }
 
 typ_id:
-  ID                      { UserType($1) }
+  ID                      { UserType($1, []) }
 
 typ_list:
   | typ                 { [$1] }
