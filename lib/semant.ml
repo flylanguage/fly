@@ -430,7 +430,7 @@ and check_block block envs special_blocks func_ret_type =
     let e_value =
       match eval_const_expr e' envs with
       | Some x -> Some x
-      | None -> raise (Failure (string_of_expr e ^ " cannot be evaluated at compile time!"))
+      | None -> None
     in
     if typ <> t
       then
@@ -448,7 +448,7 @@ and check_block block envs special_blocks func_ret_type =
     let e_value =
       match eval_const_expr e' envs with
       | Some x -> Some x
-      | None -> raise (Failure (string_of_expr e ^ " cannot be evaluated at compile time!"))
+      | None -> None
     in
     let new_var_env = var_dec_helper var_name typ e_value envs in
     let updated_envs = { envs with var_env = new_var_env } in

@@ -13,24 +13,24 @@ let check_program source_code =
 
 let tests =
   "testing_loops"
-  >::: [ ("correct_list"
+  >::: [ ("correct_list_for_loop"
           >:: fun _ ->
-          let actual = check_program "let x := [1,2,3,4,5]; for i := x {let a := i;}" in
+          let actual = check_program "let x := [1,2,3,4,5]; for v := x {let a := v;}" in
           let expected = "" in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
-       ; ("correct_tuple"
+       ; ("correct_tuple_for_loop"
           >:: fun _ ->
-          let actual = check_program "let x := (1,2,3,4,5); for i := x {let a := i;}" in
+          let actual = check_program "let x := (1,2,3,4,5); for v := x {let a := v;}" in
           let expected = "" in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
-       ; ("loop_var_shadowing"
+       ; ("loop_var_shadowing_for_loop"
           >:: fun _ ->
-          let actual = check_program "let i := 0; let x := [1,2,3,4,5]; for i := x {}" in
-          let expected = "Loop variable i previously defined" in
+          let actual = check_program "let v := 0; let v := [1,2,3,4,5]; for v := x {}" in
+          let expected = "Loop variable v previously defined" in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
-       ; ("non_iterable"
+       ; ("non_iterable_for_loop"
           >:: fun _ ->
-          let actual = check_program "let x := 5; for i := x {let a := i;}" in
+          let actual = check_program "let x := 5; for v := x {let a := v;}" in
           let expected = "Expression 'x' has type int and is not iterable" in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ]
