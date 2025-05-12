@@ -26,18 +26,18 @@ type pattern =
   | PFloatLit of float
   | PCharLit of char
   | PStringLit of string
-  | PId of string
+  (* | PId of string *)
   | PWildcard
   | PEmptyList
-  | PCons of pattern * pattern
-  | PEnumAccess of string * string
+  | PCons of string * string
+  (* | PEnumAccess of string * string *)
 
-type assign_op =
+(* type assign_op =
   | IdentityAssign
   | PlusAssign
   | MinusAssign
   | MultAssign
-  | DivAssign
+  | DivAssign *)
 
 type typ =
   | Int
@@ -87,11 +87,11 @@ type enum_variant =
   | EnumVariantExplicit of string * int
 
 type block =
-  | MutDeclTyped of string * typ * expr
-  | MutDeclInfer of string * expr
+  (* | MutDeclTyped of string * typ * expr
+  | MutDeclInfer of string * expr *)
   | DeclTyped of string * typ * expr
   | DeclInfer of string * expr
-  | Assign of expr * assign_op * expr
+  (* | Assign of expr * assign_op * expr *)
   | FunctionDefinition of
       typ * string * formal list * block list (* rtyp, func_name, func_args, func_body *)
   | BoundFunctionDefinition of

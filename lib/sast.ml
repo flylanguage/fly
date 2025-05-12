@@ -37,9 +37,9 @@ type senum_variant =
   | SEnumVariantExplicit of string * int
 
 type sblock =
-  | SMutDeclTyped of string * typ * sexpr
+  (* | SMutDeclTyped of string * typ * sexpr *)
   | SDeclTyped of string * typ * sexpr
-  | SAssign of sexpr * assign_op * sexpr
+  (* | SAssign of sexpr * assign_op * sexpr *)
   | SFunctionDefinition of
       typ * string * formal list * sblock list (* rtyp, func_name, func_args, func_body *)
   | SBoundFunctionDefinition of

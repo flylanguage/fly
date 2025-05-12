@@ -130,7 +130,7 @@ parens_expr:
 
 block:
   | declaration          { $1 }
-  | assignment           { $1 }
+  // | assignment           { $1 }
   | control_flow         { $1 }
   | expr SEMI            { Expr($1) }
 
@@ -159,8 +159,8 @@ declaration:
   | enum_decl                              { $1 }
 
 var_decl:
-  | LET MUT ID COLON typ EQUAL expr SEMI    { MutDeclTyped($3, $5, $7) }  /* let mut x: int = 5; */
-  | LET MUT ID WALRUS expr SEMI             { MutDeclInfer($3, $5) }      /* let mut x := 5; */
+  // | LET MUT ID COLON typ EQUAL expr SEMI    { MutDeclTyped($3, $5, $7) }  /* let mut x: int = 5; */
+  // | LET MUT ID WALRUS expr SEMI             { MutDeclInfer($3, $5) }      /* let mut x := 5; */
   | LET ID COLON typ EQUAL expr SEMI        { DeclTyped($2, $4, $6) }     /* let x: int = 5; */
   | LET ID WALRUS expr SEMI                 { DeclInfer($2, $4) }         /* let x := 5; */
 
@@ -227,16 +227,16 @@ enum_variant:
   | ID                            { EnumVariantDefault($1) }
   | ID EQUAL LITERAL              { EnumVariantExplicit($1, $3) }
 
-assignment:
- expr assign_op expr SEMI         { Assign($1, $2, $3) }
+// assignment:
+//  expr assign_op expr SEMI         { Assign($1, $2, $3) }
 
 
-assign_op:
-  | EQUAL                         { IdentityAssign }
-  | PLUS_ASSIGN                   { PlusAssign }
-  | MINUS_ASSIGN                  { MinusAssign }
-  | MULT_ASSIGN                   { MultAssign }
-  | DIV_ASSIGN                    { DivAssign }
+// assign_op:
+//   | EQUAL                         { IdentityAssign }
+//   | PLUS_ASSIGN                   { PlusAssign }
+//   | MINUS_ASSIGN                  { MinusAssign }
+//   | MULT_ASSIGN                   { MultAssign }
+//   | DIV_ASSIGN                    { DivAssign }
 
 
 func_call:
@@ -249,19 +249,16 @@ case_list:
 case_item:
   pattern ARROW expr { ($1, $3) }
 
-/* Only literals allowed here. TBH, this really needs discussion */
-/* Added P to indicate these are patterns */
 pattern:
   | LITERAL                     { PLiteral($1)  }
   | BLIT                        { PBoolLit($1)  }
   | FLIT                        { PFloatLit($1) }
   | CLIT                        { PCharLit($1)  }
   | SLIT                        { PStringLit($1)}
-  | ID                          { PId($1) }
   | UNDERSCORE                  { PWildcard }
   | LBRACKET RBRACKET           { PEmptyList }
-  | pattern DCOLON pattern      { PCons($1, $3) }
-  | ID DCOLON ID                { PEnumAccess($1, $3) }
+  // | ID                          { PId($1) }
+  | ID DCOLON ID                { PCons($1, $3) }
 
 list_elements_opt:
   /* empty */                 { [] }

@@ -120,13 +120,13 @@ let string_of_op = function
   | Cons -> "::"
 ;;
 
-let string_of_assign_op = function
+(* let string_of_assign_op = function
   | IdentityAssign -> " = "
   | PlusAssign -> " += "
   | MinusAssign -> " -= "
   | MultAssign -> " *= "
   | DivAssign -> " /= "
-;;
+;; *)
 
 let rec string_of_expr = function
   | Literal l -> string_of_int l
@@ -171,12 +171,12 @@ and string_of_pattern = function
   | PFloatLit f -> string_of_float f
   | PCharLit c -> Printf.sprintf "\'%s\'" (String.make 1 c)
   | PStringLit s -> Printf.sprintf "\"%s\"" s
-  | PId id -> id
+  (* | PId id -> id *)
   | PWildcard -> "_"
   | PEmptyList -> "[]"
-  | PCons (pattern1, pattern2) ->
-    string_of_pattern pattern1 ^ "::" ^ string_of_pattern pattern2
-  | PEnumAccess (enum_name, variant_name) -> enum_name ^ "::" ^ variant_name
+  | PCons (s1, s2) ->
+    s1 ^ "::" ^ s2
+  (* | PEnumAccess (enum_name, variant_name) -> enum_name ^ "::" ^ variant_name *)
 
 and string_of_case_list = function
   | [] -> "" (* empty case *)
@@ -214,14 +214,14 @@ let rec string_of_func_args = function
 ;;
 
 let rec string_of_block = function
-  | MutDeclTyped (id, typ, e) ->
+  (* | MutDeclTyped (id, typ, e) ->
     "let mut " ^ id ^ ": " ^ string_of_type typ ^ " = " ^ string_of_expr e ^ ";\n"
-  | MutDeclInfer (id, e) -> "let mut " ^ id ^ " := " ^ string_of_expr e ^ ";\n"
+  | MutDeclInfer (id, e) -> "let mut " ^ id ^ " := " ^ string_of_expr e ^ ";\n" *)
   | DeclTyped (id, typ, e) ->
     "let " ^ id ^ ": " ^ string_of_type typ ^ " = " ^ string_of_expr e ^ ";\n"
   | DeclInfer (id, e) -> "let " ^ id ^ " := " ^ string_of_expr e ^ ";\n"
-  | Assign (e1, assign_op, e2) ->
-    string_of_expr e1 ^ string_of_assign_op assign_op ^ string_of_expr e2 ^ ";\n"
+  (* | Assign (e1, assign_op, e2) ->
+    string_of_expr e1 ^ string_of_assign_op assign_op ^ string_of_expr e2 ^ ";\n" *)
   | FunctionDefinition (rtyp, func_name, func_args, func_body) ->
     "fun " ^ func_name ^ "(" ^ string_of_func_args func_args ^ ") -> "
     ^ string_of_type rtyp ^ " {\n"
@@ -336,17 +336,17 @@ and string_of_udt_access = function
 ;;
 
 let rec string_of_sblock = function
-  | SMutDeclTyped (id, typ, e) ->
-    "let mut " ^ id ^ ": " ^ string_of_type typ ^ " = " ^ string_of_sexpr (snd e) ^ ";\n"
+  (* | SMutDeclTyped (id, typ, e) ->
+    "let mut " ^ id ^ ": " ^ string_of_type typ ^ " = " ^ string_of_sexpr (snd e) ^ ";\n" *)
   (* | SMutDeclInfer (id, e) -> "let mut " ^ id ^ " := " ^ string_of_sexpr (snd e) ^ ";\n" *)
   | SDeclTyped (id, typ, e) ->
     "let " ^ id ^ ": " ^ string_of_type typ ^ " = " ^ string_of_sexpr (snd e) ^ ";\n"
   (* | SDeclInfer (id, e) -> "let " ^ id ^ " := " ^ string_of_sexpr e ^ ";\n" *)
-  | SAssign (e1, assign_op, e2) ->
+  (* | SAssign (e1, assign_op, e2) ->
     string_of_sexpr (snd e1)
     ^ string_of_assign_op assign_op
     ^ string_of_sexpr (snd e2)
-    ^ ";\n"
+    ^ ";\n" *)
   | SFunctionDefinition (rtyp, func_name, func_args, func_body) ->
     "fun " ^ func_name ^ "(" ^ string_of_func_args func_args ^ ") -> "
     ^ string_of_type rtyp ^ " {\n"
@@ -418,11 +418,11 @@ and string_of_sfunc (sfunc : sfunc) =
 ;;
 
 let rec string_of_block_name = function
-  | MutDeclTyped (_, _, e) -> Printf.sprintf "MutDeclTyped (%s)" (string_of_expr e)
-  | MutDeclInfer (_, e) -> Printf.sprintf "MutDeclInfer (%s)" (string_of_expr e)
+  (* | MutDeclTyped (_, _, e) -> Printf.sprintf "MutDeclTyped (%s)" (string_of_expr e)
+  | MutDeclInfer (_, e) -> Printf.sprintf "MutDeclInfer (%s)" (string_of_expr e) *)
   | DeclTyped (_, _, e) -> Printf.sprintf "DeclTyped (%s)" (string_of_expr e)
   | DeclInfer (_, e) -> Printf.sprintf "DeclInfer (%s)" (string_of_expr e)
-  | Assign _ -> "Assign"
+  (* | Assign _ -> "Assign" *)
   | FunctionDefinition _ -> "FunctionDefinition"
   | BoundFunctionDefinition _ -> "BoundFunctionDefinition"
   | UDTDef _ -> "UDTDef"
