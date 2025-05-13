@@ -5,6 +5,16 @@ module StringMap = Map.Make (String)
 
 let context = L.global_context ()
 
+type scope =
+  | Local
+  | Global
+
+type variable =
+  { v_value : L.llvalue
+  ; v_scope : scope
+  ; v_type : A.typ
+  }
+
 let l_int = L.i32_type context
 and l_bool = L.i1_type context
 and l_char = L.i8_type context
@@ -35,19 +45,38 @@ let get_lformals_arr (formals : A.formal list) =
   Array.of_list lformal_list
 ;;
 
-let lookup (vars : L.llvalue StringMap.t) var =
+let lookup (vars : variable StringMap.t) var =
   try StringMap.find var vars with
   | Not_found ->
     raise (Failure (Printf.sprintf "var lookup error: failed to find variable %s\n" var))
 ;;
 
-let rec build_expr expr vars the_module builder =
+let lookup_value (vars : variable StringMap.t) var =
+  try
+    let vbl = StringMap.find var vars in
+    vbl.v_value
+  with
+  | Not_found ->
+    raise (Failure (Printf.sprintf "var lookup error: failed to find variable %s\n" var))
+;;
+
+let rec build_expr expr (vars : variable StringMap.t) the_module builder =
   let sx = snd expr in
   match sx with
   | SLiteral l -> L.const_int l_int l
   | SBoolLit b -> L.const_int l_bool (if b then 1 else 0)
   | SFloatLit f -> L.const_float l_float f
-  | SId var -> L.build_load (lookup vars var) var builder
+  | SId var ->
+    let vbl = lookup vars var in
+    (* strings are pointers, they should not be load-ed like other variables 
+       Now, local strings already exist in a variable in the function scope, 
+       and build_load is okay here as we're loading from the variable, not 
+       the raw pointer.
+       Therefore, we have this special case for Global strings
+    *)
+    if vbl.v_scope == Global && vbl.v_type == A.String
+    then vbl.v_value
+    else L.build_load vbl.v_value var builder
   | SUnop (e, op) ->
     let llval = build_expr e vars the_module builder in
     let typ = fst e in
@@ -59,7 +88,7 @@ let rec build_expr expr vars the_module builder =
      | _ -> failwith ("Unary operator not supported for type " ^ Utils.string_of_type typ))
   | SUnopSideEffect (var, op) ->
     let typ = fst expr in
-    let ll_ptr = lookup vars var in
+    let ll_ptr = lookup_value vars var in
     let ll_original_val = L.build_load ll_ptr var builder in
     let ll_one =
       match typ with
@@ -101,7 +130,7 @@ let rec build_expr expr vars the_module builder =
       raise
         (Failure
            (Printf.sprintf "Enum variant %s not found in enum %s" variant_name enum_name))
-    else lookup vars key
+    else lookup_value vars key
   | SBinop (e1, op, e2) ->
     let typ = fst e1 in
     let se1 = build_expr e1 vars the_module builder in
@@ -163,6 +192,7 @@ let rec build_expr expr vars the_module builder =
              (Utils.string_of_type typ))
     in
     lval se1 se2 ("tmp_" ^ Utils.string_of_type typ) builder
+  | SStringLit s -> L.build_global_stringptr s "str" builder
   | e ->
     raise (Failure (Printf.sprintf "expr not implemented: %s" (Utils.string_of_sexpr e)))
 
@@ -211,6 +241,7 @@ and print (func : sfunc) vars the_module builder =
         in
         [| str_format_str builder; bool_str |]
       | A.Float -> [| float_format_str builder; lexpr |]
+      | A.String -> [| str_format_str builder; lexpr |]
       | _ -> failwith "print not implemented for type"
     in
     L.build_call
@@ -239,10 +270,11 @@ let add_local_val typ var vars (expr : A.typ * Sast.sx) the_module builder =
 
   ignore (L.build_store ll_initializer_value local_var_allocation builder);
 
-  StringMap.add var local_var_allocation vars
+  let vbl = { v_value = local_var_allocation; v_type = typ; v_scope = Local } in
+  StringMap.add var vbl vars
 ;;
 
-let add_global_val typ var vars expr the_module =
+let add_global_val typ var (vars : variable StringMap.t) expr the_module =
   let etyp = fst expr in
   assert_types etyp typ;
 
@@ -251,6 +283,20 @@ let add_global_val typ var vars expr the_module =
     | A.Int, SLiteral i ->
       let init = L.const_int l_int i in
       L.define_global var init the_module
+    | A.String, SStringLit s ->
+      (* Create fake temporary function to create a builder *)
+      let temp_fn_type = L.function_type (L.void_type context) [||] in
+      let temp_fn = L.define_function "temp_fn" temp_fn_type the_module in
+
+      (* Create a temporary builder *)
+      let builder = L.builder context in
+      L.position_at_end (L.entry_block temp_fn) builder;
+
+      let init = L.build_global_stringptr s "str" builder in
+
+      L.delete_function temp_fn;
+
+      init
     | t, e ->
       raise
         (Failure
@@ -259,7 +305,8 @@ let add_global_val typ var vars expr the_module =
               (Utils.string_of_type t)
               (Utils.string_of_sexpr e)))
   in
-  StringMap.add var global vars
+  let vbl = { v_value = global; v_type = typ; v_scope = Global } in
+  StringMap.add var vbl vars
 ;;
 
 let add_terminal builder instr =
@@ -270,7 +317,7 @@ let add_terminal builder instr =
 
 let translate blocks =
   let the_module = L.create_module context "Fly" in
-  let local_vars = StringMap.empty in
+  let local_vars : variable StringMap.t = StringMap.empty in
 
   let declare_function typ id (formals : A.formal list) body func_blocks =
     let lfunc =
@@ -370,10 +417,16 @@ let translate blocks =
         match variants with
         | [] -> []
         | SEnumVariantDefault n :: rest ->
-          let curr = id ^ "::" ^ n, L.const_int l_int last_value in
+          let lval = L.const_int l_int last_value in
+          let vbl = { v_value = lval; v_type = A.Int; v_scope = Global } in
+          let curr = id ^ "::" ^ n, vbl in
+
           curr :: assign_enum_values rest (last_value + 1)
         | SEnumVariantExplicit (n, v) :: rest ->
-          let curr = id ^ "::" ^ n, L.const_int l_int v in
+          let lval = L.const_int l_int v in
+          let vbl = { v_value = lval; v_type = A.Int; v_scope = Global } in
+          let curr = id ^ "::" ^ n, vbl in
+
           curr :: assign_enum_values rest (v + 1)
       in
       let vars =
