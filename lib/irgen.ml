@@ -347,6 +347,37 @@ let translate blocks =
         |> List.fold_left (fun acc (name, value) -> StringMap.add name value acc) vars
       in
       vars, curr_func, func_blocks, builder
+    | SWhile (expr, blks) ->
+      let curr_func = Option.get curr_func in
+      let builder = Option.get builder in
+
+      (* create blocks for the loop condition, body, and exit --> basically blocks of code that 
+      will necesaarily be executed together *)
+      let loop_cond_bb = L.append_block context "loop_cond" curr_func in
+      let loop_body_bb = L.append_block context "loop_body" curr_func in
+      let loop_exit_bb = L.append_block context "loop_exit" curr_func in
+
+      (* CONDITIONAL *)
+      (* immediately begin with the conditional move the pointer (builder) to this block *)
+      ignore (L.build_br loop_cond_bb builder);
+
+      (* move to the end of the conditional block *)
+      let cond_builder = L.builder_at_end context loop_cond_bb in
+      (* eval the conditional expr and store in var *)
+      let bool_val = build_expr (snd expr) vars the_module cond_builder in
+      (* if the bool_var is true then we create a loop_body branch otherwise we create loop exit *)
+      ignore (L.build_cond_br bool_val loop_body_bb loop_exit_bb cond_builder);
+
+      (* BODY*)
+      (* move ptr to body  *)
+      let body_builder = L.builder_at_end context loop_body_bb in
+      ignore (process_blocks blks vars (Some curr_func) func_blocks (Some body_builder));
+      (* go back to the conditional *)
+      ignore (L.build_br loop_cond_bb body_builder);
+
+      (* END *)
+      let exit_builder = L.builder_at_end context loop_exit_bb in
+      vars, Some curr_func, func_blocks, Some exit_builder
     | b ->
       raise
         (Failure
@@ -388,7 +419,6 @@ let translate blocks =
       assert_types (fst expr) A.Bool;
 
       let bool_val = build_expr (snd expr) vars the_module (Option.get builder) in
-
       let then_bb = L.append_block context "then" (Option.get curr_func) in
       let then_builder = Some (L.builder_at_end context then_bb) in
       ignore (process_blocks blks vars curr_func func_blocks then_builder);
