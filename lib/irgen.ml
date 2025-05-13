@@ -41,7 +41,6 @@ let lookup (vars : L.llvalue StringMap.t) var =
     raise (Failure (Printf.sprintf "var lookup error: failed to find variable %s\n" var))
 ;;
 
-
 let rec build_expr expr vars the_module builder =
   let sx = snd expr in
   match sx with
@@ -89,10 +88,6 @@ let rec build_expr expr vars the_module builder =
      | A.Postincr | A.Postdecr -> ll_original_val
      | A.Preincr | A.Predecr -> ll_new_val
      | _ -> failwith "Could apply incr/decr to variable")
-  | SBinop (e1, op, e2) ->
-    let typ = fst e1 in
-    let se1 = build_expr e1 vars the_module builder in
-    let se2 = build_expr e2 vars the_module builder in
   | SFunctionCall func ->
     let func_name = fst func in
 
@@ -183,8 +178,7 @@ and print (func : sfunc) vars the_module builder =
     let lexpr = build_expr func_arg vars the_module builder in
     let arr =
       match fst func_arg with
-      | A.Int ->
-        [| int_format_str builder; lexpr |]
+      | A.Int -> [| int_format_str builder; lexpr |]
       | A.Bool ->
         (* For bool prints, we actually print a string: "true" for true, and "false" for false 
            This is pretty tricky, requiring us to create branches and use a phi conditional (some IR stuff) 
@@ -208,7 +202,7 @@ and print (func : sfunc) vars the_module builder =
 
         L.position_at_end merge_block builder;
 
-        (* phi changes behavior dependent on which branch we arrived from 
+        (* phi changes behavior dependent on which branch we arrived from
              if we arrived from true_block, use true_str
              if we arrived from false_block, use false_str
         *)
@@ -216,10 +210,8 @@ and print (func : sfunc) vars the_module builder =
           L.build_phi [ true_str, true_block; false_str, false_block ] "bool_str" builder
         in
         [| str_format_str builder; bool_str |]
-      | A.Float, e ->
-        let lexpr = build_expr e vars the_module builder in
-        [| float_format_str builder; lexpr |]
-      | _, _ -> failwith "print not implemented for type"
+      | A.Float -> [| float_format_str builder; lexpr |]
+      | _ -> failwith "print not implemented for type"
     in
     L.build_call
       (print_func the_module)
