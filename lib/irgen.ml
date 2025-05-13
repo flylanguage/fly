@@ -122,6 +122,7 @@ let rec build_expr expr vars the_module builder =
              (Utils.string_of_type typ))
     in
     lval se1 se2 ("tmp_" ^ Utils.string_of_type typ) builder
+  | SStringLit s -> L.build_global_stringptr s "str" builder
   | e ->
     raise (Failure (Printf.sprintf "expr not implemented: %s" (Utils.string_of_sexpr e)))
 
@@ -175,6 +176,9 @@ and print (func : sfunc) vars the_module builder =
       | A.Float, e ->
         let lexpr = build_expr e vars the_module builder in
         [| float_format_str builder; lexpr |]
+      | A.String, e ->
+        let lexpr = build_expr e vars the_module builder in
+        [| str_format_str builder; lexpr |]
       | _, _ -> failwith "print not implemented for type"
     in
     L.build_call
