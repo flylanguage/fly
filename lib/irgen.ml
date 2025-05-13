@@ -61,7 +61,8 @@ let lookup_value (vars : variable StringMap.t) var =
 ;;
 
 let rec build_expr expr (vars : variable StringMap.t) the_module builder =
-  match expr with
+  let sx = snd expr in
+  match sx with
   | SLiteral l -> L.const_int l_int l
   | SBoolLit b -> L.const_int l_bool (if b then 1 else 0)
   | SFloatLit f -> L.const_float l_float f
@@ -76,6 +77,46 @@ let rec build_expr expr (vars : variable StringMap.t) the_module builder =
     if vbl.v_scope == Global && vbl.v_type == A.String
     then vbl.v_value
     else L.build_load vbl.v_value var builder
+  | SUnop (e, op) ->
+    let llval = build_expr e vars the_module builder in
+    let typ = fst e in
+    (match op with
+     | A.Not ->
+       (match typ with
+        | A.Bool -> L.build_not llval "tmp_not" builder
+        | _ -> failwith ("Unary Not not supported for type " ^ Utils.string_of_type typ))
+     | _ -> failwith ("Unary operator not supported for type " ^ Utils.string_of_type typ))
+  | SUnopSideEffect (var, op) ->
+    let typ = fst expr in
+    let ll_ptr = lookup_value vars var in
+    let ll_original_val = L.build_load ll_ptr var builder in
+    let ll_one =
+      match typ with
+      | A.Int -> L.const_int l_int 1
+      | A.Float -> L.const_float l_float 1.0
+      | _ -> failwith (Utils.string_of_type typ ^ " does not support unary incr or decr")
+    in
+    let ll_new_val =
+      match op with
+      | A.Postincr | A.Preincr ->
+        (match typ with
+         | A.Int -> L.build_add ll_original_val ll_one "incr_val" builder
+         | A.Float -> L.build_fadd ll_original_val ll_one "incr_val" builder
+         | _ -> failwith "Post/Preincr failed")
+      | A.Postdecr | A.Predecr ->
+        (match typ with
+         | A.Int -> L.build_sub ll_original_val ll_one "incr_val" builder
+         | A.Float -> L.build_fsub ll_original_val ll_one "incr_val" builder
+         | _ -> failwith "Post/Predecr failed")
+      | _ -> failwith ("Operand " ^ Utils.string_of_op op ^ " Not found")
+    in
+
+    ignore (L.build_store ll_new_val ll_ptr builder);
+
+    (match op with
+     | A.Postincr | A.Postdecr -> ll_original_val
+     | A.Preincr | A.Predecr -> ll_new_val
+     | _ -> failwith "Could apply incr/decr to variable")
   | SFunctionCall func ->
     let func_name = fst func in
 
@@ -92,8 +133,8 @@ let rec build_expr expr (vars : variable StringMap.t) the_module builder =
     else lookup_value vars key
   | SBinop (e1, op, e2) ->
     let typ = fst e1 in
-    let se1 = build_expr (snd e1) vars the_module builder in
-    let se2 = build_expr (snd e2) vars the_module builder in
+    let se1 = build_expr e1 vars the_module builder in
+    let se2 = build_expr e2 vars the_module builder in
     let lval =
       match typ with
       | A.Int ->
@@ -164,14 +205,11 @@ and print (func : sfunc) vars the_module builder =
   then failwith "Incorrect number of args to print: expected 1"
   else (
     let func_arg = List.hd (snd func) in
+    let lexpr = build_expr func_arg vars the_module builder in
     let arr =
-      match func_arg with
-      | A.Int, e ->
-        let lexpr = build_expr e vars the_module builder in
-        [| int_format_str builder; lexpr |]
-      | A.Bool, e ->
-        let lexpr = build_expr e vars the_module builder in
-
+      match fst func_arg with
+      | A.Int -> [| int_format_str builder; lexpr |]
+      | A.Bool ->
         (* For bool prints, we actually print a string: "true" for true, and "false" for false 
            This is pretty tricky, requiring us to create branches and use a phi conditional (some IR stuff) 
            to determine which one to print
@@ -194,7 +232,7 @@ and print (func : sfunc) vars the_module builder =
 
         L.position_at_end merge_block builder;
 
-        (* phi changes behavior dependent on which branch we arrived from 
+        (* phi changes behavior dependent on which branch we arrived from
              if we arrived from true_block, use true_str
              if we arrived from false_block, use false_str
         *)
@@ -202,13 +240,9 @@ and print (func : sfunc) vars the_module builder =
           L.build_phi [ true_str, true_block; false_str, false_block ] "bool_str" builder
         in
         [| str_format_str builder; bool_str |]
-      | A.Float, e ->
-        let lexpr = build_expr e vars the_module builder in
-        [| float_format_str builder; lexpr |]
-      | A.String, e ->
-        let lexpr = build_expr e vars the_module builder in
-        [| str_format_str builder; lexpr |]
-      | _, _ -> failwith "print not implemented for type"
+      | A.Float -> [| float_format_str builder; lexpr |]
+      | A.String -> [| str_format_str builder; lexpr |]
+      | _ -> failwith "print not implemented for type"
     in
     L.build_call
       (print_func the_module)
@@ -232,9 +266,7 @@ let add_local_val typ var vars (expr : A.typ * Sast.sx) the_module builder =
   assert_types expr_type typ;
 
   let local_var_allocation : L.llvalue = L.build_alloca (ltype_of_typ typ) var builder in
-  let sx = snd expr in
-
-  let ll_initializer_value : L.llvalue = build_expr sx vars the_module builder in
+  let ll_initializer_value : L.llvalue = build_expr expr vars the_module builder in
 
   ignore (L.build_store ll_initializer_value local_var_allocation builder);
 
@@ -328,15 +360,15 @@ let translate blocks =
       ignore (L.build_ret_void (Option.get builder));
       vars, curr_func, func_blocks, builder
     | SReturnVal expr ->
-      let ret = build_expr (snd expr) vars the_module (Option.get builder) in
+      let ret = build_expr expr vars the_module (Option.get builder) in
       ignore (L.build_ret ret (Option.get builder));
       vars, curr_func, func_blocks, builder
     | SExpr expr ->
-      ignore (build_expr (snd expr) vars the_module (Option.get builder));
+      ignore (build_expr expr vars the_module (Option.get builder));
       vars, curr_func, func_blocks, builder
     | SIfEnd (expr, blks) ->
       (* expression should be bool *)
-      let bool_val = build_expr (snd expr) vars the_module (Option.get builder) in
+      let bool_val = build_expr expr vars the_module (Option.get builder) in
 
       (* We require curr_func to be Some - no if-else in global scope *)
       let then_bb = L.append_block context "then" (Option.get curr_func) in
@@ -354,7 +386,7 @@ let translate blocks =
       (* expression should be bool *)
       assert_types (fst expr) A.Bool;
 
-      let bool_val = build_expr (snd expr) vars the_module (Option.get builder) in
+      let bool_val = build_expr expr vars the_module (Option.get builder) in
 
       let then_bb = L.append_block context "then" (Option.get curr_func) in
       let then_builder = Some (L.builder_at_end context then_bb) in
@@ -426,7 +458,7 @@ let translate blocks =
     | SElifEnd (expr, blks) ->
       assert_types (fst expr) A.Bool;
 
-      let bool_val = build_expr (snd expr) vars the_module (Option.get builder) in
+      let bool_val = build_expr expr vars the_module (Option.get builder) in
 
       let then_bb = L.append_block context "then" (Option.get curr_func) in
       let then_builder = Some (L.builder_at_end context then_bb) in
@@ -442,7 +474,7 @@ let translate blocks =
     | SElifNonEnd (expr, blks, else_blk) ->
       assert_types (fst expr) A.Bool;
 
-      let bool_val = build_expr (snd expr) vars the_module (Option.get builder) in
+      let bool_val = build_expr expr vars the_module (Option.get builder) in
 
       let then_bb = L.append_block context "then" (Option.get curr_func) in
       let then_builder = Some (L.builder_at_end context then_bb) in
