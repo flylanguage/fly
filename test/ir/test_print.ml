@@ -112,21 +112,27 @@ let tests =
              declare i32 @printf(i8*, ...)\n"
           in
           assert_equal expected actual ~printer)
-         (* ; ("print_string" *)
-         (*    >:: fun _ -> *)
-         (*    let sast = get_sast "fun main() -> int {print(\"hello\"); return 0;}" in *)
-         (*    let mdl = Irgen.translate sast in *)
-         (*    let actual = L.string_of_llmodule mdl in *)
-         (*    let expected = *)
-         (*      "; ModuleID = 'Fly'\n\ *)
-       (*       source_filename = \"Fly\"\n\n\ *)
-       (*       define void @main() {\n\ *)
-       (*       entry:\n\ *)
-       (*      \  ret void\n\ *)
-       (*       }\n" *)
-         (*    in *)
-         (*    _write_to_file actual "test.out"; *)
-         (*    assert_equal expected actual ~printer) *)
+       ; ("print_string"
+          >:: fun _ ->
+          let sast = get_sast "fun main() -> int {print(\"hello\"); return 0;}" in
+          let mdl = Irgen.translate sast in
+          let actual = L.string_of_llmodule mdl in
+          let expected =
+            "; ModuleID = 'Fly'\n\
+             source_filename = \"Fly\"\n\n\
+             @str = private unnamed_addr constant [6 x i8] c\"hello\\00\", align 1\n\
+             @str_fmt = private unnamed_addr constant [4 x i8] c\"%s\\0A\\00\", align 1\n\n\
+             define i32 @main() {\n\
+             entry:\n\
+            \  %printf = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x \
+             i8], [4 x i8]* @str_fmt, i32 0, i32 0), i8* getelementptr inbounds ([6 x \
+             i8], [6 x i8]* @str, i32 0, i32 0))\n\
+            \  ret i32 0\n\
+             }\n\n\
+             declare i32 @printf(i8*, ...)\n"
+          in
+          _write_to_file actual "test.out";
+          assert_equal expected actual ~printer)
        ]
 ;;
 
