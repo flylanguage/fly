@@ -44,6 +44,23 @@ let tests =
              }\n"
           in
           assert_equal expected actual ~printer)
+       ; ("global_string"
+          >:: fun _ ->
+          let sast = get_sast "let a := \"hello\"; fun function() -> () {let b := a;}" in
+          let mdl = Irgen.translate sast in
+          let actual = L.string_of_llmodule mdl in
+          let expected =
+            "; ModuleID = 'Fly'\n\
+             source_filename = \"Fly\"\n\n\
+             @str = private unnamed_addr constant [6 x i8] c\"hello\\00\", align 1\n\n\
+             define void @function() {\n\
+             entry:\n\
+            \  %b = alloca i8*, align 8\n\
+            \  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str, i32 0, i32 \
+             0), i8** %b, align 8\n\
+             }\n"
+          in
+          assert_equal expected actual ~printer)
        ]
 ;;
 
