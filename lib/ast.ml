@@ -30,6 +30,7 @@ type pattern =
   | PWildcard
   | PEmptyList
   | PCons of pattern * pattern
+  | PEnumAccess of string * string
 
 type assign_op =
   | IdentityAssign

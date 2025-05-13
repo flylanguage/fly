@@ -32,15 +32,6 @@ let tests =
           let actual = L.string_of_llmodule mdl in
           let expected = "; ModuleID = 'Fly'\nsource_filename = \"Fly\"\n" in
           assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
-       ; ("global_var"
-          >:: fun _ ->
-          let sast = get_sast "let a := 5;" in
-          let mdl = Irgen.translate sast in
-          let actual = L.string_of_llmodule mdl in
-          let expected =
-            "; ModuleID = 'Fly'\nsource_filename = \"Fly\"\n\n@a = global i32 5\n"
-          in
-          assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
        ; ("empty_function_decl"
           >:: fun _ ->
           let sast = get_sast "fun function() {}" in

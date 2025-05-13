@@ -1,2 +1,4 @@
 .DS_Store
 _build/
+test.fly
+fly.out

@@ -48,7 +48,7 @@ type sblock =
       * formal list
       * sblock list
       * typ (* rtyp, func_name, func_args, func_body, bound_type *)
-  | SEnumDeclaration of string * enum_variant list
+  | SEnumDeclaration of string * senum_variant list
   | SUDTDef of string * (string * typ) list
   | SIfEnd of sexpr * sblock list
   | SIfNonEnd of sexpr * sblock list * sblock
@@ -62,5 +62,8 @@ type sblock =
   | SReturnUnit
   | SReturnVal of sexpr
   | SExpr of sexpr
+
+(* Name of our print function *)
+let print_func_name = "print"
 
 type sprogram = { body : sblock list }

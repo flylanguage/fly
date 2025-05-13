@@ -152,6 +152,33 @@ and get_binop_return_type expr t1 binop t2 =
      | _, _ -> raise (Failure (format_binop_error expr t1 t2)))
   | _ -> raise (Failure "Invalid binary operator")
 
+and check_pattern pattern envs =
+  match pattern with
+  | PLiteral i -> PLiteral i
+  | PBoolLit b -> PBoolLit b
+  | PFloatLit f -> PFloatLit f
+  | PCharLit c -> PCharLit c
+  | PStringLit s -> PStringLit s
+  | PId id -> PId id
+  | PWildcard -> PWildcard
+  | PEmptyList -> PEmptyList
+  | PCons (p1, p2) -> PCons (check_pattern p1 envs, check_pattern p2 envs)
+  | PEnumAccess (enum_name, variant_name) ->
+    let enum_variants =
+      try StringMap.find enum_name envs.enum_env with
+      | Not_found -> raise (Failure ("Undefined enum " ^ enum_name))
+    in
+    let variant_exists =
+      List.exists
+        (function
+          | EnumVariantDefault n | EnumVariantExplicit (n, _) -> n = variant_name)
+        enum_variants
+    in
+    if not variant_exists
+    then
+      raise (Failure (Printf.sprintf "Enum %s has no variant %s" enum_name variant_name));
+    PEnumAccess (enum_name, variant_name)
+
 and check_expr expr envs special_blocks =
   match expr with
   | Literal i -> Int, SLiteral i
@@ -247,8 +274,20 @@ and check_expr expr envs special_blocks =
        else raise (Failure "Incorrect types passed to this method")
      | None -> raise (Failure (func_name ^ "is not a method bound to " ^ udt_name)))
   | EnumAccess (enum_name, variant) ->
-    let _ = find_enum enum_name envs.enum_env in
-    Int, SEnumAccess (enum_name, variant)
+    let enum_variants =
+      try StringMap.find enum_name envs.enum_env with
+      | Not_found -> raise (Failure ("Undefined enum " ^ enum_name))
+    in
+    let variant_exists =
+      List.exists
+        (function
+          | EnumVariantDefault name -> name = variant
+          | EnumVariantExplicit (name, _) -> name = variant)
+        enum_variants
+    in
+    if not variant_exists
+    then raise (Failure ("Undefined variant " ^ variant ^ " in enum " ^ enum_name))
+    else Int, SEnumAccess (enum_name, variant)
   | Index (e1, e2) ->
     let t1, e1' = check_expr e1 envs special_blocks in
     let t2, e2' = check_expr e2 envs special_blocks in
@@ -265,9 +304,10 @@ and check_expr expr envs special_blocks =
     let checked_arms =
       List.map
         (fun (pattern, arm_expr) ->
+           let checked_pattern = check_pattern pattern envs in
            let updated_special_blocks = StringSet.add "wildcard" special_blocks in
            let s_arm_expr = check_expr arm_expr envs updated_special_blocks in
-           pattern, s_arm_expr)
+           checked_pattern, s_arm_expr)
         match_arms
     in
     let _, sexpr_list = List.split checked_arms in
@@ -399,10 +439,15 @@ and check_block block envs special_blocks func_ret_type =
   | EnumDeclaration (enum_name, enum_variants) ->
     let new_enum_env = enum_dec_helper enum_name enum_variants envs in
     let updated_envs = { envs with enum_env = new_enum_env } in
+    let convert_enum_variant = function
+      | EnumVariantDefault name -> SEnumVariantDefault name
+      | EnumVariantExplicit (name, value) -> SEnumVariantExplicit (name, value)
+    in
+    let senum_variants = List.map convert_enum_variant enum_variants in
     ( updated_envs
     , special_blocks
     , func_ret_type
-    , SEnumDeclaration (enum_name, enum_variants) )
+    , SEnumDeclaration (enum_name, senum_variants) )
   | UDTDef (udt_name, udt_members) ->
     let initial_udt_def = { members = udt_members; methods = [] } in
     (* follow type definition udt_def above *)
@@ -548,10 +593,15 @@ let check block_list =
     ; enum_env = StringMap.empty
     }
   in
+
+  (* Add "print" function *)
+  let new_func_env = func_def_helper Sast.print_func_name [] Ast.Unit initial_envs in
+  let envs = { initial_envs with func_env = new_func_env } in
+
   (* Special blocks are limited to return, continue, break, wildcard.
    We need this to indicate whether these symbols are allowed in their current context.
    For example, a return is only allowed inside a function defintion and a break is only allowed inside a loop 
    I should really come up with a better name for this *)
   let special_blocks = StringSet.empty in
-  check_block_list block_list initial_envs special_blocks Unit
+  check_block_list block_list envs special_blocks Unit
 ;;
