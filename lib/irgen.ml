@@ -17,6 +17,8 @@ type variable =
 
 let udt_structs : (string, L.lltype) Hashtbl.t = Hashtbl.create 10
 let udt_field_indices : (string, (string * int) list) Hashtbl.t = Hashtbl.create 10
+let string_consts : (string, L.llvalue) Hashtbl.t = Hashtbl.create 10
+let string_counter = ref 0
 
 let l_int = L.i32_type context
 and l_bool = L.i1_type context
@@ -93,6 +95,15 @@ let build_udt_access typ var_name field_name vars builder =
   let field_val = L.build_load field_ptr (field_name ^ "_val") builder in
   field_val
 ;;
+
+let get_or_add_string_const s builder =
+  if Hashtbl.mem string_consts s then Hashtbl.find string_consts s
+  else (
+    let name = if !string_counter = 0 then "str" else Printf.sprintf "str.%d" !string_counter in
+    incr string_counter;
+    let v = L.build_global_stringptr s name builder in
+    Hashtbl.add string_consts s v;
+    v)
 
 let rec build_expr expr (vars : variable StringMap.t) var_types the_module builder =
   let sx = snd expr in
@@ -254,9 +265,7 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
     let field_val = L.build_load field_ptr (field ^ "_val") builder in
     field_val
   | SStringLit s ->
-    let str_ptr =
-      L.build_global_stringptr s ("str_" ^ Digest.to_hex (Digest.string s)) builder
-    in
+    let str_ptr = get_or_add_string_const s builder in
     str_ptr
   | e ->
     raise (Failure (Printf.sprintf "expr not implemented: %s" (Utils.string_of_sexpr e)))
@@ -364,15 +373,10 @@ let add_global_val typ var (vars : variable StringMap.t) _ expr the_module =
       (* Create fake temporary function to create a builder *)
       let temp_fn_type = L.function_type (L.void_type context) [||] in
       let temp_fn = L.define_function "temp_fn" temp_fn_type the_module in
-
-      (* Create a temporary builder *)
       let builder = L.builder context in
       L.position_at_end (L.entry_block temp_fn) builder;
-
-      let init = L.build_global_stringptr s "str" builder in
-
+      let init = get_or_add_string_const s builder in
       L.delete_function temp_fn;
-
       init
     | t, e ->
       raise

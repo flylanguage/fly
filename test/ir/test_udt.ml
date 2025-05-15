@@ -60,7 +60,7 @@ let tests =
             "store name field"
             (str_contains
                actual
-               "store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str_");
+               "store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str");
           assert_bool "store age field" (str_contains actual "store i32 30"))
        ; ("udt_field_access"
           >:: fun _ ->
