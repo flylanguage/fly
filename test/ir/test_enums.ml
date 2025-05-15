@@ -29,11 +29,14 @@ let str_contains haystack needle =
   | Some idx ->
     let len = String.length needle in
     let rec check i =
-      if i + len > String.length haystack then false
-      else if String.sub haystack i len = needle then true
-      else check (i+1)
+      if i + len > String.length haystack
+      then false
+      else if String.sub haystack i len = needle
+      then true
+      else check (i + 1)
     in
     check idx
+;;
 
 let tests =
   "testing_enum_ir"
@@ -46,9 +49,7 @@ let tests =
           in
           let mdl = Irgen.translate sast in
           let actual = L.string_of_llmodule mdl in
-          assert_bool
-            "main returns enum value"
-            (str_contains actual "ret i32 200");
+          assert_bool "main returns enum value" (str_contains actual "ret i32 200");
           assert_bool "main returns int" (str_contains actual "define i32 @main()"))
        ; ("enum_implicit_values"
           >:: fun _ ->
@@ -58,9 +59,7 @@ let tests =
           in
           let mdl = Irgen.translate sast in
           let actual = L.string_of_llmodule mdl in
-          assert_bool
-            "main returns enum value"
-            (str_contains actual "ret i32 2");
+          assert_bool "main returns enum value" (str_contains actual "ret i32 2");
           assert_bool "main returns int" (str_contains actual "define i32 @main()"))
        ; ("enum_mixed_values"
           >:: fun _ ->
@@ -70,9 +69,7 @@ let tests =
           in
           let mdl = Irgen.translate sast in
           let actual = L.string_of_llmodule mdl in
-          assert_bool
-            "main returns enum value"
-            (str_contains actual "ret i32 11");
+          assert_bool "main returns enum value" (str_contains actual "ret i32 11");
           assert_bool "main returns int" (str_contains actual "define i32 @main()"))
        ; ("enum_usage_in_if"
           >:: fun _ ->
