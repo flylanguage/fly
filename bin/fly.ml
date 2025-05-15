@@ -56,6 +56,7 @@ let read_and_print_ir channel =
   print_endline (L.string_of_llmodule md)
 ;;
 
+(* Reads all the bytes from a channel (not possible in ocaml for some reason) *)
 let read_all_from_channel (ic : in_channel) : bytes =
   let buf = Buffer.create 4096 in
   (try
@@ -78,14 +79,15 @@ let compile_wrapper =
   let cmd = String.concat " " argv in
   let child_stdout, child_stdin = Unix.open_process cmd in
 
+  (* Write into stdin *)
   output_string child_stdin wrapper;
   flush child_stdin;
+  (* Write EOF and close channel *)
   close_out child_stdin;
 
   let contents = read_all_from_channel child_stdout in
 
   let filename = Filename.get_temp_dir_name () ^ "fly_wrapper.o" in
-
   let pipe = open_out_bin filename in
   output_bytes pipe contents;
   close_out pipe;
@@ -93,6 +95,7 @@ let compile_wrapper =
   filename
 ;;
 
+(* Just delete the tmp file created with the wrapper object *)
 let cleanup_wrapper filename = Sys.remove filename
 
 let read_and_compile channel =

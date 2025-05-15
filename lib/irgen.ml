@@ -36,7 +36,6 @@ let ltype_of_typ = function
 
 let int_format_str builder = L.build_global_stringptr "%d\n" "int_fmt" builder
 let str_format_str builder = L.build_global_stringptr "%s\n" "str_fmt" builder
-let str_nonl_format_str builder = L.build_global_stringptr "%s" "str_fmt" builder
 let float_format_str builder = L.build_global_stringptr "%f\n" "float_fmt" builder
 
 (* Creates a binding to the llvm libc "printf" function *)
@@ -51,7 +50,7 @@ let strlen_func the_module = Llvm.declare_function "strlen" l_strlen the_module
 let l_scanf : L.lltype = L.var_arg_function_type l_int [| l_str |]
 let scanf_func the_module = L.declare_function "scanf" l_scanf the_module
 
-(* declare FILE struct *)
+(* declare FILE c struct *)
 let file_type = L.named_struct_type context "struct._IO_FILE"
 let _ = L.struct_set_body file_type [||] false
 let file_ptr_type = Llvm.pointer_type file_type
@@ -161,70 +160,64 @@ let rec build_expr expr (vars : variable StringMap.t) the_module builder =
     let typ = fst e1 in
     let se1 = build_expr e1 vars the_module builder in
     let se2 = build_expr e2 vars the_module builder in
-    if typ == A.String
-    then failwith "not implemented !!!"
-    (* let arr = [| se1 |] in *)
-    (* let _res = L.build_call (strlen_func the_module) arr "call_strlen" builder in *)
-    (* _res *)
-    else (
-      let lval =
-        match typ with
-        | A.Int ->
-          (match op with
-           | A.Add -> L.build_add
-           | A.Sub -> L.build_sub
-           | A.Mult -> L.build_mul
-           | A.Div -> L.build_sdiv
-           | A.Mod -> L.build_srem
-           | A.Equal -> L.build_icmp L.Icmp.Eq
-           | A.Neq -> L.build_icmp L.Icmp.Ne
-           | A.Less -> L.build_icmp L.Icmp.Slt
-           | A.Leq -> L.build_icmp L.Icmp.Sle
-           | A.Greater -> L.build_icmp L.Icmp.Sgt
-           | A.Geq -> L.build_icmp L.Icmp.Sge
-           | _ ->
-             failwith
-               (Printf.sprintf
-                  "Integer binary operator %s not yet implemented"
-                  (Utils.string_of_op op)))
-        | A.Float ->
-          (match op with
-           | A.Add -> L.build_fadd
-           | A.Sub -> L.build_fsub
-           | A.Mult -> L.build_fmul
-           | A.Div -> L.build_fdiv
-           | A.Mod -> L.build_frem
-           | A.Equal -> L.build_fcmp L.Fcmp.Oeq
-           | A.Neq -> L.build_fcmp L.Fcmp.One
-           | A.Less -> L.build_fcmp L.Fcmp.Olt
-           | A.Leq -> L.build_fcmp L.Fcmp.Ole
-           | A.Greater -> L.build_fcmp L.Fcmp.Ogt
-           | A.Geq -> L.build_fcmp L.Fcmp.Oge
-           | _ ->
-             failwith
-               (Printf.sprintf
-                  "Float binary operator %s not yet implemented"
-                  (Utils.string_of_op op)))
-        | A.Bool ->
-          (match op with
-           | A.And -> L.build_and
-           | A.Or -> L.build_or
-           | A.Equal -> L.build_icmp L.Icmp.Eq
-           | A.Neq -> L.build_icmp L.Icmp.Ne
-           | _ ->
-             failwith
-               (Printf.sprintf
-                  "Boolean binary operator %s not yet implemented"
-                  (Utils.string_of_op op)))
-        | A.String -> failwith "GOT A STRING\n"
-        | _ ->
-          failwith
-            (Printf.sprintf
-               "Binary operator %s not yet implemented for type %s"
-               (Utils.string_of_op op)
-               (Utils.string_of_type typ))
-      in
-      lval se1 se2 ("tmp_" ^ Utils.string_of_type typ) builder)
+    let lval =
+      match typ with
+      | A.Int ->
+        (match op with
+         | A.Add -> L.build_add
+         | A.Sub -> L.build_sub
+         | A.Mult -> L.build_mul
+         | A.Div -> L.build_sdiv
+         | A.Mod -> L.build_srem
+         | A.Equal -> L.build_icmp L.Icmp.Eq
+         | A.Neq -> L.build_icmp L.Icmp.Ne
+         | A.Less -> L.build_icmp L.Icmp.Slt
+         | A.Leq -> L.build_icmp L.Icmp.Sle
+         | A.Greater -> L.build_icmp L.Icmp.Sgt
+         | A.Geq -> L.build_icmp L.Icmp.Sge
+         | _ ->
+           failwith
+             (Printf.sprintf
+                "Integer binary operator %s not yet implemented"
+                (Utils.string_of_op op)))
+      | A.Float ->
+        (match op with
+         | A.Add -> L.build_fadd
+         | A.Sub -> L.build_fsub
+         | A.Mult -> L.build_fmul
+         | A.Div -> L.build_fdiv
+         | A.Mod -> L.build_frem
+         | A.Equal -> L.build_fcmp L.Fcmp.Oeq
+         | A.Neq -> L.build_fcmp L.Fcmp.One
+         | A.Less -> L.build_fcmp L.Fcmp.Olt
+         | A.Leq -> L.build_fcmp L.Fcmp.Ole
+         | A.Greater -> L.build_fcmp L.Fcmp.Ogt
+         | A.Geq -> L.build_fcmp L.Fcmp.Oge
+         | _ ->
+           failwith
+             (Printf.sprintf
+                "Float binary operator %s not yet implemented"
+                (Utils.string_of_op op)))
+      | A.Bool ->
+        (match op with
+         | A.And -> L.build_and
+         | A.Or -> L.build_or
+         | A.Equal -> L.build_icmp L.Icmp.Eq
+         | A.Neq -> L.build_icmp L.Icmp.Ne
+         | _ ->
+           failwith
+             (Printf.sprintf
+                "Boolean binary operator %s not yet implemented"
+                (Utils.string_of_op op)))
+      | A.String -> failwith "GOT A STRING\n"
+      | _ ->
+        failwith
+          (Printf.sprintf
+             "Binary operator %s not yet implemented for type %s"
+             (Utils.string_of_op op)
+             (Utils.string_of_type typ))
+    in
+    lval se1 se2 ("tmp_" ^ Utils.string_of_type typ) builder
   | SStringLit s -> L.build_global_stringptr s "str" builder
   | e ->
     raise (Failure (Printf.sprintf "expr not implemented: %s" (Utils.string_of_sexpr e)))
