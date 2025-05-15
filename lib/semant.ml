@@ -206,22 +206,14 @@ and check_expr expr envs special_blocks =
        else raise (Failure "Lists must only have 1 type"))
   | UDTInstance (udt_name, udt_members) ->
     let udt_def = find_udt udt_name envs.udt_env in
-    (* udt_def is a (string * typ) list *)
-    let def_names, def_types = List.split udt_def.members in
+    let def_names, _ = List.split udt_def.members in
     let instance_names, instance_exprs = List.split udt_members in
-    if def_names = instance_names
-    then (
-      (* this means the order of members in the instance must in the same order as definition *)
-      let sexpr_list =
-        List.map (fun e -> check_expr e envs special_blocks) instance_exprs
-      in
-      let instance_types, _ = List.split sexpr_list in
-      if def_types = instance_types
-      then (
-        let skv_list = List.combine instance_names sexpr_list in
-        UserType udt_name, SUDTInstance (udt_name, skv_list))
-      else raise (Failure ("Incorrect types used to instantiate " ^ udt_name)))
-    else raise (Failure ("Incorrect ordering when instantiating " ^ udt_name))
+    let sexpr_list = List.map (fun e -> check_expr e envs special_blocks) instance_exprs in
+    let skv_list = List.combine instance_names sexpr_list in
+    let skv_list_sorted =
+      List.map (fun n -> (n, List.assoc n skv_list)) def_names
+    in
+    UserType udt_name, SUDTInstance (udt_name, skv_list_sorted)
   | Binop (e1, binop, e2) -> check_binop expr e1 binop e2 envs special_blocks
   | Unop (e, unop) ->
     let t, e' = check_expr e envs special_blocks in
