@@ -9,7 +9,7 @@ open Ast
 %token BEQ NEQ LT LEQ GT GEQ AND OR NOT
 
 %token IF ELSE WHILE FOR BREAK CONT IN
-%token INT BOOL CHAR FLOAT STRING LIST TUPLE 
+%token INT BOOL CHAR FLOAT STRING LIST TUPLE
 %token FUN ARROW RETURN
 %token LET MUT MATCH UNDERSCORE INTERFACE
 %token TYPE SELF ENUM BIND AS
@@ -26,7 +26,16 @@ open Ast
 %type <Ast.program> program_rule
 
 %right EQUAL PLUS_ASSIGN MINUS_ASSIGN MULT_ASSIGN DIV_ASSIGN WALRUS
-%left DCOLON
+%left OR
+%left AND
+%left BEQ NEQ
+%left LT LEQ GT GEQ
+%left PLUS MINUS
+%left TIMES DIVIDE MODULO
+%right EXPONENT
+%nonassoc NOT
+%left AS
+%left DOT DCOLON LBRACKET
 
 %%
 
@@ -61,7 +70,7 @@ access_expr:
   | ID DCOLON func_call                 { UDTStaticAccess($1, $3) }
   | SELF DOT udt_access                 { UDTAccess ("self", $3) }
   | ID DCOLON ID                        { EnumAccess($1, $3) }
-  | expr9 LBRACKET expr9 RBRACKET     { Index($1, $3) }
+  | expr LBRACKET expr RBRACKET     { Index($1, $3) }
 
 udt_access:
   | ID                                 { UDTVariable($1) }
@@ -71,62 +80,33 @@ match_expr:
   MATCH LPAREN expr RPAREN LBRACE case_list RBRACE  { Match($3, $6) }
 
 expr:
-  expr1                                        { $1 }
+    primary_expr                        { $1 }
+  | expr PLUS expr                      { Binop($1, Add, $3) }
+  | expr MINUS expr                     { Binop($1, Sub, $3) }
+  | expr TIMES expr                     { Binop($1, Mult, $3) }
+  | expr DIVIDE expr                    { Binop($1, Div, $3) }
+  | expr MODULO expr                    { Binop($1, Mod, $3) }
+  | expr EXPONENT expr                  { Binop($1, Exp, $3) }
+  | expr OR expr                        { Binop($1, Or, $3) }
+  | expr AND expr                       { Binop($1, And, $3) }
+  | expr BEQ expr                       { Binop($1, Equal, $3) }
+  | expr NEQ expr                       { Binop($1, Neq, $3) }
+  | expr GT expr                        { Binop($1, Greater, $3) }
+  | expr GEQ expr                       { Binop($1, Geq, $3) }
+  | expr LT expr                        { Binop($1, Less, $3) }
+  | expr LEQ expr                       { Binop($1, Leq, $3) }
+  | NOT expr                            { Unop($2, Not) }
+  | expr AS typ                         { TypeCast($3, $1) }
 
-expr1:
- | expr1 OR expr2         { Binop($1, Or, $3) }
- | expr2                  { $1 }
-
-expr2:
- | expr2 AND expr3        { Binop($1, And, $3) }
- | expr3                  { $1 }
-
-expr3:
- | expr3 BEQ expr4        { Binop($1, Equal, $3) }
- | expr3 NEQ expr4        { Binop($1, Neq, $3) }
- | expr4                  { $1 }
-
-expr4:
- | expr4 GT expr5         { Binop($1, Greater, $3) }
- | expr4 GEQ expr5        { Binop($1, Geq, $3) }
- | expr4 LT expr5         { Binop($1, Less, $3) }
- | expr4 LEQ expr5        { Binop($1, Leq, $3) }
- | expr5                  { $1 }
-
-expr5:
- | expr5 PLUS expr6       { Binop($1, Add, $3) }
- | expr5 MINUS expr6      { Binop($1, Sub, $3) }
- | expr6                  { $1 }
-
-expr6:
- | expr6 TIMES expr7      { Binop($1, Mult, $3) }
- | expr6 DIVIDE expr7     { Binop($1, Div, $3) }
- | expr6 MODULO expr7     { Binop($1, Mod, $3) }
- | expr7                  { $1 }
-
-expr7:
- | expr7 EXPONENT expr8   { Binop($1, Exp, $3) }
- | expr8                  { $1 }
-
-expr8:
- | NOT expr8              { Unop($2, Not) }
- | expr9                  { $1 } 
-
-expr9:
+primary_expr:
  | literal_expr                              { $1 }
  | side_effect_expr                          { $1 }
  | access_expr                               { $1 }
  | udt_instance                              { $1 } /* Instantiating a user defined type */
  | match_expr                                { $1 } /* match is an expression and should evaluate to something */
  | func_call                                 { FunctionCall($1) }
- | expr9 AS typ                              { TypeCast($3, $1) }
- | parens_expr                               { $1 }
+ | LPAREN expr RPAREN                        { $2 }
  | ID                                        { Id($1) }
-
-
-
-parens_expr:
-  | LPAREN expr1 RPAREN                        { $2 }
 
 block:
   | declaration          { $1 }
@@ -268,8 +248,8 @@ list_elements_opt:
   | list_elements             { $1 }
 
 list_elements:
-  | expr9                      {[$1]}
-  | expr9 COMMA list_elements  {$1 :: $3}
+  | expr                      {[$1]}
+  | expr COMMA list_elements  {$1 :: $3}
 
 list:
   LBRACKET list_elements_opt RBRACKET             { List($2) }
@@ -289,7 +269,7 @@ udt_contents:
   | udt_element COMMA udt_contents     { $1 :: $3 }
 
 udt_element:
-  ID COLON expr9                       { ($1, $3) }
+  ID COLON expr                       { ($1, $3) }
 
 control_flow:
   | if_stmt          { $1 }
