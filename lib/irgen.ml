@@ -51,6 +51,17 @@ let strlen_func the_module = Llvm.declare_function "strlen" l_strlen the_module
 let l_scanf : L.lltype = L.var_arg_function_type l_int [| l_str |]
 let scanf_func the_module = L.declare_function "scanf" l_scanf the_module
 
+(* declare FILE struct *)
+let file_type = L.named_struct_type context "struct._IO_FILE"
+let _ = L.struct_set_body file_type [||] false
+let file_ptr_type = Llvm.pointer_type file_type
+let get_stdin_type = L.function_type file_ptr_type [||]
+let get_stdin_fn the_module = L.declare_function "get_stdin" get_stdin_type the_module
+
+(* Creates a binding to the llvm libc "fgets" function *)
+let l_fgets : L.lltype = L.function_type l_str [| l_str; l_int; file_ptr_type |]
+let fgets_func the_module = L.declare_function "fgets" l_fgets the_module
+
 let get_lformals_arr (formals : A.formal list) =
   let lformal_list = List.map ltype_of_typ (List.map snd formals) in
   Array.of_list lformal_list
@@ -288,18 +299,17 @@ and prelude_input (_func : sfunc) _vars the_module builder =
   let max_strlen = 100 in
   let buffer_type = L.array_type l_char max_strlen in
   let buffer = L.build_alloca buffer_type "buffer" builder in
-
   let buffer_ptr =
     L.build_gep buffer [| L.const_int l_int 0; L.const_int l_int 0 |] "buffer_ptr" builder
   in
 
-  let args = [| str_nonl_format_str builder; buffer_ptr |] in
-  ignore (L.build_call (scanf_func the_module) args "call_scanf" builder);
+  let stdin_val = L.build_call (get_stdin_fn the_module) [||] "stdin" builder in
+
+  let args = [| buffer_ptr; L.const_int l_int max_strlen; stdin_val |] in
+  ignore (L.build_call (fgets_func the_module) args "call_fgets" builder);
 
   buffer_ptr
 ;;
-
-(* L.build_load scanin "scanin" builder *)
 
 let assert_types typ1 typ2 =
   if typ1 != typ2
