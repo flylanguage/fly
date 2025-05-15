@@ -97,13 +97,17 @@ let build_udt_access typ var_name field_name vars builder =
 ;;
 
 let get_or_add_string_const s builder =
-  if Hashtbl.mem string_consts s then Hashtbl.find string_consts s
+  if Hashtbl.mem string_consts s
+  then Hashtbl.find string_consts s
   else (
-    let name = if !string_counter = 0 then "str" else Printf.sprintf "str.%d" !string_counter in
+    let name =
+      if !string_counter = 0 then "str" else Printf.sprintf "str.%d" !string_counter
+    in
     incr string_counter;
     let v = L.build_global_stringptr s name builder in
     Hashtbl.add string_consts s v;
     v)
+;;
 
 let rec build_expr expr (vars : variable StringMap.t) var_types the_module builder =
   let sx = snd expr in
