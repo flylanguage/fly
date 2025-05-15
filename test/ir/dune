@@ -15,6 +15,10 @@
   (libraries fly_lib ounit2))
 
 (test
+  (name test_string)
+  (libraries fly_lib ounit2))
+
+(test
   (name test_udt)
   (libraries fly_lib ounit2))
 
