@@ -601,10 +601,14 @@ let check block_list =
   let new_func_env2 = func_def_helper Sast.len_func_name [] Ast.Int envs in
   let envs2 = { envs with func_env = new_func_env2 } in
 
+  (* Add "input" function *)
+  let new_func_env3 = func_def_helper Sast.input_func_name [] Ast.String envs2 in
+  let envs3 = { envs2 with func_env = new_func_env3 } in
+
   (* Special blocks are limited to return, continue, break, wildcard.
    We need this to indicate whether these symbols are allowed in their current context.
    For example, a return is only allowed inside a function defintion and a break is only allowed inside a loop 
    I should really come up with a better name for this *)
   let special_blocks = StringSet.empty in
-  check_block_list block_list envs2 special_blocks Unit
+  check_block_list block_list envs3 special_blocks Unit
 ;;

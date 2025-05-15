@@ -34,16 +34,22 @@ let ltype_of_typ = function
     raise (Failure (Printf.sprintf "type not implemented: %s" (Utils.string_of_type t)))
 ;;
 
-(* Creates a binding to the llvm libc "printf" function *)
-let l_printf : L.lltype = L.var_arg_function_type l_int [| L.pointer_type l_char |]
-let print_func the_module : L.llvalue = L.declare_function "printf" l_printf the_module
 let int_format_str builder = L.build_global_stringptr "%d\n" "int_fmt" builder
 let str_format_str builder = L.build_global_stringptr "%s\n" "str_fmt" builder
+let str_nonl_format_str builder = L.build_global_stringptr "%s" "str_fmt" builder
 let float_format_str builder = L.build_global_stringptr "%f\n" "float_fmt" builder
 
+(* Creates a binding to the llvm libc "printf" function *)
+let l_printf : L.lltype = L.var_arg_function_type l_int [| l_str |]
+let print_func the_module : L.llvalue = L.declare_function "printf" l_printf the_module
+
 (* Creates a binding to the llvm libc "strlen" function *)
-let l_strlen = Llvm.function_type l_int [| L.pointer_type l_char |]
+let l_strlen = Llvm.function_type l_int [| l_str |]
 let strlen_func the_module = Llvm.declare_function "strlen" l_strlen the_module
+
+(* Creates a binding to the llvm libc "scanf" function *)
+let l_scanf : L.lltype = L.var_arg_function_type l_int [| l_str |]
+let scanf_func the_module = L.declare_function "scanf" l_scanf the_module
 
 let get_lformals_arr (formals : A.formal list) =
   let lformal_list = List.map ltype_of_typ (List.map snd formals) in
@@ -129,6 +135,8 @@ let rec build_expr expr (vars : variable StringMap.t) the_module builder =
     then prelude_print func vars the_module builder
     else if func_name = len_func_name
     then prelude_len func vars the_module builder
+    else if func_name = input_func_name
+    then prelude_input func vars the_module builder
     else raise (Failure "function calls not implemented")
   | SEnumAccess (enum_name, variant_name) ->
     let key = enum_name ^ "::" ^ variant_name in
@@ -220,7 +228,7 @@ and prelude_print (func : sfunc) vars the_module builder =
   else (
     let func_arg = List.hd (snd func) in
     let lexpr = build_expr func_arg vars the_module builder in
-    let arr =
+    let args =
       match fst func_arg with
       | A.Int -> [| int_format_str builder; lexpr |]
       | A.Bool ->
@@ -258,19 +266,40 @@ and prelude_print (func : sfunc) vars the_module builder =
       | A.String -> [| str_format_str builder; lexpr |]
       | _ -> failwith "print not implemented for type"
     in
-    L.build_call (print_func the_module) arr "call_printf" builder)
+    L.build_call (print_func the_module) args "call_printf" builder)
 
 and prelude_len (func : sfunc) vars the_module builder =
   let func_arg = List.hd (snd func) in
   let lexpr = build_expr func_arg vars the_module builder in
-  let arr =
+  let args =
     match fst func_arg with
     | A.String -> [| lexpr |]
-    | _ -> failwith "prelude_len not implemented for type"
+    | t ->
+      failwith
+        (Printf.sprintf
+           "prelude_len not implemented for type: %s"
+           (Utils.string_of_type t))
   in
 
-  L.build_call (strlen_func the_module) arr "call_strlen" builder
+  L.build_call (strlen_func the_module) args "call_strlen" builder
+
+and prelude_input (_func : sfunc) _vars the_module builder =
+  (* The max buffer size for reading strings *)
+  let max_strlen = 100 in
+  let buffer_type = L.array_type l_char max_strlen in
+  let buffer = L.build_alloca buffer_type "buffer" builder in
+
+  let buffer_ptr =
+    L.build_gep buffer [| L.const_int l_int 0; L.const_int l_int 0 |] "buffer_ptr" builder
+  in
+
+  let args = [| str_nonl_format_str builder; buffer_ptr |] in
+  ignore (L.build_call (scanf_func the_module) args "call_scanf" builder);
+
+  buffer_ptr
 ;;
+
+(* L.build_load scanin "scanin" builder *)
 
 let assert_types typ1 typ2 =
   if typ1 != typ2
