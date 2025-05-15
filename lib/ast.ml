@@ -107,7 +107,7 @@ type block =
   | ElifNonEnd of expr * block list * block
   | ElifEnd of expr * block list
   | ElseEnd of block list
-  | While of expr * block list
+  | While of block list
   | For of string * expr * block list
   | Break
   | Continue

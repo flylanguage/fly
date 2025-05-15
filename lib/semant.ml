@@ -501,23 +501,15 @@ and check_block block envs special_blocks func_ret_type =
   | ElseEnd body ->
     let checked_body = check_block_list body envs special_blocks func_ret_type in
     envs, special_blocks, func_ret_type, SElseEnd checked_body
-  | While (condition, body) ->
-    let checked_condition = check_expr condition envs special_blocks in
-    let t, _ = checked_condition in
-    if t <> Bool
-    then
-      raise
-        (Failure
-           ("Expression: '" ^ string_of_expr condition ^ "' has type " ^ string_of_type t
-          ^ ", but while loop conditions must be bool"))
-    else (
-      let updated_special_blocks =
-        StringSet.add "break" (StringSet.add "continue" special_blocks)
-      in
-      let checked_body =
-        check_block_list body envs updated_special_blocks func_ret_type
-      in
-      envs, updated_special_blocks, func_ret_type, SWhile (checked_condition, checked_body))
+  | While (body) ->
+    let updated_special_blocks =
+      StringSet.add "break" (StringSet.add "continue" special_blocks)
+    in
+    (* TODO: double check this function is working as expected *)
+    let checked_body =
+      check_block_list body envs updated_special_blocks func_ret_type
+    in
+    envs, updated_special_blocks, func_ret_type, SWhile (checked_body)
   | For (loop_var, iterable, body) ->
     (* Throw an error if the loop variable has been previously defined *)
     (match StringMap.find_opt loop_var envs.var_env with

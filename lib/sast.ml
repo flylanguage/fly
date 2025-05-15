@@ -55,7 +55,7 @@ type sblock =
   | SElifNonEnd of sexpr * sblock list * sblock
   | SElifEnd of sexpr * sblock list
   | SElseEnd of sblock list
-  | SWhile of sexpr * sblock list
+  | SWhile of sblock list
   | SFor of string * sexpr * sblock list
   | SBreak
   | SContinue

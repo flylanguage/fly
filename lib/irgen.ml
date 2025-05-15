@@ -236,7 +236,11 @@ let add_terminal builder instr =
 
 let translate blocks =
   let the_module = L.create_module context "Fly" in
+  (* use this for keeping track of variable assignements *)
   let local_vars = StringMap.empty in
+  (* use this to keep track of where to jump to when we encounter a 
+     control flow label *)
+  let block_map = StringMap.empty in
 
   let declare_function typ id (formals : A.formal list) body func_blocks =
     let lfunc =
@@ -261,8 +265,8 @@ let translate blocks =
     let lfunc, _, blocks = func_block in
     let curr_func = Some lfunc in
     let builder = L.builder_at_end context (L.entry_block lfunc) in
-    process_blocks blocks vars curr_func [] (Some builder)
-  and process_block block vars (curr_func : L.llvalue option) func_blocks builder =
+    process_blocks blocks vars curr_func [] (Some builder) block_map
+  and process_block block vars (curr_func : L.llvalue option) func_blocks builder block_map =
     match block with
     | SDeclTyped (id, typ, expr) ->
       if Option.is_some curr_func
@@ -270,21 +274,22 @@ let translate blocks =
         ( add_local_val typ id vars expr the_module (Option.get builder)
         , curr_func
         , func_blocks
-        , builder )
-      else add_global_val typ id vars expr the_module, curr_func, func_blocks, builder
+        , builder
+        , block_map )
+      else add_global_val typ id vars expr the_module, curr_func, func_blocks, builder, block_map
     | SFunctionDefinition (typ, id, formals, body) ->
       let u_func_blocks = declare_function typ id formals body func_blocks in
-      vars, curr_func, u_func_blocks, builder
+      vars, curr_func, u_func_blocks, builder, block_map
     | SReturnUnit ->
       ignore (L.build_ret_void (Option.get builder));
-      vars, curr_func, func_blocks, builder
+      vars, curr_func, func_blocks, builder, block_map
     | SReturnVal expr ->
       let ret = build_expr (snd expr) vars the_module (Option.get builder) in
       ignore (L.build_ret ret (Option.get builder));
-      vars, curr_func, func_blocks, builder
+      vars, curr_func, func_blocks, builder, block_map
     | SExpr expr ->
       ignore (build_expr (snd expr) vars the_module (Option.get builder));
-      vars, curr_func, func_blocks, builder
+      vars, curr_func, func_blocks, builder, block_map
     | SIfEnd (expr, blks) ->
       (* expression should be bool *)
       let bool_val = build_expr (snd expr) vars the_module (Option.get builder) in
@@ -292,7 +297,7 @@ let translate blocks =
       (* We require curr_func to be Some - no if-else in global scope *)
       let then_bb = L.append_block context "then" (Option.get curr_func) in
       let then_builder = Some (L.builder_at_end context then_bb) in
-      ignore (process_blocks blks vars curr_func func_blocks then_builder);
+      ignore (process_blocks blks vars curr_func func_blocks then_builder block_map);
 
       let end_bb = L.append_block context "if_end" (Option.get curr_func) in
       let build_br_end = L.build_br end_bb in
@@ -300,7 +305,7 @@ let translate blocks =
 
       ignore (L.build_cond_br bool_val then_bb end_bb (Option.get builder));
       let u_builder = Some (L.builder_at_end context end_bb) in
-      vars, curr_func, func_blocks, u_builder
+      vars, curr_func, func_blocks, u_builder, block_map
     | SIfNonEnd (expr, blks, else_blk) ->
       (* expression should be bool *)
       assert_types (fst expr) A.Bool;
@@ -309,7 +314,7 @@ let translate blocks =
 
       let then_bb = L.append_block context "then" (Option.get curr_func) in
       let then_builder = Some (L.builder_at_end context then_bb) in
-      ignore (process_blocks blks vars curr_func func_blocks then_builder);
+      ignore (process_blocks blks vars curr_func func_blocks then_builder block_map);
 
       let end_bb = L.append_block context "if_end" (Option.get curr_func) in
 
@@ -320,14 +325,14 @@ let translate blocks =
       ignore (L.build_cond_br bool_val then_bb else_bb (Option.get builder));
 
       let u_builder =
-        process_elseifs vars else_blk end_bb curr_func func_blocks else_builder
+        process_elseifs vars else_blk end_bb curr_func func_blocks else_builder block_map
       in
 
       let build_br_end = L.build_br end_bb in
       add_terminal (L.builder_at_end context then_bb) build_br_end;
       add_terminal (L.builder_at_end context else_bb) build_br_end;
 
-      vars, curr_func, func_blocks, u_builder
+      vars, curr_func, func_blocks, u_builder, block_map
     | SEnumDeclaration (id, variants) ->
       let enum_type = L.named_struct_type context id in
       let fields = Array.of_list (List.map (fun _ -> L.i32_type context) variants) in
@@ -346,59 +351,63 @@ let translate blocks =
         assign_enum_values variants 0
         |> List.fold_left (fun acc (name, value) -> StringMap.add name value acc) vars
       in
-      vars, curr_func, func_blocks, builder
-    | SWhile (expr, blks) ->
+      vars, curr_func, func_blocks, builder, block_map
+    | SWhile (blks) ->
+      (* the function we are currently wokring within *)
       let curr_func = Option.get curr_func in
+      (* keeps track of where IR code should be insserted in our output IR file *)
       let builder = Option.get builder in
 
-      (* create blocks for the loop condition, body, and exit --> basically blocks of code that 
-      will necesaarily be executed together *)
-      let loop_cond_bb = L.append_block context "loop_cond" curr_func in
+      (* create blocks for the loop body and exit *)
       let loop_body_bb = L.append_block context "loop_body" curr_func in
       let loop_exit_bb = L.append_block context "loop_exit" curr_func in
 
-      (* CONDITIONAL *)
-      (* immediately begin with the conditional move the pointer (builder) to this block *)
-      ignore (L.build_br loop_cond_bb builder);
+      (* Add the exit block to the block map for break statements *)
+      let block_map = StringMap.add "break" loop_exit_bb block_map in
 
-      (* move to the end of the conditional block *)
-      let cond_builder = L.builder_at_end context loop_cond_bb in
-      (* eval the conditional expr and store in var *)
-      let bool_val = build_expr (snd expr) vars the_module cond_builder in
-      (* if the bool_var is true then we create a loop_body branch otherwise we create loop exit *)
-      ignore (L.build_cond_br bool_val loop_body_bb loop_exit_bb cond_builder);
+      (* Always branch to the loop body *)
+      ignore (L.build_br loop_body_bb builder);
 
-      (* BODY*)
-      (* move ptr to body  *)
+      (* BODY *)
       let body_builder = L.builder_at_end context loop_body_bb in
-      ignore (process_blocks blks vars (Some curr_func) func_blocks (Some body_builder));
-      (* go back to the conditional *)
-      ignore (L.build_br loop_cond_bb body_builder);
+      (* this line will recurisvely create new lines of IR code via the process_blocks 
+      --> process_block functions *)
+      (* need to add logic here so that if we encounter a break we short circuit and immediately jump to exit *)
+      ignore (process_blocks blks vars (Some curr_func) func_blocks (Some body_builder) block_map);
+      (* Continue the loop if no break was encountered .... go back to the start of the loop body *)
+      ignore (L.build_br loop_body_bb body_builder);
 
       (* END *)
       let exit_builder = L.builder_at_end context loop_exit_bb in
       vars, Some curr_func, func_blocks, Some exit_builder
+    | SBreak ->
+      try
+        let exit_bb = StringMap.find "break" block_map in
+        ignore (L.build_br exit_bb builder);
+        vars, Some curr_func, func_blocks, builder, block_map
+      with Not_found ->
+        raise (Failure "Break cannot be placed outside of a loop")
     | b ->
       raise
         (Failure
            (Printf.sprintf "expression not implemented: %s" (Utils.string_of_sblock b)))
-  and process_blocks blocks vars (curr_func : L.llvalue option) func_blocks builder =
+  and process_blocks blocks vars (curr_func : L.llvalue option) func_blocks builder block_map =
     match blocks with
     (* We've declared all objects, lets fill in all function bodies *)
     | [] -> process_func_blocks func_blocks vars
     | block :: rest ->
-      let updated_vars, updated_curr_func, u_func_blocks, u_builder =
-        process_block block vars curr_func func_blocks builder
+      let updated_vars, updated_curr_func, u_func_blocks, u_builder, updated_block_map =
+        process_block block vars curr_func func_blocks builder block_map
       in
-      process_blocks rest updated_vars updated_curr_func u_func_blocks u_builder
-  and process_elseifs vars block end_bb curr_func func_blocks builder =
+      process_blocks rest updated_vars updated_curr_func u_func_blocks u_builder updated_block_map
+  and process_elseifs vars block end_bb curr_func func_blocks builder block_map =
     match block with
     | SElseEnd blks ->
-      ignore (process_blocks blks vars curr_func func_blocks builder);
+      ignore (process_blocks blks vars curr_func func_blocks builder block_map);
 
       (* TODO: Throw an error or warning if the code is unreachable? *)
       let u_builder = Some (L.builder_at_end context end_bb) in
-      u_builder
+      u_builder, block_map
     | SElifEnd (expr, blks) ->
       assert_types (fst expr) A.Bool;
 
@@ -406,7 +415,7 @@ let translate blocks =
 
       let then_bb = L.append_block context "then" (Option.get curr_func) in
       let then_builder = Some (L.builder_at_end context then_bb) in
-      ignore (process_blocks blks vars curr_func func_blocks then_builder);
+      ignore (process_blocks blks vars curr_func func_blocks then_builder block_map);
 
       let build_br_end = L.build_br end_bb in
       add_terminal (L.builder_at_end context then_bb) build_br_end;
@@ -414,14 +423,14 @@ let translate blocks =
       ignore (L.build_cond_br bool_val then_bb end_bb (Option.get builder));
 
       let u_builder = Some (L.builder_at_end context end_bb) in
-      u_builder
+      u_builder, block_map
     | SElifNonEnd (expr, blks, else_blk) ->
       assert_types (fst expr) A.Bool;
 
       let bool_val = build_expr (snd expr) vars the_module (Option.get builder) in
       let then_bb = L.append_block context "then" (Option.get curr_func) in
       let then_builder = Some (L.builder_at_end context then_bb) in
-      ignore (process_blocks blks vars curr_func func_blocks then_builder);
+      ignore (process_blocks blks vars curr_func func_blocks then_builder block_map);
 
       let build_br_end = L.build_br end_bb in
       add_terminal (L.builder_at_end context then_bb) build_br_end;
@@ -431,11 +440,11 @@ let translate blocks =
       ignore (L.build_cond_br bool_val then_bb else_bb (Option.get builder));
 
       (* We haven't reached the End - let's keep going *)
-      let u_builder =
-        process_elseifs vars else_blk end_bb curr_func func_blocks else_builder
+      let u_builder, updated_block_map =
+        process_elseifs vars else_blk end_bb curr_func func_blocks else_builder block_map
       in
 
-      u_builder
+      u_builder, updated_block_map
     | _ -> raise (Failure "Only SElseEnd, SElifEnd and SElifNonEnd can follow SIfNonEnd")
   in
 
@@ -445,6 +454,6 @@ let translate blocks =
   let func_blocks = [] in
   (* ..and start off with no builder.. *)
   let builder = None in
-  process_blocks blocks local_vars curr_func func_blocks builder;
+  process_blocks blocks local_vars curr_func func_blocks builder block_map;
   the_module
 ;;
