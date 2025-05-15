@@ -26,7 +26,7 @@ let _write_to_file text filename =
 ;;
 
 let tests =
-  "testing_prints"
+  "testing_preludes"
   >::: [ (* ("print_nothing" *)
          (*     >:: fun _ -> *)
          (*     let sast = get_sast "fun main() -> int {print(); return 0;}" in *)
@@ -54,8 +54,8 @@ let tests =
              @int_fmt = private unnamed_addr constant [4 x i8] c\"%d\\0A\\00\", align 1\n\n\
              define i32 @main() {\n\
              entry:\n\
-            \  %printf = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x \
-             i8], [4 x i8]* @int_fmt, i32 0, i32 0), i32 1)\n\
+            \  %call_printf = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 \
+             x i8], [4 x i8]* @int_fmt, i32 0, i32 0), i32 1)\n\
             \  ret i32 0\n\
              }\n\n\
              declare i32 @printf(i8*, ...)\n"
@@ -73,8 +73,8 @@ let tests =
              1\n\n\
              define i32 @main() {\n\
              entry:\n\
-            \  %printf = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x \
-             i8], [4 x i8]* @float_fmt, i32 0, i32 0), float 0x3FF3AE1480000000)\n\
+            \  %call_printf = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 \
+             x i8], [4 x i8]* @float_fmt, i32 0, i32 0), float 0x3FF3AE1480000000)\n\
             \  ret i32 0\n\
              }\n\n\
              declare i32 @printf(i8*, ...)\n"
@@ -105,8 +105,8 @@ let tests =
             \  %bool_str = phi i8* [ getelementptr inbounds ([5 x i8], [5 x i8]* \
              @true_str, i32 0, i32 0), %true_case ], [ getelementptr inbounds ([6 x i8], \
              [6 x i8]* @false_str, i32 0, i32 0), %false_case ]\n\
-            \  %printf = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x \
-             i8], [4 x i8]* @str_fmt, i32 0, i32 0), i8* %bool_str)\n\
+            \  %call_printf = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 \
+             x i8], [4 x i8]* @str_fmt, i32 0, i32 0), i8* %bool_str)\n\
             \  ret i32 0\n\
              }\n\n\
              declare i32 @printf(i8*, ...)\n"
@@ -124,14 +124,39 @@ let tests =
              @str_fmt = private unnamed_addr constant [4 x i8] c\"%s\\0A\\00\", align 1\n\n\
              define i32 @main() {\n\
              entry:\n\
-            \  %printf = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x \
-             i8], [4 x i8]* @str_fmt, i32 0, i32 0), i8* getelementptr inbounds ([6 x \
+            \  %call_printf = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 \
+             x i8], [4 x i8]* @str_fmt, i32 0, i32 0), i8* getelementptr inbounds ([6 x \
              i8], [6 x i8]* @str, i32 0, i32 0))\n\
             \  ret i32 0\n\
              }\n\n\
              declare i32 @printf(i8*, ...)\n"
           in
-          _write_to_file actual "test.out";
+          (* _write_to_file actual "test.out"; *)
+          assert_equal expected actual ~printer)
+       ; ("len"
+          >:: fun _ ->
+          let sast =
+            get_sast "fun main() {let str := \"hello\"; let strlen := len(str); }"
+          in
+          let mdl = Irgen.translate sast in
+          let actual = L.string_of_llmodule mdl in
+          let expected =
+            "; ModuleID = 'Fly'\n\
+             source_filename = \"Fly\"\n\n\
+             @str = private unnamed_addr constant [6 x i8] c\"hello\\00\", align 1\n\n\
+             define void @main() {\n\
+             entry:\n\
+            \  %str = alloca i8*, align 8\n\
+            \  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str, i32 0, i32 \
+             0), i8** %str, align 8\n\
+            \  %strlen = alloca i32, align 4\n\
+            \  %str1 = load i8*, i8** %str, align 8\n\
+            \  %call_strlen = call i32 @strlen(i8* %str1)\n\
+            \  store i32 %call_strlen, i32* %strlen, align 4\n\
+             }\n\n\
+             declare i32 @strlen(i8*)\n"
+          in
+          (* _write_to_file actual "actual.out"; *)
           assert_equal expected actual ~printer)
        ]
 ;;

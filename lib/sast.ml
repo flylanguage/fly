@@ -66,4 +66,7 @@ type sblock =
 (* Name of our print function *)
 let print_func_name = "print"
 
+(* Name of our len function *)
+let len_func_name = "len"
+
 type sprogram = { body : sblock list }

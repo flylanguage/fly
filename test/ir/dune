@@ -11,9 +11,9 @@
   (libraries fly_lib ounit2))
 
 (test
-  (name test_print)
+  (name test_string)
   (libraries fly_lib ounit2))
 
 (test
-  (name test_string)
+  (name test_prelude)
   (libraries fly_lib ounit2))
