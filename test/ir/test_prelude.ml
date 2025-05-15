@@ -158,6 +158,31 @@ let tests =
           in
           (* _write_to_file actual "actual.out"; *)
           assert_equal expected actual ~printer)
+       ; ("input"
+          >:: fun _ ->
+          let sast = get_sast "fun main() {let str := input(); return; }" in
+          let mdl = Irgen.translate sast in
+          let actual = L.string_of_llmodule mdl in
+          let expected =
+            "; ModuleID = 'Fly'\n\
+             source_filename = \"Fly\"\n\n\
+             %struct._IO_FILE = type {}\n\n\
+             define void @main() {\n\
+             entry:\n\
+            \  %str = alloca i8*, align 8\n\
+            \  %buffer = alloca [100 x i8], align 1\n\
+            \  %buffer_ptr = getelementptr [100 x i8], [100 x i8]* %buffer, i32 0, i32 0\n\
+            \  %stdin_val = call %struct._IO_FILE* @get_stdin()\n\
+            \  %call_fgets = call i8* @fgets(i8* %buffer_ptr, i32 100, %struct._IO_FILE* \
+             %stdin_val)\n\
+            \  store i8* %buffer_ptr, i8** %str, align 8\n\
+            \  ret void\n\
+             }\n\n\
+             declare %struct._IO_FILE* @get_stdin()\n\n\
+             declare i8* @fgets(i8*, i32, %struct._IO_FILE*)\n"
+          in
+          (* _write_to_file actual "actual.out"; *)
+          assert_equal expected actual ~printer)
        ]
 ;;
 

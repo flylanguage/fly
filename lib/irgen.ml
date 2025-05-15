@@ -303,7 +303,7 @@ and prelude_input (_func : sfunc) _vars the_module builder =
     L.build_gep buffer [| L.const_int l_int 0; L.const_int l_int 0 |] "buffer_ptr" builder
   in
 
-  let stdin_val = L.build_call (get_stdin_fn the_module) [||] "stdin" builder in
+  let stdin_val = L.build_call (get_stdin_fn the_module) [||] "stdin_val" builder in
 
   let args = [| buffer_ptr; L.const_int l_int max_strlen; stdin_val |] in
   ignore (L.build_call (fgets_func the_module) args "call_fgets" builder);
