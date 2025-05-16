@@ -28,7 +28,7 @@ let tests =
           let actual = check_program "fun main() -> int { return \"c\"; }" in
           let expected = "Expression '\"c\"' has type string but expected int" in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
-        ; ("append_missing_return_unit"
+       ; ("append_missing_return_unit"
           >:: fun _ ->
           let actual = check_program "fun main() -> () {}" in
           let expected = "" in

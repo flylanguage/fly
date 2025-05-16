@@ -178,31 +178,29 @@ and check_pattern pattern envs =
     then
       raise (Failure (Printf.sprintf "Enum %s has no variant %s" enum_name variant_name));
     PEnumAccess (enum_name, variant_name)
-and update_func_body checked_func_body func_name is_unit = 
-  let rec walk_body body = 
-    begin match body with
+
+and update_func_body checked_func_body func_name is_unit =
+  let rec walk_body body =
+    match body with
     | curr_block :: rest ->
-      if is_unit then
-        begin match curr_block with
+      if is_unit
+      then (
+        match curr_block with
         | SReturnUnit -> true
-        | _ -> walk_body rest
-        end
-      else
-        begin match curr_block with
+        | _ -> walk_body rest)
+      else (
+        match curr_block with
         | SReturnVal _ -> true
-        | _ -> walk_body rest
-        end
+        | _ -> walk_body rest)
     | [] -> false
-    end
   in
   let found_ret = walk_body checked_func_body in
-  if found_ret = false && not is_unit then
-    raise (Failure ("Missing return statement in " ^ func_name))
-  else if found_ret = false && is_unit then
-    checked_func_body @ [SReturnUnit]
-  else
-    checked_func_body
-    
+  if found_ret = false && not is_unit
+  then raise (Failure ("Missing return statement in " ^ func_name))
+  else if found_ret = false && is_unit
+  then checked_func_body @ [ SReturnUnit ]
+  else checked_func_body
+
 and check_expr expr envs special_blocks =
   match expr with
   | Literal i -> Int, SLiteral i
@@ -426,8 +424,8 @@ and check_block block envs special_blocks func_ret_type =
     let checked_func_body =
       check_block_list func_body updated_envs2 updated_special_blocks rtyp
     in
-    let is_unit = (rtyp = Unit) in
-    let updated_checked_func_body = 
+    let is_unit = rtyp = Unit in
+    let updated_checked_func_body =
       update_func_body checked_func_body func_name is_unit
     in
     ( updated_envs2
@@ -450,7 +448,7 @@ and check_block block envs special_blocks func_ret_type =
       check_block_list func_body updated_envs2 updated_special_blocks rtyp
     in
     let is_unit = rtyp = Unit in
-    let updated_checked_func_body = 
+    let updated_checked_func_body =
       update_func_body checked_func_body func_name is_unit
     in
     let new_udt_env = add_bound_func_def func_name (string_of_type bound_type) envs in
@@ -458,8 +456,8 @@ and check_block block envs special_blocks func_ret_type =
     ( updated_envs3
     , updated_special_blocks
     , rtyp
-    , SBoundFunctionDefinition (rtyp, func_name, func_args, updated_checked_func_body, bound_type)
-    )
+    , SBoundFunctionDefinition
+        (rtyp, func_name, func_args, updated_checked_func_body, bound_type) )
   | EnumDeclaration (enum_name, enum_variants) ->
     let new_enum_env = enum_dec_helper enum_name enum_variants envs in
     let updated_envs = { envs with enum_env = new_enum_env } in
