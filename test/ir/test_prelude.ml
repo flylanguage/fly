@@ -120,12 +120,13 @@ let tests =
             "; ModuleID = 'Fly'\n\
              source_filename = \"Fly\"\n\n\
              @str = private unnamed_addr constant [6 x i8] c\"hello\\00\", align 1\n\
+             @str.1 = private unnamed_addr constant [6 x i8] c\"hello\\00\", align 1\n\
              @str_fmt = private unnamed_addr constant [4 x i8] c\"%s\\0A\\00\", align 1\n\n\
              define i32 @main() {\n\
              entry:\n\
             \  %call_printf = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 \
              x i8], [4 x i8]* @str_fmt, i32 0, i32 0), i8* getelementptr inbounds ([6 x \
-             i8], [6 x i8]* @str, i32 0, i32 0))\n\
+             i8], [6 x i8]* @str.1, i32 0, i32 0))\n\
             \  ret i32 0\n\
              }\n\n\
              declare i32 @printf(i8*, ...)\n"
