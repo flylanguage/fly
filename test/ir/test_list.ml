@@ -123,6 +123,38 @@ let tests =
           in
           (* _write_to_file actual "actual.out"; *)
           assert_equal expected actual ~printer)
+       ; ("local_string_list_index"
+          >:: fun _ ->
+          let sast =
+            get_sast
+              "fun function() -> string {let a := [\"hello\", \"world\"]; return a[0];}"
+          in
+          let mdl = Irgen.translate sast in
+          let actual = L.string_of_llmodule mdl in
+          let expected =
+            "; ModuleID = 'Fly'\n\
+             source_filename = \"Fly\"\n\n\
+             @str = private unnamed_addr constant [6 x i8] c\"hello\\00\", align 1\n\
+             @str.1 = private unnamed_addr constant [6 x i8] c\"world\\00\", align 1\n\n\
+             define i8* @function() {\n\
+             entry:\n\
+            \  %list = alloca i8*, i32 2, align 8\n\
+            \  %index = getelementptr inbounds i8*, i8** %list, i32 0\n\
+            \  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str, i32 0, i32 \
+             0), i8** %index, align 8\n\
+            \  %index1 = getelementptr inbounds i8*, i8** %list, i32 1\n\
+            \  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str.1, i32 0, i32 \
+             0), i8** %index1, align 8\n\
+            \  %a = alloca i8**, align 8\n\
+            \  store i8** %list, i8*** %a, align 8\n\
+            \  %a2 = load i8**, i8*** %a, align 8\n\
+            \  %elem_ptr = getelementptr i8*, i8** %a2, i32 0\n\
+            \  %elem_val = load i8*, i8** %elem_ptr, align 8\n\
+            \  ret i8* %elem_val\n\
+             }\n"
+          in
+          (* _write_to_file actual "actual.out"; *)
+          assert_equal expected actual ~printer)
        ]
 ;;
 
