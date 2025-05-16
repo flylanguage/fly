@@ -37,15 +37,23 @@ let tests =
              source_filename = \"Fly\"\n\n\
              define void @function() {\n\
              entry:\n\
+            \  %list_shell = alloca { i32, i8* }, align 8\n\
+            \  %len_ptr = getelementptr inbounds { i32, i8* }, { i32, i8* }* \
+             %list_shell, i32 0, i32 0\n\
+            \  store i32 3, i32* %len_ptr, align 4\n\
             \  %list = alloca i32, i32 3, align 4\n\
+            \  %llist_cast = bitcast i32* %list to i8*\n\
+            \  %data_ptr = getelementptr inbounds { i32, i8* }, { i32, i8* }* \
+             %list_shell, i32 0, i32 1\n\
+            \  store i8* %llist_cast, i8** %data_ptr, align 8\n\
             \  %index = getelementptr inbounds i32, i32* %list, i32 0\n\
             \  store i32 10, i32* %index, align 4\n\
             \  %index1 = getelementptr inbounds i32, i32* %list, i32 1\n\
             \  store i32 20, i32* %index1, align 4\n\
             \  %index2 = getelementptr inbounds i32, i32* %list, i32 2\n\
             \  store i32 30, i32* %index2, align 4\n\
-            \  %a = alloca i32*, align 8\n\
-            \  store i32* %list, i32** %a, align 8\n\
+            \  %a = alloca { i32, i8* }*, align 8\n\
+            \  store { i32, i8* }* %list_shell, { i32, i8* }** %a, align 8\n\
             \  ret void\n\
              }\n"
           in
@@ -60,17 +68,26 @@ let tests =
              source_filename = \"Fly\"\n\n\
              define void @function() {\n\
              entry:\n\
+            \  %list_shell = alloca { i32, i8* }, align 8\n\
+            \  %len_ptr = getelementptr inbounds { i32, i8* }, { i32, i8* }* \
+             %list_shell, i32 0, i32 0\n\
+            \  store i32 2, i32* %len_ptr, align 4\n\
             \  %list = alloca i1, i32 2, align 1\n\
+            \  %llist_cast = bitcast i1* %list to i8*\n\
+            \  %data_ptr = getelementptr inbounds { i32, i8* }, { i32, i8* }* \
+             %list_shell, i32 0, i32 1\n\
+            \  store i8* %llist_cast, i8** %data_ptr, align 8\n\
             \  %index = getelementptr inbounds i1, i1* %list, i32 0\n\
             \  store i1 true, i1* %index, align 1\n\
             \  %index1 = getelementptr inbounds i1, i1* %list, i32 1\n\
             \  store i1 false, i1* %index1, align 1\n\
-            \  %a = alloca i1*, align 8\n\
-            \  store i1* %list, i1** %a, align 8\n\
+            \  %a = alloca { i32, i8* }*, align 8\n\
+            \  store { i32, i8* }* %list_shell, { i32, i8* }** %a, align 8\n\
             \  ret void\n\
              }\n"
           in
           _write_to_file actual "actual.out";
+          _write_to_file expected "expected.out";
           assert_equal expected actual ~printer)
        ; ("local_string_list"
           >:: fun _ ->
@@ -84,19 +101,28 @@ let tests =
              @str.1 = private unnamed_addr constant [6 x i8] c\"world\\00\", align 1\n\n\
              define void @function() {\n\
              entry:\n\
+            \  %list_shell = alloca { i32, i8* }, align 8\n\
+            \  %len_ptr = getelementptr inbounds { i32, i8* }, { i32, i8* }* \
+             %list_shell, i32 0, i32 0\n\
+            \  store i32 2, i32* %len_ptr, align 4\n\
             \  %list = alloca i8*, i32 2, align 8\n\
+            \  %llist_cast = bitcast i8** %list to i8*\n\
+            \  %data_ptr = getelementptr inbounds { i32, i8* }, { i32, i8* }* \
+             %list_shell, i32 0, i32 1\n\
+            \  store i8* %llist_cast, i8** %data_ptr, align 8\n\
             \  %index = getelementptr inbounds i8*, i8** %list, i32 0\n\
             \  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str, i32 0, i32 \
              0), i8** %index, align 8\n\
             \  %index1 = getelementptr inbounds i8*, i8** %list, i32 1\n\
             \  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str.1, i32 0, i32 \
              0), i8** %index1, align 8\n\
-            \  %a = alloca i8**, align 8\n\
-            \  store i8** %list, i8*** %a, align 8\n\
+            \  %a = alloca { i32, i8* }*, align 8\n\
+            \  store { i32, i8* }* %list_shell, { i32, i8* }** %a, align 8\n\
             \  ret void\n\
              }\n"
           in
-          (* _write_to_file actual "actual.out"; *)
+          _write_to_file actual "actual.out";
+          _write_to_file expected "expected.out";
           assert_equal expected actual ~printer)
          (* ; ("global_int_list" *)
          (*    >:: fun _ -> *)
@@ -108,15 +134,23 @@ let tests =
        (*       source_filename = \"Fly\"\n\n\ *)
        (*       define void @function() {\n\ *)
        (*       entry:\n\ *)
+       (*      \  %list_shell = alloca { i32, i8* }, align 8\n\ *)
+       (*      \  %len_ptr = getelementptr inbounds { i32, i8* }, { i32, i8* }* \ *)
+       (*       %list_shell, i32 0, i32 0\n\ *)
+       (*      \  store i32 3, i32* %len_ptr, align 4\n\ *)
        (*      \  %list = alloca i32, i32 3, align 4\n\ *)
+       (*      \  %llist_cast = bitcast i32* %list to i8*\n\ *)
+       (*      \  %data_ptr = getelementptr inbounds { i32, i8* }, { i32, i8* }* \ *)
+       (*       %list_shell, i32 0, i32 1\n\ *)
+       (*      \  store i8* %llist_cast, i8** %data_ptr, align 8\n\ *)
        (*      \  %index = getelementptr inbounds i32, i32* %list, i32 0\n\ *)
        (*      \  store i32 10, i32* %index, align 4\n\ *)
        (*      \  %index1 = getelementptr inbounds i32, i32* %list, i32 1\n\ *)
        (*      \  store i32 20, i32* %index1, align 4\n\ *)
        (*      \  %index2 = getelementptr inbounds i32, i32* %list, i32 2\n\ *)
        (*      \  store i32 30, i32* %index2, align 4\n\ *)
-       (*      \  %a = alloca i32*, align 8\n\ *)
-       (*      \  store i32* %list, i32** %a, align 8\n\ *)
+       (*      \  %a = alloca { i32, i8* }*, align 8\n\ *)
+       (*      \  store { i32, i8* }* %list_shell, { i32, i8* }** %a, align 8\n\ *)
        (*      \  ret void\n\ *)
        (*       }\n" *)
          (*    in *)
