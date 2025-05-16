@@ -602,8 +602,7 @@ and check_block_list block_list envs special_blocks func_ret_type =
     let updated_envs, updated_special_blocks, _, sblock =
       check_block curr_block envs special_blocks func_ret_type
     in
-    sblock
-    :: check_block_list rest updated_envs updated_special_blocks func_ret_type
+    sblock :: check_block_list rest updated_envs updated_special_blocks func_ret_type
 ;;
 
 let check block_list =

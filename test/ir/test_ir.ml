@@ -42,7 +42,7 @@ let tests =
              source_filename = \"Fly\"\n\n\
              define void @function() {\n\
              entry:\n\
-             \  ret void\n\
+            \  ret void\n\
              }\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
@@ -56,7 +56,7 @@ let tests =
              source_filename = \"Fly\"\n\n\
              define void @function() {\n\
              entry:\n\
-             \  ret void\n\
+            \  ret void\n\
              }\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
@@ -70,7 +70,7 @@ let tests =
              source_filename = \"Fly\"\n\n\
              define i32 @function() {\n\
              entry:\n\
-             \  ret i32 0\n\
+            \  ret i32 0\n\
              }\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
@@ -84,7 +84,7 @@ let tests =
              source_filename = \"Fly\"\n\n\
              define i32 @function(i32 %0) {\n\
              entry:\n\
-             \  ret i32 0\n\
+            \  ret i32 0\n\
              }\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
@@ -92,7 +92,8 @@ let tests =
           >:: fun _ ->
           let sast =
             get_sast
-              "fun function(num : int) -> int { return 0; }\n fun function2(num2 : float) -> float{ return 0.0; }"
+              "fun function(num : int) -> int { return 0; }\n\
+              \ fun function2(num2 : float) -> float{ return 0.0; }"
           in
           let mdl = Irgen.translate sast in
           let actual = L.string_of_llmodule mdl in
@@ -101,11 +102,11 @@ let tests =
              source_filename = \"Fly\"\n\n\
              define i32 @function(i32 %0) {\n\
              entry:\n\
-             \  ret i32 0\n\
+            \  ret i32 0\n\
              }\n\n\
              define float @function2(float %0) {\n\
              entry:\n\
-             \  ret float 0.000000e+00\n\
+            \  ret float 0.000000e+00\n\
              }\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
@@ -119,15 +120,18 @@ let tests =
              source_filename = \"Fly\"\n\n\
              define i32 @function(i32 %0) {\n\
              entry:\n\
-             \  %b = alloca i32, align 4\n\
-             \  store i32 5, i32* %b, align 4\n\
-             \  ret i32 0\n\
+            \  %b = alloca i32, align 4\n\
+            \  store i32 5, i32* %b, align 4\n\
+            \  ret i32 0\n\
              }\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
        ; ("process_nested_functions"
           >:: fun _ ->
-          let sast = get_sast "fun function(num : int) -> int {fun nested() -> () { return; } return 0;}" in
+          let sast =
+            get_sast
+              "fun function(num : int) -> int {fun nested() -> () { return; } return 0;}"
+          in
           let mdl = Irgen.translate sast in
           let actual = L.string_of_llmodule mdl in
           let expected =
@@ -135,11 +139,11 @@ let tests =
              source_filename = \"Fly\"\n\n\
              define i32 @function(i32 %0) {\n\
              entry:\n\
-             \  ret i32 0\n\
+            \  ret i32 0\n\
              }\n\n\
              define void @nested() {\n\
              entry:\n\
-             \  ret void\n\
+            \  ret void\n\
              }\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
