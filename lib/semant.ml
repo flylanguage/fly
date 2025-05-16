@@ -204,14 +204,13 @@ and check_pattern pattern envs =
     PEnumAccess (enum_name, variant_name)
 
 and update_func_body checked_func_body func_name is_unit rtyp envs =
-  let rec walk_block blk recurse = 
+  let rec walk_block blk recurse =
     match blk with
-    | SIfNonEnd (_, if_body, other_body) -> 
+    | SIfNonEnd (_, if_body, other_body) ->
       walk_block_list if_body recurse && walk_block other_body recurse
-    | SElifNonEnd (_, elif_body, other_body) -> 
+    | SElifNonEnd (_, elif_body, other_body) ->
       walk_block_list elif_body recurse && walk_block other_body recurse
-    | SElseEnd (else_body) -> 
-      walk_block_list else_body recurse
+    | SElseEnd else_body -> walk_block_list else_body recurse
     | _ -> false
   and walk_block_list body recurse =
     match body with
@@ -220,21 +219,21 @@ and update_func_body checked_func_body func_name is_unit rtyp envs =
       then (
         match curr_block with
         | SReturnUnit -> true
-        | SIfNonEnd _ -> 
-          if recurse then
+        | SIfNonEnd _ ->
+          if recurse
+          then (
             let res = walk_block curr_block recurse in
-            if res then true
-            else walk_block_list rest recurse
+            if res then true else walk_block_list rest recurse)
           else walk_block_list rest recurse
         | _ -> walk_block_list rest recurse)
       else (
         match curr_block with
         | SReturnVal _ -> true
-        | SIfNonEnd _ -> 
-          if recurse then
+        | SIfNonEnd _ ->
+          if recurse
+          then (
             let res = walk_block curr_block recurse in
-            if res then true
-            else walk_block_list rest recurse
+            if res then true else walk_block_list rest recurse)
           else walk_block_list rest recurse
         | _ -> walk_block_list rest recurse)
     | [] -> false
@@ -246,32 +245,39 @@ and update_func_body checked_func_body func_name is_unit rtyp envs =
   else if top_level_ret = false && is_unit
   then checked_func_body @ [ SReturnUnit ]
   else if top_level_ret = false && not is_unit
-  then
-    let rec construct_default_sexpr rt envs = 
+  then (
+    let rec construct_default_sexpr rt envs =
       match rt with
-      | Sast.RInt -> Sast.RInt, SLiteral(0)
-      | Sast.RBool -> Sast.RBool, SBoolLit(true)
-      | Sast.RChar -> Sast.RChar, SCharLit('0')
-      | Sast.RFloat -> Sast.RFloat, SFloatLit(0.0)
-      | Sast.RString -> Sast.RString, SStringLit("0")
+      | Sast.RInt -> Sast.RInt, SLiteral 0
+      | Sast.RBool -> Sast.RBool, SBoolLit true
+      | Sast.RChar -> Sast.RChar, SCharLit '0'
+      | Sast.RFloat -> Sast.RFloat, SFloatLit 0.0
+      | Sast.RString -> Sast.RString, SStringLit "0"
       | Sast.REnumType name ->
         let enum_variant = List.hd (StringMap.find name envs.enum_env) in
         (match enum_variant with
-        | EnumVariantDefault variant_name -> REnumType (name), SEnumAccess(name, variant_name) 
-        | EnumVariantExplicit (variant_name, _) -> REnumType (name), SEnumAccess(name, variant_name)) 
-      | Sast.RUserType name -> 
+         | EnumVariantDefault variant_name ->
+           REnumType name, SEnumAccess (name, variant_name)
+         | EnumVariantExplicit (variant_name, _) ->
+           REnumType name, SEnumAccess (name, variant_name))
+      | Sast.RUserType name ->
         let udt_info = StringMap.find name envs.udt_env in
         let udt_members = udt_info.members in
-        let default_exprs = List.map (fun member -> fst member, construct_default_sexpr (snd member) envs) udt_members in
-        RUserType name, SUDTInstance(name, default_exprs)
-      | Sast.RList resolved_t -> 
-        Sast.RList resolved_t, SList ([ construct_default_sexpr resolved_t envs ])
-      | Sast.RTuple resolved_tl -> 
-        Sast.RTuple resolved_tl, STuple (List.map (fun t -> construct_default_sexpr t envs) resolved_tl)
-      | _ -> failwith ("Failed to construct default expression")
-    in 
+        let default_exprs =
+          List.map
+            (fun member -> fst member, construct_default_sexpr (snd member) envs)
+            udt_members
+        in
+        RUserType name, SUDTInstance (name, default_exprs)
+      | Sast.RList resolved_t ->
+        Sast.RList resolved_t, SList [ construct_default_sexpr resolved_t envs ]
+      | Sast.RTuple resolved_tl ->
+        ( Sast.RTuple resolved_tl
+        , STuple (List.map (fun t -> construct_default_sexpr t envs) resolved_tl) )
+      | _ -> failwith "Failed to construct default expression"
+    in
     let resolved_t = resolve_typ rtyp envs in
-    checked_func_body @ [SReturnVal (construct_default_sexpr resolved_t envs) ]
+    checked_func_body @ [ SReturnVal (construct_default_sexpr resolved_t envs) ])
   else checked_func_body
 
 and check_expr expr envs special_blocks =

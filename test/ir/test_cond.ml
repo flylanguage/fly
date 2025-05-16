@@ -47,8 +47,7 @@ let tests =
        ; ("if-else"
           >:: fun _ ->
           let sast =
-            get_sast
-              "fun main() -> int {if (true) {return 1;} else {return 0;} }"
+            get_sast "fun main() -> int {if (true) {return 1;} else {return 0;} }"
           in
           let mdl = Irgen.translate sast in
           let actual = L.string_of_llmodule mdl in
@@ -130,7 +129,6 @@ let tests =
           in
           (* _write_to_file actual "test.out"; *)
           assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
-      
        ; ("if-elif-else"
           >:: fun _ ->
           let sast =
@@ -164,7 +162,6 @@ let tests =
           (* _write_to_file actual "test.out"; *)
           assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
        ]
-  
 ;;
 
 let _ = run_test_tt_main tests
