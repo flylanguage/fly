@@ -132,7 +132,7 @@ let tests =
           in
           (* _write_to_file actual "test.out"; *)
           assert_equal expected actual ~printer)
-       ; ("len"
+       ; ("len_of_string"
           >:: fun _ ->
           let sast =
             get_sast "fun main() {let str := \"hello\"; let strlen := len(str); }"
@@ -155,6 +155,44 @@ let tests =
             \  ret void\n\
              }\n\n\
              declare i32 @strlen(i8*)\n"
+          in
+          (* _write_to_file actual "actual.out"; *)
+          assert_equal expected actual ~printer)
+       ; ("len_of_list"
+          >:: fun _ ->
+          let sast =
+            get_sast "fun main() {let lis := [10, 20]; let lislen := len(lis); }"
+          in
+          let mdl = Irgen.translate sast in
+          let actual = L.string_of_llmodule mdl in
+          let expected =
+            "; ModuleID = 'Fly'\n\
+             source_filename = \"Fly\"\n\n\
+             define void @main() {\n\
+             entry:\n\
+            \  %list_shell = alloca { i32, i8* }, align 8\n\
+            \  %len_ptr = getelementptr inbounds { i32, i8* }, { i32, i8* }* \
+             %list_shell, i32 0, i32 0\n\
+            \  store i32 2, i32* %len_ptr, align 4\n\
+            \  %list = alloca i32, i32 2, align 4\n\
+            \  %llist_cast = bitcast i32* %list to i8*\n\
+            \  %data_ptr = getelementptr inbounds { i32, i8* }, { i32, i8* }* \
+             %list_shell, i32 0, i32 1\n\
+            \  store i8* %llist_cast, i8** %data_ptr, align 8\n\
+            \  %index = getelementptr inbounds i32, i32* %list, i32 0\n\
+            \  store i32 10, i32* %index, align 4\n\
+            \  %index1 = getelementptr inbounds i32, i32* %list, i32 1\n\
+            \  store i32 20, i32* %index1, align 4\n\
+            \  %lis = alloca { i32, i8* }*, align 8\n\
+            \  store { i32, i8* }* %list_shell, { i32, i8* }** %lis, align 8\n\
+            \  %lis2 = load { i32, i8* }*, { i32, i8* }** %lis, align 8\n\
+            \  %len_ptr3 = getelementptr inbounds { i32, i8* }, { i32, i8* }* %lis2, i32 \
+             0, i32 0\n\
+            \  %lislen = load i32, i32* %len_ptr3, align 4\n\
+            \  %lislen4 = alloca i32, align 4\n\
+            \  store i32 %lislen, i32* %lislen4, align 4\n\
+            \  ret void\n\
+             }\n"
           in
           (* _write_to_file actual "actual.out"; *)
           assert_equal expected actual ~printer)
