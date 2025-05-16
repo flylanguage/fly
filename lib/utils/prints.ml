@@ -94,7 +94,21 @@ let rec string_of_type = function
   | List t -> "list<" ^ string_of_type t ^ ">"
   | Tuple t_list -> "tuple<" ^ String.concat ", " (List.map string_of_type t_list) ^ ">"
   | Unit -> "()"
-  | UserType udt_name -> udt_name
+  | TypeName name -> name
+;;
+
+let rec string_of_resolved_type = function
+  | RInt -> "int"
+  | RBool -> "bool"
+  | RChar -> "char"
+  | RFloat -> "float"
+  | RString -> "string"
+  | RList t -> "list<" ^ string_of_resolved_type t ^ ">"
+  | RTuple t_list ->
+    "tuple<" ^ String.concat ", " (List.map string_of_resolved_type t_list) ^ ">"
+  | RUnit -> "()"
+  | REnumType name -> name
+  | RUserType name -> name
 ;;
 
 let string_of_op = function
@@ -213,6 +227,15 @@ let rec string_of_func_args = function
   | hd :: tl -> fst hd ^ ": " ^ string_of_type (snd hd) ^ ", " ^ string_of_func_args tl
 ;;
 
+let rec string_of_resolved_func_args = function
+  | [] -> ""
+  | hd :: tl ->
+    fst hd ^ ": "
+    ^ string_of_resolved_type (snd hd)
+    ^ ", "
+    ^ string_of_resolved_func_args tl
+;;
+
 let rec string_of_block = function
   | MutDeclTyped (id, typ, e) ->
     "let mut " ^ id ^ ": " ^ string_of_type typ ^ " = " ^ string_of_expr e ^ ";\n"
@@ -312,7 +335,7 @@ let rec string_of_sexpr = function
   | SWildcard -> "_"
   | SEnumAccess (enum_name, enum_variant) -> enum_name ^ "::" ^ enum_variant
   | STypeCast (type_name, e) ->
-    string_of_sexpr (snd e) ^ " as " ^ string_of_type type_name
+    string_of_sexpr (snd e) ^ " as " ^ string_of_resolved_type type_name
 
 and string_of_scase_list = function
   | [] -> "" (* empty case *)
@@ -337,10 +360,14 @@ and string_of_udt_access = function
 
 let rec string_of_sblock = function
   | SMutDeclTyped (id, typ, e) ->
-    "let mut " ^ id ^ ": " ^ string_of_type typ ^ " = " ^ string_of_sexpr (snd e) ^ ";\n"
+    "let mut " ^ id ^ ": " ^ string_of_resolved_type typ ^ " = "
+    ^ string_of_sexpr (snd e)
+    ^ ";\n"
   (* | SMutDeclInfer (id, e) -> "let mut " ^ id ^ " := " ^ string_of_sexpr (snd e) ^ ";\n" *)
   | SDeclTyped (id, typ, e) ->
-    "let " ^ id ^ ": " ^ string_of_type typ ^ " = " ^ string_of_sexpr (snd e) ^ ";\n"
+    "let " ^ id ^ ": " ^ string_of_resolved_type typ ^ " = "
+    ^ string_of_sexpr (snd e)
+    ^ ";\n"
   (* | SDeclInfer (id, e) -> "let " ^ id ^ " := " ^ string_of_sexpr e ^ ";\n" *)
   | SAssign (e1, assign_op, e2) ->
     string_of_sexpr (snd e1)
@@ -348,18 +375,22 @@ let rec string_of_sblock = function
     ^ string_of_sexpr (snd e2)
     ^ ";\n"
   | SFunctionDefinition (rtyp, func_name, func_args, func_body) ->
-    "fun " ^ func_name ^ "(" ^ string_of_func_args func_args ^ ") -> "
-    ^ string_of_type rtyp ^ " {\n"
+    "fun " ^ func_name ^ "("
+    ^ string_of_resolved_func_args func_args
+    ^ ") -> " ^ string_of_resolved_type rtyp ^ " {\n"
     ^ String.concat "" (List.map string_of_sblock func_body)
     ^ "\n}\n"
   | SBoundFunctionDefinition (rtyp, func_name, func_args, func_body, bound_type) ->
-    "bind " ^ func_name ^ "<" ^ string_of_type bound_type ^ ">" ^ "("
-    ^ string_of_func_args func_args ^ ") -> " ^ string_of_type rtyp ^ " {\n"
+    "bind " ^ func_name ^ "<"
+    ^ string_of_resolved_type bound_type
+    ^ ">" ^ "("
+    ^ string_of_resolved_func_args func_args
+    ^ ") -> " ^ string_of_resolved_type rtyp ^ " {\n"
     ^ String.concat "" (List.map string_of_sblock func_body)
     ^ "\n}\n"
   | SUDTDef (udt_name, udt_members) ->
     "type " ^ udt_name ^ "{\n"
-    ^ string_of_func_args
+    ^ string_of_resolved_func_args
         udt_members (* Re-use string_of_func_args  as it generates name: type string*)
     ^ "\n}"
   | SEnumDeclaration (enum_name, enum_variants) ->
