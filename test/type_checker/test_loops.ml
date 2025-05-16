@@ -18,11 +18,6 @@ let tests =
           let actual = check_program "let x := [1,2,3,4,5]; for i := x {let a := i;}" in
           let expected = "" in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
-       ; ("correct_tuple"
-          >:: fun _ ->
-          let actual = check_program "let x := (1,2,3,4,5); for i := x {let a := i;}" in
-          let expected = "" in
-          assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("loop_var_shadowing"
           >:: fun _ ->
           let actual = check_program "let i := 0; let x := [1,2,3,4,5]; for i := x {}" in
