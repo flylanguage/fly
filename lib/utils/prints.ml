@@ -7,7 +7,7 @@ let string_of_token = function
   | MINUS -> "MINUS"
   | TIMES -> "TIMES"
   | DIVIDE -> "DIVIDE"
-  | EXPONENT -> "EXPONENT"
+  | POW -> "POW"
   | MODULO -> "MODULO"
   | AND -> "AND" (* Logical operators *)
   | OR -> "OR"
@@ -116,7 +116,7 @@ let string_of_op = function
   | Sub -> "-"
   | Mult -> "*"
   | Div -> "/"
-  | Exp -> "**"
+  | Pow -> "**"
   | Mod -> "%"
   | Preincr -> "++"
   | Predecr -> "--"

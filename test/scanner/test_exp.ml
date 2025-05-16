@@ -19,7 +19,7 @@ let tests =
           let actual = string_of_tokens (to_list lexbuf) in
           let expected =
             "LET ID(a1) WALRUS LITERAL(2) SEMI LET ID(b1) WALRUS LITERAL(3) SEMI LET \
-             ID(result1) WALRUS ID(a1) EXPONENT ID(b1) SEMI"
+             ID(result1) WALRUS ID(a1) POW ID(b1) SEMI"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("test2"
@@ -30,7 +30,7 @@ let tests =
           let actual = string_of_tokens (to_list lexbuf) in
           let expected =
             "LET ID(a2) WALRUS FLIT(2.500000) SEMI LET ID(b2) WALRUS LITERAL(2) SEMI LET \
-             ID(result2) WALRUS ID(a2) EXPONENT ID(b2) SEMI"
+             ID(result2) WALRUS ID(a2) POW ID(b2) SEMI"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("test3"
@@ -41,7 +41,7 @@ let tests =
           let actual = string_of_tokens (to_list lexbuf) in
           let expected =
             "LET ID(a3) WALRUS LITERAL(2) SEMI LET ID(b3) WALRUS FLIT(3.500000) SEMI LET \
-             ID(result3) WALRUS ID(a3) EXPONENT ID(b3) SEMI"
+             ID(result3) WALRUS ID(a3) POW ID(b3) SEMI"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("test4"
@@ -53,7 +53,7 @@ let tests =
           let actual = string_of_tokens (to_list lexbuf) in
           let expected =
             "LET ID(a4) WALRUS LITERAL(2) SEMI LET ID(b4) WALRUS SLIT(3) SEMI LET \
-             ID(result4) WALRUS ID(a4) EXPONENT ID(b4) SEMI"
+             ID(result4) WALRUS ID(a4) POW ID(b4) SEMI"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("test5"
@@ -64,7 +64,7 @@ let tests =
           let actual = string_of_tokens (to_list lexbuf) in
           let expected =
             "LET ID(a5) WALRUS LITERAL(2) SEMI LET ID(b5) WALRUS BLIT(true) SEMI LET \
-             ID(result5) WALRUS ID(a5) EXPONENT ID(b5) SEMI"
+             ID(result5) WALRUS ID(a5) POW ID(b5) SEMI"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("test6"
@@ -76,7 +76,7 @@ let tests =
           let actual = string_of_tokens (to_list lexbuf) in
           let expected =
             "LET ID(a6) WALRUS LPAREN LITERAL(1) COMMA LITERAL(2) RPAREN SEMI LET ID(b6) \
-             WALRUS LITERAL(2) SEMI LET ID(result6) WALRUS ID(a6) EXPONENT ID(b6) SEMI"
+             WALRUS LITERAL(2) SEMI LET ID(result6) WALRUS ID(a6) POW ID(b6) SEMI"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("test7"
@@ -89,7 +89,7 @@ let tests =
           let expected =
             "LET ID(a7) WALRUS LBRACKET LITERAL(1) COMMA LITERAL(2) COMMA LITERAL(3) \
              RBRACKET SEMI LET ID(b7) WALRUS LITERAL(3) SEMI LET ID(result7) WALRUS \
-             ID(a7) EXPONENT ID(b7) SEMI"
+             ID(a7) POW ID(b7) SEMI"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("test8"
@@ -102,7 +102,7 @@ let tests =
           let expected =
             "LET ID(a8) WALRUS LBRACE LITERAL(1) COMMA LITERAL(2) COMMA LITERAL(3) \
              RBRACE SEMI LET ID(b8) WALRUS LITERAL(2) SEMI LET ID(result8) WALRUS ID(a8) \
-             EXPONENT ID(b8) SEMI"
+             POW ID(b8) SEMI"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("test9"
@@ -113,7 +113,7 @@ let tests =
           let actual = string_of_tokens (to_list lexbuf) in
           let expected =
             "LET ID(a9) WALRUS LITERAL(0) SEMI LET ID(b9) WALRUS LITERAL(5) SEMI LET \
-             ID(result9) WALRUS ID(a9) EXPONENT ID(b9) SEMI"
+             ID(result9) WALRUS ID(a9) POW ID(b9) SEMI"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("test10"
@@ -125,7 +125,7 @@ let tests =
           let actual = string_of_tokens (to_list lexbuf) in
           let expected =
             "LET ID(a10) WALRUS LITERAL(4) SEMI LET ID(b10) WALRUS LITERAL(-2) SEMI LET \
-             ID(result10) WALRUS ID(a10) EXPONENT ID(b10) SEMI"
+             ID(result10) WALRUS ID(a10) POW ID(b10) SEMI"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("test11"
@@ -137,7 +137,7 @@ let tests =
           let actual = string_of_tokens (to_list lexbuf) in
           let expected =
             "LET ID(a11) WALRUS FLIT(5.000000) SEMI LET ID(b11) WALRUS LITERAL(-3) SEMI \
-             LET ID(result11) WALRUS ID(a11) EXPONENT ID(b11) SEMI"
+             LET ID(result11) WALRUS ID(a11) POW ID(b11) SEMI"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("test12"
@@ -149,7 +149,7 @@ let tests =
           let actual = string_of_tokens (to_list lexbuf) in
           let expected =
             "LET ID(a12) WALRUS LITERAL(1) SEMI LET ID(b12) WALRUS LITERAL(1000) SEMI \
-             LET ID(result12) WALRUS ID(a12) EXPONENT ID(b12) SEMI"
+             LET ID(result12) WALRUS ID(a12) POW ID(b12) SEMI"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("test13"
@@ -161,7 +161,7 @@ let tests =
           let actual = string_of_tokens (to_list lexbuf) in
           let expected =
             "LET ID(a13) WALRUS LITERAL(-2) SEMI LET ID(b13) WALRUS LITERAL(3) SEMI LET \
-             ID(result13) WALRUS ID(a13) EXPONENT ID(b13) SEMI"
+             ID(result13) WALRUS ID(a13) POW ID(b13) SEMI"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("test14"
@@ -173,7 +173,7 @@ let tests =
           let actual = string_of_tokens (to_list lexbuf) in
           let expected =
             "LET ID(a14) WALRUS FLIT(-2.500000) SEMI LET ID(b14) WALRUS LITERAL(2) SEMI \
-             LET ID(result14) WALRUS ID(a14) EXPONENT ID(b14) SEMI"
+             LET ID(result14) WALRUS ID(a14) POW ID(b14) SEMI"
           in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ]

@@ -150,7 +150,7 @@ and format_binop_error expr t1 t2 =
 
 and get_binop_return_type expr t1 binop t2 =
   match binop with
-  | Add | Sub | Mult | Div | Mod | Exp ->
+  | Add | Sub | Mult | Div | Mod | Pow ->
     (match t1, t2 with
      | RInt, RInt -> RInt
      | RFloat, RFloat -> RFloat

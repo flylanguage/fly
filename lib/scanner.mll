@@ -38,7 +38,7 @@ rule tokenize = parse
   | '+' { PLUS }
   | '-' { MINUS }
   | '*' { TIMES }
-  | "**" { EXPONENT }
+  | "**" { POW }
   | '/' { DIVIDE }
   | '%' { MODULO }
   | '=' { EQUAL }

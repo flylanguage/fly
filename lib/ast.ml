@@ -4,7 +4,7 @@ type op =
   | Mult
   | Div
   | Mod
-  | Exp
+  | Pow
   | Preincr
   | Postincr
   | Predecr
