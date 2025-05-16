@@ -103,3 +103,7 @@
 (test
   (name test_tuple)
   (libraries fly_lib ounit2))
+
+(test
+  (name test_while)
+  (libraries fly_lib ounit2))

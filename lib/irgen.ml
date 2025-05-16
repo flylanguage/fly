@@ -371,7 +371,6 @@ let translate blocks =
     | SExpr expr ->
       ignore (build_expr expr vars the_module (Option.get builder));
       vars, curr_func, func_blocks, builder, block_map
-      vars, curr_func, func_blocks, builder
       | SIfEnd (expr, blks) ->
       (* expression should be bool *)
       let bool_val = build_expr expr vars the_module (Option.get builder) in
@@ -406,7 +405,7 @@ let translate blocks =
       let else_builder = Some (L.builder_at_end context else_bb) in
       ignore (L.build_cond_br bool_val then_bb else_bb (Option.get builder));
 
-      let u_builder =
+      let u_builder, block_map =
         process_elseifs vars else_blk end_bb curr_func func_blocks else_builder block_map
       in
 
@@ -460,25 +459,27 @@ let translate blocks =
       let body_builder = L.builder_at_end context loop_body_bb in
       (* this line will recurisvely create new lines of IR code via the process_blocks 
       --> process_block functions *)
-      (* need to add logic here so that if we encounter a break we short circuit and immediately jump to exit *)
+      (* if we encounter a break we short circuit and immediately jump to exit *)
       ignore (process_blocks blks vars (Some curr_func) func_blocks (Some body_builder) block_map);
       (* Continue the loop if no break was encountered .... go back to the start of the loop body *)
       ignore (L.build_br loop_body_bb body_builder);
 
       (* END *)
       let exit_builder = L.builder_at_end context loop_exit_bb in
-      vars, Some curr_func, func_blocks, Some exit_builder
+      vars, Some curr_func, func_blocks, Some exit_builder, block_map
     | SBreak ->
-      try
-        let exit_bb = StringMap.find "break" block_map in
-        ignore (L.build_br exit_bb builder);
-        vars, Some curr_func, func_blocks, builder, block_map
+      let exit_bb = (try
+        StringMap.find "break" block_map
       with Not_found ->
-        raise (Failure "Break cannot be placed outside of a loop")
+        (* this should never actually run becuase sast ensures breaks are only in loops *)
+        raise (Failure "Break cannot be placed outside of a loop")) in
+        (* go to the while loop exit branch *)
+      ignore (L.build_br exit_bb (Option.get builder));
+      vars, curr_func, func_blocks, builder, block_map
     | b ->
       raise
         (Failure
-           (Printf.sprintf "expression not implemented: %s" (Utils.string_of_sblock b)))
+        (Printf.sprintf "expression not implemented: %s" (Utils.string_of_sblock b)))
   and process_blocks blocks vars (curr_func : L.llvalue option) func_blocks builder block_map =
     match blocks with
     (* We've declared all objects, lets fill in all function bodies *)
@@ -514,7 +515,7 @@ let translate blocks =
       u_builder, block_map
     | SElifNonEnd (expr, blks, else_blk) ->
       assert_types (fst expr) A.Bool;
-      
+
 let bool_val = build_expr expr vars the_module (Option.get builder) in
       let then_bb = L.append_block context "then" (Option.get curr_func) in
       let then_builder = Some (L.builder_at_end context then_bb) in

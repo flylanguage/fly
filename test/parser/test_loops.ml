@@ -38,10 +38,10 @@ let tests =
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("test5"
           >:: fun _ ->
-          let lexbuf = Lexing.from_string "while (i < 5) {i += 1;\n}\n" in
+          let lexbuf = Lexing.from_string "while {i += 1;\n}\n" in
           let program = Parser.program_rule Scanner.tokenize lexbuf in
           let actual = string_of_program program in
-          let expected = "while (i < 5) {\ni += 1;\n\n}" in
+          let expected = "while {\ni += 1;\n\n}" in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ]
 ;;

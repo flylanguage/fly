@@ -115,3 +115,7 @@
 (test
   (name test_preincrement)
   (libraries fly_lib ounit2)) 
+
+(test
+  (name test_while)
+  (libraries fly_lib ounit2)) 

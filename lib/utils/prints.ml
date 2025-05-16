@@ -258,8 +258,8 @@ let rec string_of_block = function
     ^ String.concat "\n" (List.map string_of_block bl)
     ^ "\n} " ^ string_of_block nbl
   | ElseEnd bl -> "else {\n" ^ String.concat "\n" (List.map string_of_block bl) ^ "\n}"
-  | While (e, block_list) ->
-    "while (" ^ string_of_expr e ^ ") {\n"
+  | While (block_list) ->
+    "while {\n"
     ^ String.concat "" (List.map string_of_block block_list)
     ^ "\n}"
   | For (idx, it, block_list) ->
@@ -391,10 +391,8 @@ let rec string_of_sblock = function
     ^ String.concat "\n" (List.map string_of_sblock bl)
     ^ "\n} " ^ string_of_sblock nbl
   | SElseEnd bl -> "else {\n" ^ String.concat "\n" (List.map string_of_sblock bl) ^ "\n}"
-  | SWhile (e, block_list) ->
-    "while ("
-    ^ string_of_sexpr (snd e)
-    ^ ") {\n"
+  | SWhile (block_list) ->
+    "while {\n"
     ^ String.concat "" (List.map string_of_sblock block_list)
     ^ "\n}"
   | SFor (idx, it, block_list) ->

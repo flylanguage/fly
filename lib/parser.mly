@@ -290,7 +290,7 @@ elif_stmt:
   | ELSE LBRACE block_list RBRACE                                           { ElseEnd($3) }
 
 while_loop:
-  WHILE LBRACE block_list RBRACE     { While(Unit, $3) }
+  WHILE LBRACE block_list RBRACE                                           { While($3) }
 
 /* Currently allow only list or variable as iterators */
 for_loop:
