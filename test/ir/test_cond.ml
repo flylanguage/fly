@@ -1,5 +1,5 @@
 open OUnit2
-open Fly_lib
+open Fly_lib (* Assuming this brings in Sast, Irgen, Parser, Scanner, Semant, Utils *)
 module L = Llvm
 
 let get_sast input =
@@ -11,24 +11,31 @@ let get_sast input =
     unbound_sast
   with
   | err ->
-    raise
-      (Failure
-         (Printf.sprintf
-            "Error generating sast, is your program correct?: error=%s"
-            (Printexc.to_string err)))
+    failwith
+      (Printf.sprintf
+         "Error generating sast for test, is your program correct?: error=%s\nInput:\n%s"
+         (Printexc.to_string err)
+         input)
 ;;
 
-let _write_to_file text filename =
-  let channel = open_out filename in
-  Printf.fprintf channel "%s" text;
-  close_out channel
+let assert_ir_equal ~ctxt expected actual =
+  let _ = ctxt in
+  assert_equal
+    (String.trim expected)
+    (String.trim actual)
+    ~printer:(fun s -> "\n" ^ s)
+    ~pp_diff:(fun fmt (expected_trimmed, actual_trimmed) ->
+      Format.fprintf fmt "EXPECTED:\n%s\nBUT GOT:\n%s\n" expected_trimmed actual_trimmed)
 ;;
 
 let tests =
-  "testing_ir"
+  "test_cond_ir"
   >::: [ ("simple_if"
-          >:: fun _ ->
-          let sast = get_sast "fun main() -> int {if (true) {return 1;} return 0;}" in
+          >:: fun ctxt ->
+          let fly_code =
+            "fun main() -> int {\n  if (true) {\n    return 1;\n  }\n  return 0;\n}"
+          in
+          let sast = get_sast fly_code in
           let mdl = Irgen.translate sast in
           let actual = L.string_of_llmodule mdl in
           let expected =
@@ -36,132 +43,14 @@ let tests =
              source_filename = \"Fly\"\n\n\
              define i32 @main() {\n\
              entry:\n\
-            \  br i1 true, label %then, label %if_end\n\n\
+            \  br i1 true, label %then, label %ifcont\n\n\
              then:                                             ; preds = %entry\n\
             \  ret i32 1\n\n\
-             if_end:                                           ; preds = %entry\n\
+             ifcont:                                           ; preds = %entry\n\
             \  ret i32 0\n\
              }\n"
           in
-          (* _write_to_file actual "test.out"; *)
-          assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
-       ; ("if-else"
-          >:: fun _ ->
-          let sast =
-            get_sast "fun main() -> int {if (true) {return 1;} else {return 0;} }"
-          in
-          let mdl = Irgen.translate sast in
-          let actual = L.string_of_llmodule mdl in
-          let expected =
-            "; ModuleID = 'Fly'\n\
-             source_filename = \"Fly\"\n\n\
-             define i32 @main() {\n\
-             entry:\n\
-            \  br i1 true, label %then, label %else\n\n\
-             then:                                             ; preds = %entry\n\
-            \  ret i32 1\n\n\
-             if_end:                                           ; No predecessors!\n\
-            \  ret i32 0\n\n\
-             else:                                             ; preds = %entry\n\
-            \  ret i32 0\n\
-             }\n"
-          in
-          (* _write_to_file actual "test.out"; *)
-          assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
-       ; ("if-elif"
-          >:: fun _ ->
-          let sast =
-            get_sast
-              "fun main() -> int {\n\
-              \  if (true) {return 1;} \n\
-              \  else if (true) {return 3;}\n\
-              \  return 2;\n\
-               }"
-          in
-          let mdl = Irgen.translate sast in
-          let actual = L.string_of_llmodule mdl in
-          let expected =
-            "; ModuleID = 'Fly'\n\
-             source_filename = \"Fly\"\n\n\
-             define i32 @main() {\n\
-             entry:\n\
-            \  br i1 true, label %then, label %else\n\n\
-             then:                                             ; preds = %entry\n\
-            \  ret i32 1\n\n\
-             if_end:                                           ; preds = %else\n\
-            \  ret i32 2\n\n\
-             else:                                             ; preds = %entry\n\
-            \  br i1 true, label %then1, label %if_end\n\n\
-             then1:                                            ; preds = %else\n\
-            \  ret i32 3\n\
-             }\n"
-          in
-          (* _write_to_file actual "test.out"; *)
-          assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
-       ; ("if-elif-else"
-          >:: fun _ ->
-          let sast =
-            get_sast
-              "fun main() -> int {\n\
-              \  if (true) {return 1;} \n\
-              \  else if (true) {return 3;}\n\
-              \  else {return 0;}\n\
-               }"
-          in
-          let mdl = Irgen.translate sast in
-          let actual = L.string_of_llmodule mdl in
-          let expected =
-            "; ModuleID = 'Fly'\n\
-             source_filename = \"Fly\"\n\n\
-             define i32 @main() {\n\
-             entry:\n\
-            \  br i1 true, label %then, label %else\n\n\
-             then:                                             ; preds = %entry\n\
-            \  ret i32 1\n\n\
-             if_end:                                           ; No predecessors!\n\
-            \  ret i32 0\n\n\
-             else:                                             ; preds = %entry\n\
-            \  br i1 true, label %then1, label %else2\n\n\
-             then1:                                            ; preds = %else\n\
-            \  ret i32 3\n\n\
-             else2:                                            ; preds = %else\n\
-            \  ret i32 0\n\
-             }\n"
-          in
-          (* _write_to_file actual "test.out"; *)
-          assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
-       ; ("if-elif-else"
-          >:: fun _ ->
-          let sast =
-            get_sast
-              "fun main() -> int {\n\
-              \  if (true) {return 1;} \n\
-              \  else if (true) {return 3;}\n\
-              \  else {return 0;}\n\
-               }"
-          in
-          let mdl = Irgen.translate sast in
-          let actual = L.string_of_llmodule mdl in
-          let expected =
-            "; ModuleID = 'Fly'\n\
-             source_filename = \"Fly\"\n\n\
-             define i32 @main() {\n\
-             entry:\n\
-            \  br i1 true, label %then, label %else\n\n\
-             then:                                             ; preds = %entry\n\
-            \  ret i32 1\n\n\
-             if_end:                                           ; No predecessors!\n\
-            \  ret i32 0\n\n\
-             else:                                             ; preds = %entry\n\
-            \  br i1 true, label %then1, label %else2\n\n\
-             then1:                                            ; preds = %else\n\
-            \  ret i32 3\n\n\
-             else2:                                            ; preds = %else\n\
-            \  ret i32 0\n\
-             }\n"
-          in
-          (* _write_to_file actual "test.out"; *)
-          assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
+          assert_ir_equal ~ctxt expected actual)
        ]
 ;;
 

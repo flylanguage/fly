@@ -353,6 +353,7 @@ and check_expr expr envs special_blocks =
         | Some _ ->
           let func_sig = find_func (fst udt_func) envs.func_env in
           let _, def_arg_types = List.split func_sig.args in
+          let def_arg_types = List.tl def_arg_types in
           let sexpr_list =
             List.map (fun e -> check_expr e envs special_blocks) (snd udt_func)
           in

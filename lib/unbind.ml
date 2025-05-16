@@ -39,10 +39,9 @@ and unbind_sexpr se replace_self new_var_name =
     t', SFunctionCall (func_name, unbound_args)
   | SId id -> 
     if replace_self && id = "self"
-    then (
-      print_endline ("Replaced 'self' with '" ^ new_var_name ^ "' in SId");
+    then
       t', SId new_var_name
-    ) else t', SId id
+    else t', SId id
   | STuple se_list ->
     let unbound_se_list =
       List.map (fun elem -> unbind_sexpr elem replace_self new_var_name) se_list
@@ -60,13 +59,13 @@ and unbind_sexpr se replace_self new_var_name =
     (match udt_member with
      | SUDTVariable x -> t', SUDTAccess (unbound_udt_se, SUDTVariable x)
      | SUDTFunction (udt_func_name, udt_func_params) ->
-       let unbound_params =
+       let unbound_params1 =
          List.map
            (fun param -> unbind_sexpr param replace_self new_var_name)
            udt_func_params
        in
-       (* let unbound_params2 = unbound_params1 @ [ (fst unbound_udt_se, SId new_var_name ) ] in *)
-       t', SFunctionCall (udt_func_name, unbound_params))
+       let unbound_params2 = unbound_params1 @ [ unbound_udt_se ] in
+       t', SFunctionCall (udt_func_name, unbound_params2))
 
   | SUDTStaticAccess (udt_name, udt_static_func) ->
     t', SUDTStaticAccess (udt_name, udt_static_func)
@@ -100,11 +99,8 @@ and unbind_block sblk variables replace_self new_var_name =
     let updated_func_args =
       List.map
         (fun (arg_name, arg_type) ->
-           if arg_name = "self" then (
-            print_endline ("Replaced 'self' with '" ^ var_name ^ "' in tuple");
+           if arg_name = "self" then 
             (var_name, arg_type)
-           )
-
           else arg_name, arg_type)
         func_args
     in
