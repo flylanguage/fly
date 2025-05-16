@@ -320,6 +320,16 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
       list;
     llist
   | SStringLit s -> L.build_global_stringptr s "str" builder
+  | SIndex (list_expr, index_expr) ->
+    let list_val = build_expr list_expr vars var_types the_module builder in
+    let index_val = build_expr index_expr vars var_types the_module builder in
+    let elem_ptr = L.build_gep list_val [| index_val |] "elem_ptr" builder in
+
+    (match fst expr with
+     | RInt | RFloat | RBool | RChar | REnumType _ ->
+       L.build_load elem_ptr "elem_val" builder
+     | RUserType _ -> elem_ptr
+     | _ -> failwith "Unsupported list type for indexing")
   | e ->
     raise (Failure (Printf.sprintf "expr not implemented: %s" (Utils.string_of_sexpr e)))
 
