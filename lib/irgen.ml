@@ -30,10 +30,9 @@ let ltype_of_typ = function
   (* | A.Char -> l_char *)
   | RUnit -> l_unit
   | RString -> l_str
+  | REnumType _ -> l_int
   | t ->
-    raise
-      (Failure
-         (Printf.sprintf "type not implemented: %s" (Utils.string_of_resolved_type t)))
+    failwith (Printf.sprintf "type not implemented: %s" (Utils.string_of_resolved_type t))
 ;;
 
 let l_printf : L.lltype = L.var_arg_function_type l_int [| L.pointer_type l_char |]
@@ -70,9 +69,9 @@ let rec build_expr expr (vars : variable StringMap.t) the_module builder =
   | SFloatLit f -> L.const_float l_float f
   | SId var ->
     let vbl = lookup vars var in
-    (* strings are pointers, they should not be load-ed like other variables 
-       Now, local strings already exist in a variable in the function scope, 
-       and build_load is okay here as we're loading from the variable, not 
+    (* strings are pointers, they should not be load-ed like other variables
+       Now, local strings already exist in a variable in the function scope,
+       and build_load is okay here as we're loading from the variable, not
        the raw pointer.
        Therefore, we have this special case for Global strings
     *)
@@ -192,6 +191,16 @@ let rec build_expr expr (vars : variable StringMap.t) the_module builder =
              (Printf.sprintf
                 "Boolean binary operator %s not yet implemented"
                 (Utils.string_of_op op)))
+      | REnumType _ ->
+        (match op with
+         | A.Equal -> L.build_icmp L.Icmp.Eq
+         | A.Neq -> L.build_icmp L.Icmp.Ne
+         | _ ->
+           failwith
+             (Printf.sprintf
+                "Internal Compiler Error: Operator %s on EnumType %s reached IRgen."
+                (Utils.string_of_op op)
+                (Utils.string_of_resolved_type typ)))
       | _ ->
         failwith
           (Printf.sprintf
@@ -420,31 +429,61 @@ let translate blocks =
       add_terminal (L.builder_at_end context else_bb) build_br_end;
 
       vars, curr_func, func_blocks, u_builder
-    | SEnumDeclaration (id, variants) ->
-      let enum_type = L.named_struct_type context id in
-      let fields = Array.of_list (List.map (fun _ -> L.i32_type context) variants) in
-      ignore (L.struct_set_body enum_type fields true);
-      let rec assign_enum_values variants last_value =
-        match variants with
-        | [] -> []
-        | SEnumVariantDefault n :: rest ->
-          let lval = L.const_int l_int last_value in
-          let vbl = { v_value = lval; v_type = RInt; v_scope = Global } in
-          let curr = id ^ "::" ^ n, vbl in
+    | SEnumDeclaration (enum_name_str, sast_variants) ->
+      let rec process_variants_to_update_vars
+                current_vars_map
+                variant_list
+                current_int_val
+        =
+        match variant_list with
+        | [] -> current_vars_map
+        | SEnumVariantDefault variant_n :: rest ->
+          let assigned_int_val = current_int_val in
+          let llvm_const_i32 = L.const_int l_int assigned_int_val in
 
-          curr :: assign_enum_values rest (last_value + 1)
-        | SEnumVariantExplicit (n, v) :: rest ->
-          let lval = L.const_int l_int v in
-          let vbl = { v_value = lval; v_type = RInt; v_scope = Global } in
-          let curr = id ^ "::" ^ n, vbl in
+          let global_llvm_var_name = enum_name_str ^ "::" ^ variant_n in
+          let global_llvm_var_ptr =
+            L.define_global global_llvm_var_name llvm_const_i32 the_module
+          in
+          L.set_global_constant true global_llvm_var_ptr;
 
-          curr :: assign_enum_values rest (v + 1)
+          (* Enum variants are constants *)
+          (* Optional: L.set_linkage L.Linkage.Internal global_llvm_var_ptr; or other appropriate linkage *)
+          let vbl_record =
+            { v_value = global_llvm_var_ptr
+            ; v_type = REnumType enum_name_str
+            ; v_scope = Global
+            }
+          in
+          let updated_vars_map =
+            StringMap.add global_llvm_var_name vbl_record current_vars_map
+          in
+          process_variants_to_update_vars updated_vars_map rest (assigned_int_val + 1)
+        | SEnumVariantExplicit (variant_n, explicit_int_val) :: rest ->
+          let assigned_int_val = explicit_int_val in
+          let llvm_const_i32 = L.const_int l_int assigned_int_val in
+
+          let global_llvm_var_name = enum_name_str ^ "::" ^ variant_n in
+          let global_llvm_var_ptr =
+            L.define_global global_llvm_var_name llvm_const_i32 the_module
+          in
+          L.set_global_constant true global_llvm_var_ptr;
+
+          (* Optional: L.set_linkage L.Linkage.Internal global_llvm_var_ptr; *)
+          let vbl_record =
+            { v_value = global_llvm_var_ptr
+            ; v_type = REnumType enum_name_str
+            ; v_scope = Global
+            }
+          in
+          let updated_vars_map =
+            StringMap.add global_llvm_var_name vbl_record current_vars_map
+          in
+          process_variants_to_update_vars updated_vars_map rest (assigned_int_val + 1)
       in
-      let vars =
-        assign_enum_values variants 0
-        |> List.fold_left (fun acc (name, value) -> StringMap.add name value acc) vars
-      in
-      vars, curr_func, func_blocks, builder
+
+      let updated_vars = process_variants_to_update_vars vars sast_variants 0 in
+      updated_vars, curr_func, func_blocks, builder
     | b ->
       raise
         (Failure
