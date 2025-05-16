@@ -237,7 +237,7 @@ and check_expr expr envs special_blocks =
     in
     let skv_list = List.combine instance_names sexpr_list in
     let skv_list_sorted = List.map (fun n -> n, List.assoc n skv_list) def_names in
-    UserType udt_name, SUDTInstance (udt_name, skv_list_sorted)
+    RUserType udt_name, SUDTInstance (udt_name, skv_list_sorted)
   | Binop (e1, binop, e2) -> check_binop expr e1 binop e2 envs special_blocks
   | Unop (e, unop) ->
     let t, e' = check_expr e envs special_blocks in
@@ -636,14 +636,14 @@ let check block_list =
   in
 
   (* Add "print" function *)
-  let new_func_env = func_def_helper Sast.print_func_name [] Sast.RUnit initial_envs in
+  let new_func_env = func_def_helper Sast.print_func_name [] RUnit initial_envs in
   let envs = { initial_envs with func_env = new_func_env } in
   (* Add "len" function *)
-  let new_func_env2 = func_def_helper Sast.len_func_name [] Ast.Int envs in
+  let new_func_env2 = func_def_helper Sast.len_func_name [] RInt envs in
   let envs2 = { envs with func_env = new_func_env2 } in
 
   (* Add "input" function *)
-  let new_func_env3 = func_def_helper Sast.input_func_name [] Ast.String envs2 in
+  let new_func_env3 = func_def_helper Sast.input_func_name [] RString envs2 in
   let envs3 = { envs2 with func_env = new_func_env3 } in
 
   (* Special blocks are limited to return, continue, break, wildcard.

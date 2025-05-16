@@ -47,9 +47,10 @@ let int_format_str builder = L.build_global_stringptr "%d\n" "int_fmt" builder
 let str_format_str builder = L.build_global_stringptr "%s\n" "str_fmt" builder
 let float_format_str builder = L.build_global_stringptr "%f\n" "float_fmt" builder
 
-let get_lformals_arr (formals : resolved_formal list) =
-
 (* Creates a binding to the llvm libc "printf" function *)
+(* let l_printf : L.lltype = L.var_arg_function_type l_int [| l_str |] *)
+(* let print_func the_module : L.llvalue = L.declare_function "printf" l_printf the_module *)
+
 let l_printf : L.lltype = L.var_arg_function_type l_int [| l_str |]
 let print_func the_module : L.llvalue = L.declare_function "printf" l_printf the_module
 
@@ -67,11 +68,10 @@ let _ = L.struct_set_body file_type [||] false
 let file_ptr_type = Llvm.pointer_type file_type
 let get_stdin_type = L.function_type file_ptr_type [||]
 let get_stdin_fn the_module = L.declare_function "get_stdin" get_stdin_type the_module
-
-(* Creates a binding to the llvm libc "fgets" function *)
 let l_fgets : L.lltype = L.function_type l_str [| l_str; l_int; file_ptr_type |]
 let fgets_func the_module = L.declare_function "fgets" l_fgets the_module
 
+let get_lformals_arr (formals : resolved_formal list) =
   let lformal_list = List.map ltype_of_typ (List.map snd formals) in
   Array.of_list lformal_list
 ;;
@@ -82,7 +82,7 @@ let lookup (vars : variable StringMap.t) var =
     raise (Failure (Printf.sprintf "var lookup error: failed to find variable %s\n" var))
 ;;
 
-let lookup_type (var_types : A.typ StringMap.t) var =
+let lookup_type (var_types : resolved_typ StringMap.t) var =
   try StringMap.find var var_types with
   | Not_found -> raise (Failure ("type lookup error: " ^ var))
 ;;
@@ -107,7 +107,7 @@ let build_udt_access typ var_name field_name vars builder =
   let struct_ptr = lookup_value vars var_name in
   let var_typ =
     match typ with
-    | A.UserType name -> name
+    | RUserType name -> name
     | _ -> raise (Failure "expected user-defined type")
   in
   let field_indices = Hashtbl.find udt_field_indices var_typ in
@@ -133,6 +133,7 @@ let get_or_add_string_const s builder =
 ;;
 
 let rec build_expr expr (vars : variable StringMap.t) var_types the_module builder =
+  let resolved_typ = fst expr in
   let sx = snd expr in
   match sx with
   | SLiteral l -> L.const_int l_int l
@@ -207,12 +208,23 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
     else raise (Failure "function calls not implemented")
   | SEnumAccess (enum_name, variant_name) ->
     let key = enum_name ^ "::" ^ variant_name in
-    if not (StringMap.mem key vars)
+    let vbl =
+      try StringMap.find key vars with
+      | Not_found ->
+        failwith
+          (Printf.sprintf
+             "IRgen: Enum variant %s::%s not found in vars map during SEnumAccess"
+             enum_name
+             variant_name)
+    in
+    if L.type_of vbl.v_value <> L.pointer_type l_int
     then
-      raise
-        (Failure
-           (Printf.sprintf "Enum variant %s not found in enum %s" variant_name enum_name))
-    else lookup_value vars key
+      failwith
+        (Printf.sprintf
+           "IRgen SEnumAccess: Expected global %s to be i32*, but got %s"
+           key
+           (L.string_of_lltype (L.type_of vbl.v_value)));
+    L.build_load vbl.v_value (key ^ "_load") builder
   | SBinop (e1, op, e2) ->
     let typ = fst e1 in
     let se1 = build_expr e1 vars var_types the_module builder in
@@ -276,7 +288,6 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
                 "Internal Compiler Error: Operator %s on EnumType %s reached IRgen."
                 (Utils.string_of_op op)
                 (Utils.string_of_resolved_type typ)))
-
       | RString -> failwith "GOT A STRING\n"
       | _ ->
         failwith
@@ -286,8 +297,7 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
              (Utils.string_of_resolved_type typ))
     in
     lval se1 se2 ("tmp_" ^ Utils.string_of_resolved_type typ) builder
-  | SStringLit s -> L.build_global_stringptr s "str" builder
-    lval se1 se2 ("tmp_" ^ Utils.string_of_resolved_type typ) builder
+  | SStringLit s -> get_or_add_string_const s builder
   | SUDTInstance (typename, fields) ->
     let struct_type = Hashtbl.find udt_structs typename in
     let field_indices = Hashtbl.find udt_field_indices typename in
@@ -304,10 +314,9 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
     instance
   | SUDTAccess (id, SUDTVariable field) ->
     let struct_ptr = lookup_value vars id in
-    let id_typ = lookup_type var_types id in
     let type_name =
-      match id_typ with
-      | A.UserType n -> n
+      match resolved_typ with
+      | RUserType n -> n
       | _ -> raise (Failure ("Expected user type for variable: " ^ id))
     in
     let field_indices = Hashtbl.find udt_field_indices type_name in
@@ -315,9 +324,6 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
     let field_ptr = L.build_struct_gep struct_ptr idx (id ^ "_" ^ field) builder in
     let field_val = L.build_load field_ptr (field ^ "_val") builder in
     field_val
-  | SStringLit s ->
-    let str_ptr = get_or_add_string_const s builder in
-    str_ptr
   | e ->
     raise (Failure (Printf.sprintf "expr not implemented: %s" (Utils.string_of_sexpr e)))
 
@@ -377,12 +383,12 @@ and prelude_len (func : sfunc) vars var_types the_module builder =
   let lexpr = build_expr func_arg vars var_types the_module builder in
   let args =
     match fst func_arg with
-    | A.String -> [| lexpr |]
+    | RString -> [| lexpr |]
     | t ->
       failwith
         (Printf.sprintf
            "prelude_len not implemented for type: %s"
-           (Utils.string_of_type t))
+           (Utils.string_of_resolved_type t))
   in
 
   L.build_call (strlen_func the_module) args "call_strlen" builder
@@ -405,7 +411,7 @@ and prelude_input (_func : sfunc) _vars _var_types the_module builder =
 ;;
 
 let assert_types typ1 typ2 =
-  if typ1 != typ2
+  if typ1 <> typ2
   then
     failwith
       (Printf.sprintf
@@ -414,14 +420,22 @@ let assert_types typ1 typ2 =
          (Utils.string_of_resolved_type typ2))
 ;;
 
-let add_local_val typ var vars (expr : resolved_typ * Sast.sx) the_module builder =
+let add_local_val
+      typ
+      var
+      vars
+      var_types
+      (expr : resolved_typ * Sast.sx)
+      the_module
+      builder
+  =
   let expr_type = fst expr in
   assert_types expr_type typ;
   let ll_initializer_value : L.llvalue =
     build_expr expr vars var_types the_module builder
   in
   match typ with
-  | A.UserType _ ->
+  | RUserType _ ->
     let vbl = { v_value = ll_initializer_value; v_type = typ; v_scope = Local } in
     StringMap.add var vbl vars
   | _ ->
@@ -478,7 +492,6 @@ let translate blocks =
       | SUDTDef (name, members) -> define_udt_type name members
       | _ -> ())
     blocks;
-  let declare_function typ id (formals : A.formal list) body func_blocks =
   let declare_function typ id (formals : resolved_formal list) body func_blocks =
     let lfunc =
       L.define_function
@@ -598,7 +611,7 @@ let translate blocks =
       let build_br_end = L.build_br end_bb in
       add_terminal (L.builder_at_end context then_bb) build_br_end;
       add_terminal (L.builder_at_end context else_bb) build_br_end;
-      vars, curr_func, func_blocks, u_builder
+      vars, var_types, curr_func, func_blocks, u_builder
     | SEnumDeclaration (enum_name_str, sast_variants) ->
       let rec process_variants_to_update_vars
                 current_vars_map
@@ -653,7 +666,7 @@ let translate blocks =
       in
 
       let updated_vars = process_variants_to_update_vars vars sast_variants 0 in
-      updated_vars, curr_func, func_blocks, builder
+      updated_vars, var_types, curr_func, func_blocks, builder
     | b ->
       raise
         (Failure
