@@ -41,6 +41,7 @@ let tests =
             \  %a = alloca i8*, align 8\n\
             \  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str, i32 0, i32 \
              0), i8** %a, align 8\n\
+            \  ret void\n\
              }\n"
           in
           assert_equal expected actual ~printer)
@@ -58,6 +59,7 @@ let tests =
             \  %b = alloca i8*, align 8\n\
             \  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str, i32 0, i32 \
              0), i8** %b, align 8\n\
+            \  ret void\n\
              }\n"
           in
           assert_equal expected actual ~printer)

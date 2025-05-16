@@ -23,67 +23,139 @@ let _write_to_file text filename =
   close_out channel
 ;;
 
-let str_contains haystack needle =
-  match String.index_opt haystack needle.[0] with
-  | None -> false
-  | Some idx ->
-    let len = String.length needle in
-    let rec check i =
-      if i + len > String.length haystack
-      then false
-      else if String.sub haystack i len = needle
-      then true
-      else check (i + 1)
-    in
-    check idx
+let str_contains haystack needle_regex_pattern =
+  try
+    ignore (Str.search_forward (Str.regexp needle_regex_pattern) haystack 0);
+    true
+  with
+  | Not_found -> false
 ;;
 
 let tests =
   "testing_enum_ir"
-  >::: [ ("enum_explicit_values"
+  >::: [ ("enum_explicit_values_and_comparison"
           >:: fun _ ->
-          let sast =
-            get_sast
-              "enum HTTP{OK = 200, BadRequest = 400, InternalServerError = 500} fun \
-               main() -> int { return HTTP::OK; }"
+          let fly_code =
+            "enum HTTP { \n\
+            \  OK = 200, \n\
+            \  NotFound = 404, \n\
+            \  ServerError = 500 \n\
+             } \n\
+             fun main() -> int { \n\
+            \  let status_ok : HTTP = HTTP::OK; \n\
+            \  let status_404 := HTTP::NotFound; \n\
+            \  if (status_ok == HTTP::OK && status_404 != HTTP::ServerError) { \n\
+            \    return 1; \n\
+            \  } else { \n\
+            \    return 0; \n\
+            \  } \n\
+            \  return 0;\n\
+            \             }"
           in
+          let sast = get_sast fly_code in
           let mdl = Irgen.translate sast in
-          let actual = L.string_of_llmodule mdl in
-          assert_bool "main returns enum value" (str_contains actual "ret i32 200");
-          assert_bool "main returns int" (str_contains actual "define i32 @main()"))
-       ; ("enum_implicit_values"
-          >:: fun _ ->
-          let sast =
-            get_sast
-              "enum Color{Red, Green, Blue} fun main() -> int { return Color::Blue; }"
-          in
-          let mdl = Irgen.translate sast in
-          let actual = L.string_of_llmodule mdl in
-          assert_bool "main returns enum value" (str_contains actual "ret i32 2");
-          assert_bool "main returns int" (str_contains actual "define i32 @main()"))
-       ; ("enum_mixed_values"
-          >:: fun _ ->
-          let sast =
-            get_sast
-              "enum Mixed{A = 1, B, C = 10, D} fun main() -> int { return Mixed::D; }"
-          in
-          let mdl = Irgen.translate sast in
-          let actual = L.string_of_llmodule mdl in
-          assert_bool "main returns enum value" (str_contains actual "ret i32 11");
-          assert_bool "main returns int" (str_contains actual "define i32 @main()"))
-       ; ("enum_usage_in_if"
-          >:: fun _ ->
-          let sast =
-            get_sast
-              "enum Color{Red, Green, Blue} fun main() -> int { if (true) { return \
-               Color::Red; } return Color::Green; }"
-          in
-          let mdl = Irgen.translate sast in
-          let actual = L.string_of_llmodule mdl in
+          let actual_ir = L.string_of_llmodule mdl in
           assert_bool
-            "main returns enum values in if"
-            (str_contains actual "ret i32 0" && str_contains actual "ret i32 1");
-          assert_bool "main returns int" (str_contains actual "define i32 @main()"))
+            "main function returns i32"
+            (str_contains actual_ir "define i32 @main()");
+          assert_bool
+            "HTTP::OK global is 200"
+            (str_contains actual_ir "@\"HTTP::OK\" = .*constant i32 200");
+          assert_bool
+            "HTTP::NotFound global is 404"
+            (str_contains actual_ir "@\"HTTP::NotFound\" = .*constant i32 404");
+          assert_bool
+            "HTTP::ServerError global is 500"
+            (str_contains actual_ir "@\"HTTP::ServerError\" = .*constant i32 500");
+          assert_bool
+            "icmp eq i32 instruction exists"
+            (str_contains actual_ir "icmp eq i32");
+          assert_bool
+            "icmp ne i32 instruction exists"
+            (str_contains actual_ir "icmp ne i32");
+          assert_bool "main returns 1" (str_contains actual_ir "ret i32 1"))
+       ; ("enum_implicit_values_and_branching"
+          >:: fun _ ->
+          let fly_code =
+            "enum Color { Red, Green, Blue } \n\
+             fun main() -> int { \n\
+            \  let c1 := Color::Red; \n\
+            \  let c2 := Color::Green; \n\
+            \  if (c1 == c2) { \n\
+            \    return 10; \n\
+            \  } else { \n\
+            \    if (Color::Blue == Color::Blue) { \n\
+            \      return 20; \n\
+            \    } else { \n\
+            \      return 30; \n\
+            \    } \n\
+            \  } \n\
+            \  return 0; \n\
+             }"
+          in
+          let sast = get_sast fly_code in
+          let mdl = Irgen.translate sast in
+          let actual_ir = L.string_of_llmodule mdl in
+
+          assert_bool
+            "main function returns i32"
+            (str_contains actual_ir "define i32 @main()");
+          assert_bool
+            "Color::Red global is 0"
+            (str_contains actual_ir "@\"Color::Red\" = .*constant i32 0");
+          assert_bool
+            "Color::Green global is 1"
+            (str_contains actual_ir "@\"Color::Green\" = .*constant i32 1");
+          assert_bool
+            "Color::Blue global is 2"
+            (str_contains actual_ir "@\"Color::Blue\" = .*constant i32 2");
+          assert_bool
+            "icmp eq i32 instruction exists"
+            (str_contains actual_ir "icmp eq i32");
+          assert_bool "main returns 20" (str_contains actual_ir "ret i32 20"))
+       ; ("enum_mixed_values_auto_increment"
+          >:: fun _ ->
+          let fly_code =
+            "enum Sequence { \n\
+            \  First = 10, \n\
+            \  Second, \n\
+            \  Third = 20, \n\
+            \  Fourth, \n\
+            \  Fifth \n\
+             } \n\
+             fun main() -> int { \n\
+            \  if (Sequence::Second == Sequence::Fourth) { \n\
+            \    return 0; \n\
+            \  } else { \n\
+            \    if (Sequence::Fifth == Sequence::Fifth) { return 22; } \n\
+            \    return 99; \n\
+            \  } \n\
+            \  return 0; \n\
+             }"
+          in
+          let sast = get_sast fly_code in
+          let mdl = Irgen.translate sast in
+          let actual_ir = L.string_of_llmodule mdl in
+
+          assert_bool
+            "main function returns i32"
+            (str_contains actual_ir "define i32 @main()");
+          assert_bool
+            "Sequence::First global is 10"
+            (str_contains actual_ir "@\"Sequence::First\" = .*constant i32 10");
+          assert_bool
+            "Sequence::Second global is 11"
+            (str_contains actual_ir "@\"Sequence::Second\" = .*constant i32 11");
+          assert_bool
+            "Sequence::Third global is 20"
+            (str_contains actual_ir "@\"Sequence::Third\" = .*constant i32 20");
+          assert_bool
+            "Sequence::Fourth global is 21"
+            (str_contains actual_ir "@\"Sequence::Fourth\" = .*constant i32 21");
+          assert_bool
+            "Sequence::Fifth global is 22"
+            (str_contains actual_ir "@\"Sequence::Fifth\" = .*constant i32 22");
+          assert_bool "main returns 22" (str_contains actual_ir "ret i32 22"))
        ]
 ;;
 

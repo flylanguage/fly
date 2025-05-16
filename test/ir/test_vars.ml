@@ -93,6 +93,7 @@ let tests =
              entry:\n\
             \  %b = alloca i32, align 4\n\
             \  store i32 5, i32* %b, align 4\n\
+            \  ret void\n\
              }\n"
           in
           assert_equal expected actual ~printer)
@@ -108,6 +109,7 @@ let tests =
              entry:\n\
             \  %b = alloca i1, align 1\n\
             \  store i1 true, i1* %b, align 1\n\
+            \  ret void\n\
              }\n"
           in
           assert_equal expected actual ~printer)
@@ -123,6 +125,7 @@ let tests =
              entry:\n\
             \  %a = alloca float, align 4\n\
             \  store float 1.050000e+01, float* %a, align 4\n\
+            \  ret void\n\
              }\n"
           in
           assert_equal expected actual ~printer)
