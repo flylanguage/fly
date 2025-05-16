@@ -26,7 +26,10 @@ and l_float = L.float_type context
 
 let l_str = L.pointer_type l_char
 
-let rec ltype_of_typ = function
+(* A list is a wrapper struct containing length and a pointer to the array *)
+let l_list = L.struct_type context [| l_int; l_str |]
+
+let ltype_of_typ = function
   | RInt -> l_int
   | RBool -> l_bool
   | RFloat -> l_float
@@ -34,7 +37,8 @@ let rec ltype_of_typ = function
   | RUnit -> l_unit
   | RString -> l_str
   | REnumType _ -> l_int
-  | RList typ -> L.pointer_type (ltype_of_typ typ)
+  | RList _ ->
+    L.pointer_type l_list (* Not an accident - supposed to be a pointer to list struct *)
   | RUserType name ->
     (try Hashtbl.find udt_structs name with
      | Not_found -> raise (Failure ("Unknown user type: " ^ name)))
@@ -308,8 +312,20 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
     field_val
   | SList list ->
     let typ = fst (List.hd list) in
-    let lval = L.const_int l_int (List.length list) in
-    let llist = L.build_array_alloca (ltype_of_typ typ) lval "list" builder in
+    let llen = L.const_int l_int (List.length list) in
+
+    let llist_shell = L.build_alloca l_list "list_shell" builder in
+    let len_ptr = L.build_struct_gep llist_shell 0 "len_ptr" builder in
+    ignore (L.build_store llen len_ptr builder);
+
+    let llist = L.build_array_alloca (ltype_of_typ typ) llen "list" builder in
+    let llist_cast =
+      L.build_pointercast llist (L.pointer_type (L.i8_type context)) "llist_cast" builder
+    in
+    let data_ptr = L.build_struct_gep llist_shell 1 "data_ptr" builder in
+
+    ignore (L.build_store llist_cast data_ptr builder);
+
     List.iteri
       (fun idx item ->
          let litem = build_expr item vars var_types the_module builder in
@@ -318,7 +334,7 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
          in
          ignore (L.build_store litem lidx builder))
       list;
-    llist
+    llist_shell
   | SStringLit s -> L.build_global_stringptr s "str" builder
   | e ->
     raise (Failure (Printf.sprintf "expr not implemented: %s" (Utils.string_of_sexpr e)))
@@ -377,17 +393,22 @@ and prelude_print (func : sfunc) vars var_types the_module builder =
 and prelude_len (func : sfunc) vars var_types the_module builder =
   let func_arg = List.hd (snd func) in
   let lexpr = build_expr func_arg vars var_types the_module builder in
-  let args =
-    match fst func_arg with
-    | RString -> [| lexpr |]
-    | t ->
-      failwith
-        (Printf.sprintf
-           "prelude_len not implemented for type: %s"
-           (Utils.string_of_resolved_type t))
-  in
 
-  L.build_call (strlen_func the_module) args "call_strlen" builder
+  match fst func_arg with
+  | RString ->
+    let args = [| lexpr |] in
+
+    L.build_call (strlen_func the_module) args "call_strlen" builder
+  | RList _l ->
+    flush stdout;
+    let len_ptr = L.build_struct_gep lexpr 0 "len_ptr" builder in
+    let len_val = L.build_load len_ptr "lislen" builder in
+    len_val
+  | t ->
+    failwith
+      (Printf.sprintf
+         "prelude_len not implemented for type: %s"
+         (Utils.string_of_resolved_type t))
 
 and prelude_input (_func : sfunc) _vars _var_types the_module builder =
   (* The max buffer size for reading strings *)

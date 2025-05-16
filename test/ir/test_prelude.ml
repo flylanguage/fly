@@ -132,10 +132,36 @@ let tests =
           in
           (* _write_to_file actual "test.out"; *)
           assert_equal expected actual ~printer)
-       ; ("len"
+       ; ("len_of_string"
           >:: fun _ ->
           let sast =
             get_sast "fun main() {let str := \"hello\"; let strlen := len(str); }"
+          in
+          let mdl = Irgen.translate sast in
+          let actual = L.string_of_llmodule mdl in
+          let expected =
+            "; ModuleID = 'Fly'\n\
+             source_filename = \"Fly\"\n\n\
+             @str = private unnamed_addr constant [6 x i8] c\"hello\\00\", align 1\n\n\
+             define void @main() {\n\
+             entry:\n\
+            \  %str = alloca i8*, align 8\n\
+            \  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str, i32 0, i32 \
+             0), i8** %str, align 8\n\
+            \  %str1 = load i8*, i8** %str, align 8\n\
+            \  %call_strlen = call i32 @strlen(i8* %str1)\n\
+            \  %strlen = alloca i32, align 4\n\
+            \  store i32 %call_strlen, i32* %strlen, align 4\n\
+            \  ret void\n\
+             }\n\n\
+             declare i32 @strlen(i8*)\n"
+          in
+          (* _write_to_file actual "actual.out"; *)
+          assert_equal expected actual ~printer)
+       ; ("len_of_list"
+          >:: fun _ ->
+          let sast =
+            get_sast "fun main() {let lis := [10, 20]; let lislen := len(lis); }"
           in
           let mdl = Irgen.translate sast in
           let actual = L.string_of_llmodule mdl in
