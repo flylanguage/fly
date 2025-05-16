@@ -337,7 +337,6 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
     llist_shell
   | SStringLit s -> L.build_global_stringptr s "str" builder
   | SIndex (list_expr, index_expr) ->
-    let typ = fst index_expr in
     (* the list_expr should be an SId and nothing else right? *)
     let var_name =
       match snd list_expr with
@@ -345,7 +344,14 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
       | _ -> failwith "bad list_expr"
     in
 
-    let list_val = lookup_value vars var_name in
+    let vbl = lookup vars var_name in
+    let list_val = vbl.v_value in
+    let typ =
+      match vbl.v_type with
+      | RList t -> t
+      | _ -> failwith "type should be list"
+    in
+
     let loaded_list_val = L.build_load list_val "loaded_list" builder in
 
     let index_val = build_expr index_expr vars var_types the_module builder in
