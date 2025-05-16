@@ -415,7 +415,7 @@ let add_global_val typ var (vars : variable StringMap.t) _ expr the_module =
       let temp_fn = L.define_function "temp_fn" temp_fn_type the_module in
       let builder = L.builder context in
       L.position_at_end (L.entry_block temp_fn) builder;
-      let init = get_or_add_string_const s builder in
+      let init = L.build_global_stringptr s "str" builder in
       L.delete_function temp_fn;
       init
     | t, e ->
