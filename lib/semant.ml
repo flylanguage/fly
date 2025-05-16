@@ -203,26 +203,81 @@ and check_pattern pattern envs =
       raise (Failure (Printf.sprintf "Enum %s has no variant %s" enum_name variant_name));
     PEnumAccess (enum_name, variant_name)
 
-and update_func_body checked_func_body func_name is_unit =
-  let rec walk_body body =
+and update_func_body checked_func_body func_name is_unit rtyp envs =
+  let rec walk_block blk recurse =
+    match blk with
+    | SIfNonEnd (_, if_body, other_body) ->
+      walk_block_list if_body recurse && walk_block other_body recurse
+    | SElifNonEnd (_, elif_body, other_body) ->
+      walk_block_list elif_body recurse && walk_block other_body recurse
+    | SElseEnd else_body -> walk_block_list else_body recurse
+    | _ -> false
+  and walk_block_list body recurse =
     match body with
     | curr_block :: rest ->
       if is_unit
       then (
         match curr_block with
         | SReturnUnit -> true
-        | _ -> walk_body rest)
+        | SIfNonEnd _ ->
+          if recurse
+          then (
+            let res = walk_block curr_block recurse in
+            if res then true else walk_block_list rest recurse)
+          else walk_block_list rest recurse
+        | _ -> walk_block_list rest recurse)
       else (
         match curr_block with
         | SReturnVal _ -> true
-        | _ -> walk_body rest)
+        | SIfNonEnd _ ->
+          if recurse
+          then (
+            let res = walk_block curr_block recurse in
+            if res then true else walk_block_list rest recurse)
+          else walk_block_list rest recurse
+        | _ -> walk_block_list rest recurse)
     | [] -> false
   in
-  let found_ret = walk_body checked_func_body in
-  if found_ret = false && not is_unit
+  let top_level_ret = walk_block_list checked_func_body false in
+  let nested_ret = walk_block_list checked_func_body true in
+  if top_level_ret = false && nested_ret = false && not is_unit
   then raise (Failure ("Missing return statement in " ^ func_name))
-  else if found_ret = false && is_unit
+  else if top_level_ret = false && is_unit
   then checked_func_body @ [ SReturnUnit ]
+  else if top_level_ret = false && not is_unit
+  then (
+    let rec construct_default_sexpr rt envs =
+      match rt with
+      | Sast.RInt -> Sast.RInt, SLiteral 0
+      | Sast.RBool -> Sast.RBool, SBoolLit true
+      | Sast.RChar -> Sast.RChar, SCharLit '0'
+      | Sast.RFloat -> Sast.RFloat, SFloatLit 0.0
+      | Sast.RString -> Sast.RString, SStringLit "0"
+      | Sast.REnumType name ->
+        let enum_variant = List.hd (StringMap.find name envs.enum_env) in
+        (match enum_variant with
+         | EnumVariantDefault variant_name ->
+           REnumType name, SEnumAccess ((REnumType name, SId name), variant_name)
+         | EnumVariantExplicit (variant_name, _) ->
+           REnumType name, SEnumAccess ((REnumType name, SId name), variant_name))
+      | Sast.RUserType name ->
+        let udt_info = StringMap.find name envs.udt_env in
+        let udt_members = udt_info.members in
+        let default_exprs =
+          List.map
+            (fun member -> fst member, construct_default_sexpr (snd member) envs)
+            udt_members
+        in
+        RUserType name, SUDTInstance (name, default_exprs)
+      | Sast.RList resolved_t ->
+        Sast.RList resolved_t, SList [ construct_default_sexpr resolved_t envs ]
+      | Sast.RTuple resolved_tl ->
+        ( Sast.RTuple resolved_tl
+        , STuple (List.map (fun t -> construct_default_sexpr t envs) resolved_tl) )
+      | _ -> failwith "Failed to construct default expression"
+    in
+    let resolved_t = resolve_typ rtyp envs in
+    checked_func_body @ [ SReturnVal (construct_default_sexpr resolved_t envs) ])
   else checked_func_body
 
 and check_expr expr envs special_blocks =
@@ -234,8 +289,15 @@ and check_expr expr envs special_blocks =
   | StringLit s -> RString, SStringLit s
   | Unit -> RUnit, SUnit
   | Id id_name ->
-    let t = find_var id_name envs.var_env in
-    t, SId id_name
+    if StringMap.mem id_name envs.var_env
+    then (
+      let t = find_var id_name envs.var_env in
+      t, SId id_name)
+    else if StringMap.mem id_name envs.enum_env
+    then REnumType id_name, SId id_name
+    else if StringMap.mem id_name envs.udt_env
+    then RUserType id_name, SId id_name
+    else raise (Failure ("Undeclared variable or type " ^ id_name))
   | Tuple expr_list ->
     let sexpr_list = List.map (fun e -> check_expr e envs special_blocks) expr_list in
     let typs, _ = List.split sexpr_list in
@@ -276,13 +338,14 @@ and check_expr expr envs special_blocks =
     let t = find_func func_name envs.func_env in
     (* t is return type of this function call *)
     t.rtyp, SFunctionCall (func_name, sfunc_args)
-  | UDTAccess (id_name, udt_accessed_member) ->
-    let udt_typ = find_var id_name envs.var_env in
+  | UDTAccess (udt_expr, udt_accessed_member) ->
+    let udt_typ, checked_udt_expr = check_expr udt_expr envs special_blocks in
     let udt_def = find_udt (string_of_resolved_type udt_typ) envs.udt_env in
     (match udt_accessed_member with
      | UDTVariable udt_var ->
        (match List.assoc_opt udt_var udt_def.members with
-        | Some accessed_type -> accessed_type, SUDTAccess (id_name, SUDTVariable udt_var)
+        | Some accessed_type ->
+          accessed_type, SUDTAccess ((udt_typ, checked_udt_expr), SUDTVariable udt_var)
         | None ->
           raise (Failure (udt_var ^ "is not in " ^ string_of_resolved_type udt_typ)))
      | UDTFunction udt_func ->
@@ -295,7 +358,10 @@ and check_expr expr envs special_blocks =
           in
           let arg_types, _ = List.split sexpr_list in
           if arg_types = def_arg_types
-          then func_sig.rtyp, SUDTAccess (id_name, SUDTFunction (fst udt_func, sexpr_list))
+          then
+            ( func_sig.rtyp
+            , SUDTAccess
+                ((udt_typ, checked_udt_expr), SUDTFunction (fst udt_func, sexpr_list)) )
           else raise (Failure "Incorrect types passed to this method")
         | None ->
           raise
@@ -314,7 +380,15 @@ and check_expr expr envs special_blocks =
        then func_sig.rtyp, SUDTStaticAccess (udt_name, (func_name, sexpr_list))
        else raise (Failure "Incorrect types passed to this method")
      | None -> raise (Failure (func_name ^ "is not a method bound to " ^ udt_name)))
-  | EnumAccess (enum_name, variant) ->
+  | EnumAccess (enum_expr, variant) ->
+    let t_enum, checked_enum_expr = check_expr enum_expr envs special_blocks in
+    let enum_name =
+      match enum_expr with
+      | Id name -> name
+      | _ ->
+        Printf.eprintf "EnumAccess base: %s\n" (Utils.string_of_expr enum_expr);
+        failwith "EnumAccess base must be an identifier"
+    in
     let enum_variants =
       try StringMap.find enum_name envs.enum_env with
       | Not_found -> raise (Failure ("Undefined enum " ^ enum_name))
@@ -328,7 +402,7 @@ and check_expr expr envs special_blocks =
     in
     if not variant_exists
     then raise (Failure ("Undefined variant " ^ variant ^ " in enum " ^ enum_name))
-    else REnumType enum_name, SEnumAccess (enum_name, variant)
+    else REnumType enum_name, SEnumAccess ((t_enum, checked_enum_expr), variant)
   | Index (e1, e2) ->
     let t1, e1' = check_expr e1 envs special_blocks in
     let t2, e2' = check_expr e2 envs special_blocks in
@@ -463,7 +537,7 @@ and check_block block envs special_blocks func_ret_type =
     in
     let is_unit = rtyp = Unit in
     let updated_checked_func_body =
-      update_func_body checked_func_body func_name is_unit
+      update_func_body checked_func_body func_name is_unit rtyp envs
     in
     ( updated_envs2
     , updated_special_blocks
@@ -491,7 +565,7 @@ and check_block block envs special_blocks func_ret_type =
     in
     let is_unit = rtyp = Unit in
     let updated_checked_func_body =
-      update_func_body checked_func_body func_name is_unit
+      update_func_body checked_func_body func_name is_unit rtyp envs
     in
     let new_udt_env =
       add_bound_func_def func_name (string_of_resolved_type bound_type) envs

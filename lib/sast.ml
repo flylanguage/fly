@@ -30,9 +30,9 @@ and sx =
   | SUnopSideEffect of string * op (* this is for postincr, postdecr, preincr, postdecr *)
   | SFunctionCall of sfunc
   | SUDTInstance of string * skv_list
-  | SUDTAccess of string * sudt_access
+  | SUDTAccess of sexpr * sudt_access
   | SUDTStaticAccess of string * sfunc
-  | SEnumAccess of string * string
+  | SEnumAccess of sexpr * string
   | SIndex of sexpr * sexpr
   | SList of sexpr list
   | SMatch of sexpr * (pattern * sexpr) list
