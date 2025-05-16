@@ -25,3 +25,7 @@
 (test
   (name test_enums)
   (libraries fly_lib ounit2))
+
+(test
+  (name test_for)
+  (libraries fly_lib ounit2))

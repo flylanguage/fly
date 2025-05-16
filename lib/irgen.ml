@@ -20,6 +20,12 @@ let udt_field_indices : (string, (string * int) list) Hashtbl.t = Hashtbl.create
 let string_consts : (string, L.llvalue) Hashtbl.t = Hashtbl.create 10
 let string_counter = ref 0
 
+let build_entry_alloca the_function var_name var_type =
+  let builder =
+    L.builder_at context (L.instr_begin (L.entry_block the_function))
+  in
+  L.build_alloca var_type var_name builder
+
 let l_int = L.i32_type context
 and l_bool = L.i1_type context
 and l_char = L.i8_type context
@@ -456,6 +462,7 @@ let add_terminal builder instr =
 let translate blocks =
   let the_module = L.create_module context "Fly" in
   let local_vars = StringMap.empty in
+  let block_map = StringMap.empty in
   let var_types = StringMap.empty in
   List.iter
     (function
@@ -489,7 +496,7 @@ let translate blocks =
     let lfunc, _, blocks = func_block in
     let curr_func = Some lfunc in
     let builder = L.builder_at_end context (L.entry_block lfunc) in
-    process_blocks blocks vars var_types curr_func [] (Some builder)
+    process_blocks blocks vars var_types curr_func [] (Some builder) block_map
   and process_blocks
         blocks
         vars
@@ -497,13 +504,14 @@ let translate blocks =
         (curr_func : L.llvalue option)
         func_blocks
         (builder : L.llbuilder option)
+        block_map
     =
     match blocks with
     (* We've declared all objects, lets fill in all function bodies *)
     | [] -> process_func_blocks func_blocks vars var_types
     | block :: rest ->
-      let updated_vars, updated_var_types, updated_curr_func, u_func_blocks, u_builder =
-        process_block block vars var_types curr_func func_blocks builder
+      let updated_vars, updated_var_types, updated_curr_func, u_func_blocks, u_builder, block_map =
+        process_block block vars var_types curr_func func_blocks builder block_map
       in
       process_blocks
         rest
@@ -512,6 +520,7 @@ let translate blocks =
         updated_curr_func
         u_func_blocks
         u_builder
+        block_map
   and process_block
         block
         vars
@@ -519,56 +528,57 @@ let translate blocks =
         (curr_func : L.llvalue option)
         func_blocks
         (builder : L.llbuilder option)
+        block_map
     =
     match block with
     | SUDTDef (name, members) ->
       define_udt_type name members;
-      vars, var_types, curr_func, func_blocks, builder
+      vars, var_types, curr_func, func_blocks, builder, block_map
     | SDeclTyped (id, typ, expr) ->
-      if Option.is_some curr_func
-      then (
+      if Option.is_some curr_func then (
         let new_vars =
           add_local_val typ id vars var_types expr the_module (Option.get builder)
         in
         let new_var_types = StringMap.add id typ var_types in
-        new_vars, new_var_types, curr_func, func_blocks, builder)
+        new_vars, new_var_types, curr_func, func_blocks, builder, block_map
+        )      
       else (
         let new_vars = add_global_val typ id vars var_types expr the_module in
         let new_var_types = StringMap.add id typ var_types in
-        new_vars, new_var_types, curr_func, func_blocks, builder)
+        new_vars, new_var_types, curr_func, func_blocks, builder, block_map)
     | SFunctionDefinition (typ, id, formals, body) ->
       let u_func_blocks = declare_function typ id formals body func_blocks in
-      vars, var_types, curr_func, u_func_blocks, builder
+      vars, var_types, curr_func, u_func_blocks, builder, block_map
     | SReturnUnit ->
       ignore (L.build_ret_void (Option.get builder));
-      vars, var_types, curr_func, func_blocks, builder
+      vars, var_types, curr_func, func_blocks, builder, block_map
     | SReturnVal expr ->
       let ret = build_expr expr vars var_types the_module (Option.get builder) in
       ignore (L.build_ret ret (Option.get builder));
-      vars, var_types, curr_func, func_blocks, builder
+      vars, var_types, curr_func, func_blocks, builder, block_map
     | SExpr expr ->
       ignore (build_expr expr vars var_types the_module (Option.get builder));
-      vars, var_types, curr_func, func_blocks, builder
+      vars, var_types, curr_func, func_blocks, builder, block_map
     | SIfEnd (expr, blks) ->
       let bool_val = build_expr expr vars var_types the_module (Option.get builder) in
 
       (* We require curr_func to be Some - no if-else in global scope *)
       let then_bb = L.append_block context "then" (Option.get curr_func) in
       let then_builder = Some (L.builder_at_end context then_bb) in
-      ignore (process_blocks blks vars var_types curr_func func_blocks then_builder);
+      ignore (process_blocks blks vars var_types curr_func func_blocks then_builder block_map);
       let end_bb = L.append_block context "if_end" (Option.get curr_func) in
       let build_br_end = L.build_br end_bb in
       add_terminal (L.builder_at_end context then_bb) build_br_end;
       ignore (L.build_cond_br bool_val then_bb end_bb (Option.get builder));
       let u_builder = Some (L.builder_at_end context end_bb) in
-      vars, var_types, curr_func, func_blocks, u_builder
+      vars, var_types, curr_func, func_blocks, u_builder, block_map
     | SIfNonEnd (expr, blks, else_blk) ->
       assert_types (fst expr) A.Bool;
       let bool_val = build_expr expr vars var_types the_module (Option.get builder) in
 
       let then_bb = L.append_block context "then" (Option.get curr_func) in
       let then_builder = Some (L.builder_at_end context then_bb) in
-      ignore (process_blocks blks vars var_types curr_func func_blocks then_builder);
+      ignore (process_blocks blks vars var_types curr_func func_blocks then_builder block_map);
       let end_bb = L.append_block context "if_end" (Option.get curr_func) in
       let else_bb = L.append_block context "else" (Option.get curr_func) in
       let else_builder = Some (L.builder_at_end context else_bb) in
@@ -579,7 +589,7 @@ let translate blocks =
       let build_br_end = L.build_br end_bb in
       add_terminal (L.builder_at_end context then_bb) build_br_end;
       add_terminal (L.builder_at_end context else_bb) build_br_end;
-      vars, var_types, curr_func, func_blocks, u_builder
+      vars, var_types, curr_func, func_blocks, u_builder, block_map
     | SEnumDeclaration (id, variants) ->
       let enum_type = L.named_struct_type context id in
       let fields = Array.of_list (List.map (fun _ -> L.i32_type context) variants) in
@@ -604,7 +614,74 @@ let translate blocks =
         assign_enum_values variants 0
         |> List.fold_left (fun acc (name, value) -> StringMap.add name value acc) vars
       in
-      vars, var_types, curr_func, func_blocks, builder
+      vars, var_types, curr_func, func_blocks, builder, block_map
+
+    | SFor (loop_var, checked_iterable, checked_body) ->
+      (* checked_itrable is a tuple of the following for: 
+      (list of types of all elements in t , list of elements all of same type )*)
+      let curr_func = Option.get curr_func in
+      let builder = Option.get builder in
+  
+      (* Evaluate the iterable to get the list struct *)
+      let list_val = build_expr checked_iterable vars var_types the_module builder in
+  
+      (* Extract length and data pointer from list struct *)
+      let list_length = L.build_extractvalue list_val 0 "list_length" builder in
+      let list_data_ptr = L.build_extractvalue list_val 1 "list_data" builder in
+  
+      (* Allocate index variable *)
+      let index_alloca = build_entry_alloca curr_func "i" (L.i32_type context) in
+      ignore (L.build_store (L.const_int (L.i32_type context) 0) index_alloca builder);
+  
+      (* Allocate loop variable (e.g. x) *)
+      let loop_var_alloca = build_entry_alloca curr_func loop_var (L.i32_type context) in
+      let vars = StringMap.add loop_var { v_value = loop_var_alloca; v_type = A.Int; v_scope = Local } vars in
+  
+      (* Create blocks *)
+      let loop_cond_bb = L.append_block context "loop_cond" curr_func in
+      let loop_body_bb = L.append_block context "loop_body" curr_func in
+      let loop_after_bb = L.append_block context "loop_after" curr_func in
+      ignore (L.build_br loop_cond_bb builder);
+  
+      (* Condition block *)
+      let cond_builder = L.builder_at_end context loop_cond_bb in
+      let curr_i = L.build_load index_alloca "i_val" cond_builder in
+      let cond = L.build_icmp L.Icmp.Slt curr_i list_length "loop_cond" cond_builder in
+      ignore (L.build_cond_br cond loop_body_bb loop_after_bb cond_builder);
+  
+      (* Body block *)
+      let body_builder = L.builder_at_end context loop_body_bb in
+  
+      (* Get current element from list: list_data_ptr[i] *)
+      let elem_ptr = L.build_gep list_data_ptr [| curr_i |] "elem_ptr" body_builder in
+      let elem_val = L.build_load elem_ptr "elem_val" body_builder in
+  
+      (* Store current element into loop variable *)
+      ignore (L.build_store elem_val loop_var_alloca body_builder);
+  
+      (* Run loop body *)
+      let block_map = StringMap.add "break" loop_after_bb block_map in
+      ignore (process_blocks checked_body vars var_types (Some curr_func) func_blocks (Some body_builder) block_map);
+  
+      (* Increment i and jump back to condition *)
+      let updated_body_builder = L.builder_at_end context (L.insertion_block body_builder) in
+      let next_i = L.build_add curr_i (L.const_int (L.i32_type context) 1) "i_plus_1" updated_body_builder in
+      ignore (L.build_store next_i index_alloca updated_body_builder);
+      ignore (L.build_br loop_cond_bb updated_body_builder);
+  
+      (* After loop *)
+      let after_builder = L.builder_at_end context loop_after_bb in
+      vars, var_types, Some curr_func, func_blocks, Some after_builder, block_map
+  
+    | SBreak ->
+      let exit_bb = (try
+        StringMap.find "break" block_map
+      with Not_found ->
+        (* this should never actually run becuase sast ensures breaks are only in loops *)
+        raise (Failure "Break cannot be placed outside of a loop")) in
+        (* go to the while loop exit branch *)
+      ignore (L.build_br exit_bb (Option.get builder));
+      vars, var_types, curr_func, func_blocks, builder, block_map
     | b ->
       raise
         (Failure
@@ -620,7 +697,7 @@ let translate blocks =
     =
     match block with
     | SElseEnd blks ->
-      ignore (process_blocks blks vars var_types curr_func func_blocks builder);
+      ignore (process_blocks blks vars var_types curr_func func_blocks builder block_map);
       let u_builder = Some (L.builder_at_end context end_bb) in
       u_builder
     | SElifEnd (expr, blks) ->
@@ -629,7 +706,7 @@ let translate blocks =
 
       let then_bb = L.append_block context "then" (Option.get curr_func) in
       let then_builder = Some (L.builder_at_end context then_bb) in
-      ignore (process_blocks blks vars var_types curr_func func_blocks then_builder);
+      ignore (process_blocks blks vars var_types curr_func func_blocks then_builder block_map);
       let build_br_end = L.build_br end_bb in
       add_terminal (L.builder_at_end context then_bb) build_br_end;
       ignore (L.build_cond_br bool_val then_bb end_bb (Option.get builder));
@@ -641,7 +718,7 @@ let translate blocks =
 
       let then_bb = L.append_block context "then" (Option.get curr_func) in
       let then_builder = Some (L.builder_at_end context then_bb) in
-      ignore (process_blocks blks vars var_types curr_func func_blocks then_builder);
+      ignore (process_blocks blks vars var_types curr_func func_blocks then_builder block_map);
       let build_br_end = L.build_br end_bb in
       add_terminal (L.builder_at_end context then_bb) build_br_end;
       let else_bb = L.append_block context "else" (Option.get curr_func) in
@@ -660,6 +737,7 @@ let translate blocks =
   let func_blocks = [] in
   (* ..and start off with no builder.. *)
   let builder = None in
-  process_blocks blocks local_vars var_types curr_func func_blocks builder;
+  process_blocks blocks local_vars var_types curr_func func_blocks builder block_map;
   the_module
+  
 ;;
