@@ -596,8 +596,9 @@ and check_block block envs special_blocks func_ret_type =
     let checked_iterable = check_expr iterable envs special_blocks in
     let t, _ = checked_iterable in
     (match t with
-     | RList _ | RTuple _ ->
-       let new_var_env = var_dec_helper loop_var RInt envs in
+     | RList list_typ ->
+      Printf.printf "SEMANT: %s\n" (Utils.string_of_resolved_type list_typ);
+       let new_var_env = var_dec_helper loop_var list_typ envs in
        let updated_envs = { envs with var_env = new_var_env } in
        let updated_special_blocks =
          StringSet.add "break" (StringSet.add "continue" special_blocks)

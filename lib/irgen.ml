@@ -24,12 +24,23 @@ let build_entry_alloca the_function var_name var_type =
   in
   L.build_alloca var_type var_name builder
 
-  let build_itr_meta_data (_, itr_object) = 
-    match itr_object with
-    | SList elements -> (List.length elements, elements)
-    | STuple elements -> (List.length elements, elements)
-    | _ -> failwith "Not a list or tuple"  
+let build_itr_meta_data (_, itr_object) = 
+  match itr_object with
+  | SList elements -> (List.length elements, elements)
+  | STuple elements -> (List.length elements, elements)
+  | _ -> failwith "Not a list or tuple"  
 
+let rec sast_type_of_resolved_type (rty ) =
+  match rty with
+  | RInt -> Sast.RInt
+  | RBool -> Sast.RBool
+  | RChar -> Sast.RChar
+  | RFloat -> Sast.RFloat
+  | RString -> Sast.RString
+  | RUnit -> Sast.RUnit
+  | RList t -> Sast.RList (sast_type_of_resolved_type t)
+  | _ -> raise (Failure ("IR ERROR: TBI "))
+    
 let l_int = L.i32_type context
 and l_bool = L.i1_type context
 and l_char = L.i8_type context
@@ -679,20 +690,42 @@ let translate blocks =
       updated_vars, var_types, curr_func, func_blocks, builder, block_map
 
     | SFor (loop_var, checked_iterable, checked_body) ->
+
+      (* let _prt = List.hd checked_body in
+      let () = match _prt with 
+      | SExpr _sp -> 
+        let () = match snd _sp  with
+        | SFunctionCall (_id, sexprs) -> 
+          let arg = List.hd sexprs in
+          Printf.printf "ARG: %s, %s\n" (Utils.string_of_resolved_type (fst arg)) (Utils.string_of_sexpr (snd arg));
+
+        | _ -> failwith "bad" in 
+        failwith "bad"
+      | _ -> failwith "really bad" in *)
+
+      
       (* checked_itrable is a tuple of the following for: 
       (list of types of all elements in t , list of elements all of same type )*)
       let curr_func = Option.get curr_func in
       let builder = Option.get builder in
-  
+      let elem_type = fst checked_iterable in
+      let v_type = sast_type_of_resolved_type elem_type in
+
+      let v_type = match v_type with 
+       | RList t -> t 
+       | _ -> failwith "this shouldn't ever happen" in
+
+      Printf.printf "VTYPE: %s\n" (Utils.string_of_resolved_type v_type);
       (* so this should be constructing a tuple of the form {list length, ptr to list head }
          TODO: ensure this is the case! *)
-      let (list_length, list_data_ptr) = build_itr_meta_data checked_iterable in
-      let llvm_list_length = L.const_int l_int list_length in
+      let list_data_ptr = build_expr checked_iterable vars var_types the_module builder in
+      let data_obj =
+        match snd checked_iterable with
+        | SList lst -> lst
+        | lst -> raise (Failure ("IR ERROR: Expression '" ^ Utils.string_of_sexpr lst ^ "' has type " ^ Utils.string_of_resolved_type (fst checked_iterable) ^ " and is not iterable. "))
+      in
+      let llvm_list_length = L.const_int l_int (List.length data_obj) in
 
-  
-      (* ITERABLE META DATA *)
-      (* let list_length = L.build_extractvalue list_val 0 "list_length" builder in
-      let list_data_ptr = L.build_extractvalue list_val 1 "list_data" builder in *)
   
       (* LOOP ITERABLE VARIABLE COUNTER *)
       (* ATM this instantiates a new builder and inserts it into a new block within the current function  *)
@@ -701,8 +734,9 @@ let translate blocks =
       ignore (L.build_store (L.const_int l_int 0) index_alloca builder);
   
       (* make loop variable visibile to the for loop body  *)
-      let loop_var_alloca = build_entry_alloca curr_func loop_var l_int in
-      let vars = StringMap.add loop_var { v_value = loop_var_alloca; v_type = Sast.RInt; v_scope = Local } vars in
+      let loop_var_alloca = build_entry_alloca curr_func loop_var (ltype_of_typ v_type) in
+      Printf.printf "LOOP_VAR: %s\n" (L.string_of_llvalue loop_var_alloca);
+      let vars = StringMap.add loop_var { v_value = loop_var_alloca; v_type = v_type; v_scope = Local } vars in
   
       let loop_cond_bb = L.append_block context "loop_cond" curr_func in
       let loop_body_bb = L.append_block context "loop_body" curr_func in
