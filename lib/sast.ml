@@ -80,7 +80,13 @@ type sblock =
   | SReturnVal of sexpr
   | SExpr of sexpr
 
-(* Name of our print function *)
+(* Name of our "print" function *)
 let print_func_name = "print"
+
+(* Name of our "len" function *)
+let len_func_name = "len"
+
+(* Name of our "input" function *)
+let input_func_name = "input"
 
 type sprogram = { body : sblock list }

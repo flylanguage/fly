@@ -1,4 +1,5 @@
 open Fly_lib
+open Wrapper
 module L = Llvm
 
 type action =
@@ -79,8 +80,11 @@ let read_and_compile channel =
 
   let asmstr = Llvm.MemoryBuffer.as_string asmbuf in
 
-  (* Compile asm to an executable using gcc - reading the asm from stdin *)
-  let argv = [ "gcc"; "-x"; "assembler"; "/dev/stdin"; "-o"; exe_name ] in
+  (* Compile asm to an executable using clang - reading the asm from stdin *)
+  let tmp_filename = compile_wrapper in
+  let argv =
+    [ "gcc"; "-x"; "assembler"; "/dev/stdin"; "-x"; "none"; tmp_filename; "-o"; exe_name ]
+  in
   let cmd = String.concat " " argv in
   let child_stdout, child_stdin = Unix.open_process cmd in
 
@@ -90,16 +94,21 @@ let read_and_compile channel =
   (* send EOF *)
   close_out child_stdin;
 
-  match Unix.close_process (child_stdout, child_stdin) with
-  | WEXITED 0 -> ()
-  | err ->
-    let msg =
-      match err with
-      | WEXITED n -> Printf.sprintf "exit: %d" n
-      | WSIGNALED s -> Printf.sprintf "signal: %d" s
-      | _ -> "unknown"
-    in
-    raise (Failure (Printf.sprintf "Failed to generate executable: error=%s\n" msg))
+  (* Fun.protect ensures that the cleanup_wrapper (in the "finally" function) 
+     is always called, even if the match case raises *)
+  Fun.protect
+    ~finally:(fun () -> cleanup_wrapper tmp_filename)
+    (fun () ->
+       match Unix.close_process (child_stdout, child_stdin) with
+       | WEXITED 0 -> ()
+       | err ->
+         let msg =
+           match err with
+           | WEXITED n -> Printf.sprintf "exit: %d" n
+           | WSIGNALED s -> Printf.sprintf "signal: %d" s
+           | _ -> "unknown"
+         in
+         raise (Failure (Printf.sprintf "Failed to generate executable: error=%s\n" msg)))
 ;;
 
 let () =
