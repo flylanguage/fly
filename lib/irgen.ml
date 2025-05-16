@@ -337,9 +337,27 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
     llist_shell
   | SStringLit s -> L.build_global_stringptr s "str" builder
   | SIndex (list_expr, index_expr) ->
-    let list_val = build_expr list_expr vars var_types the_module builder in
+    let typ = fst index_expr in
+    (* the list_expr should be an SId and nothing else right? *)
+    let var_name =
+      match snd list_expr with
+      | SId i -> i
+      | _ -> failwith "bad list_expr"
+    in
+
+    let list_val = lookup_value vars var_name in
+    let loaded_list_val = L.build_load list_val "loaded_list" builder in
+
     let index_val = build_expr index_expr vars var_types the_module builder in
-    let elem_ptr = L.build_gep list_val [| index_val |] "elem_ptr" builder in
+
+    (* bitcast the array pointer type back to the appropriate value *)
+    let raw_larr_ptr = L.build_struct_gep loaded_list_val 1 "raw_arr_ptr" builder in
+    let i8_arr = L.build_load raw_larr_ptr "i8_arr" builder in
+    let larr_ptr =
+      L.build_bitcast i8_arr (L.pointer_type (ltype_of_typ typ)) "arr_ptr" builder
+    in
+
+    let elem_ptr = L.build_gep larr_ptr [| index_val |] "elem_ptr" builder in
 
     (match fst expr with
      | RInt | RFloat | RString | RBool | REnumType _ ->
