@@ -48,7 +48,7 @@ type typ =
   | List of typ
   | Tuple of typ list
   | Unit
-  | UserType of string
+  | TypeName of string
 
 type expr =
   | Literal of int
