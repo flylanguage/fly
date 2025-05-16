@@ -117,11 +117,26 @@ let assert_types typ1 typ2 =
 ;;
 
 let define_udt_type name members =
-  let field_types = List.map (fun (_, t) -> ltype_of_typ t) members in
-  let struct_type = L.struct_type context (Array.of_list field_types) in
-  Hashtbl.add udt_structs name struct_type;
-  Hashtbl.add udt_field_indices name (List.mapi (fun i (name, _) -> name, i) members)
+  let struct_ll_type = L.named_struct_type context name in
+  Hashtbl.add udt_structs name struct_ll_type;
+  Hashtbl.add
+    udt_field_indices
+    name
+    (List.mapi (fun i (member_name, _) -> member_name, i) members);
+
+  let field_ll_types_list =
+    List.map (fun (_, sast_member_typ) -> ltype_of_typ sast_member_typ) members
+  in
+  let field_ll_types_array = Array.of_list field_ll_types_list in
+  L.struct_set_body struct_ll_type field_ll_types_array false
 ;;
+
+(* let define_udt_type name members = *)
+(*   let field_types = List.map (fun (_, t) -> ltype_of_typ t) members in *)
+(*   let struct_type = L.struct_type context (Array.of_list field_types) in *)
+(*   Hashtbl.add udt_structs name struct_type; *)
+(*   Hashtbl.add udt_field_indices name (List.mapi (fun i (name, _) -> name, i) members) *)
+(* ;; *)
 
 let build_udt_access typ var_name field_name vars builder =
   let struct_ptr = lookup_value vars var_name in
@@ -660,8 +675,25 @@ and process_block
     vars, var_types, curr_func, func_blocks, builder
   | SReturnVal expr_ret ->
     let current_builder = Option.get builder in
-    let ll_ret_val = build_expr expr_ret vars var_types the_module current_builder in
-    ignore (L.build_ret ll_ret_val current_builder);
+    let ll_expr_val_from_build_expr =
+      build_expr expr_ret vars var_types the_module current_builder
+    in
+    let expr_ret_sast_typ, _expr_ret_sx_detail = expr_ret in
+    let ll_actual_val_to_return =
+      match expr_ret_sast_typ with
+      | RUserType _ ->
+        let current_func_llval = Option.get curr_func in
+        let func_ll_type = L.element_type (L.type_of current_func_llval) in
+        let func_return_ll_type = L.return_type func_ll_type in
+        if
+          L.classify_type (L.type_of ll_expr_val_from_build_expr) = L.TypeKind.Pointer
+          && (L.classify_type func_return_ll_type = L.TypeKind.Struct
+              || L.classify_type func_return_ll_type = L.TypeKind.Array)
+        then L.build_load ll_expr_val_from_build_expr "load_udt_for_ret" current_builder
+        else ll_expr_val_from_build_expr
+      | _ -> ll_expr_val_from_build_expr
+    in
+    ignore (L.build_ret ll_actual_val_to_return current_builder);
     vars, var_types, curr_func, func_blocks, builder
   | SReturnUnit ->
     let current_builder = Option.get builder in
