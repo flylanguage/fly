@@ -6,23 +6,43 @@ module StringSet = Set.Make (String)
 
 (* Type definitions for function signatures, user-defined types, and enums *)
 type func_sig =
-  { args : (string * typ) list
-  ; rtyp : typ
+  { args : (string * resolved_typ) list
+  ; rtyp : resolved_typ
   }
 
 type udt_def =
-  { members : (string * typ) list
+  { members : (string * resolved_typ) list
   ; methods : string list
   }
 
 type enum_def = enum_variant list
 
 type envs =
-  { var_env : typ StringMap.t
+  { var_env : resolved_typ StringMap.t
   ; func_env : func_sig StringMap.t
   ; udt_env : udt_def StringMap.t
   ; enum_env : enum_def StringMap.t
   }
+
+let rec resolve_typ (ast_t : Ast.typ) (envs : envs) : resolved_typ =
+  match ast_t with
+  | Ast.Int -> Sast.RInt
+  | Ast.Bool -> Sast.RBool
+  | Ast.Char -> Sast.RChar
+  | Ast.Float -> Sast.RFloat
+  | Ast.String -> Sast.RString
+  | Ast.Unit -> Sast.RUnit
+  | Ast.TypeName name ->
+    let is_enum = StringMap.mem name envs.enum_env in
+    let is_udt = StringMap.mem name envs.udt_env in
+    (match is_enum, is_udt with
+     | true, false -> REnumType name
+     | false, true -> RUserType name
+     | true, true -> failwith ("Conflict Type and Enum have the same name: " ^ name)
+     | false, false -> failwith ("Undefined type name: " ^ name))
+  | Ast.List t1 -> Sast.RList (resolve_typ t1 envs)
+  | Ast.Tuple tl -> Sast.RTuple (List.map (fun t -> resolve_typ t envs) tl)
+;;
 
 let rec find_var var_name env =
   try StringMap.find var_name env with
@@ -113,7 +133,7 @@ and format_ifelif_error expr t =
   Printf.sprintf
     "Expression: \'%s\' has type: %s, but if/else if conditions must be bool"
     (string_of_expr expr)
-    (string_of_type t)
+    (string_of_resolved_type t)
 
 and check_binop expr e1 binop e2 envs special_blocks =
   let t1, e1' = check_expr e1 envs special_blocks in
@@ -125,30 +145,34 @@ and format_binop_error expr t1 t2 =
   Printf.sprintf
     "Expression: \'%s\' LHS: %s, RHS: %s"
     (string_of_expr expr)
-    (string_of_type t1)
-    (string_of_type t2)
+    (string_of_resolved_type t1)
+    (string_of_resolved_type t2)
 
 and get_binop_return_type expr t1 binop t2 =
   match binop with
   | Add | Sub | Mult | Div | Mod | Exp ->
     (match t1, t2 with
-     | Int, Int -> Int
-     | Float, Float -> Float
+     | RInt, RInt -> RInt
+     | RFloat, RFloat -> RFloat
      | _, _ -> raise (Failure (format_binop_error expr t1 t2)))
   | Equal | Neq ->
-    if t1 = t2 then Bool else raise (Failure (format_binop_error expr t1 t2))
+    (match t1, t2 with
+     | REnumType s1, REnumType s2 when s1 = s2 -> RBool
+     | _ when t1 = t2 -> RBool
+     | _ -> failwith (format_binop_error expr t1 t2))
+    (* if t1 = t2 then Bool else raise (Failure (format_binop_error expr t1 t2)) *)
   | Less | Leq | Greater | Geq ->
     (match t1, t2 with
-     | Int, Int -> Bool
-     | Float, Float -> Bool
+     | RInt, RInt -> RBool
+     | RFloat, RFloat -> RBool
      | _, _ -> raise (Failure (format_binop_error expr t1 t2)))
   | And | Or ->
     (match t1, t2 with
-     | Bool, Bool -> Bool
+     | RBool, RBool -> RBool
      | _, _ -> raise (Failure (format_binop_error expr t1 t2)))
   | Cons ->
     (match t1, t2 with
-     | t1', List t2' when t1' = t2' -> List t1'
+     | t1', RList t2' when t1' = t2' -> RList t1'
      | _, _ -> raise (Failure (format_binop_error expr t1 t2)))
   | _ -> raise (Failure "Invalid binary operator")
 
@@ -181,19 +205,19 @@ and check_pattern pattern envs =
 
 and check_expr expr envs special_blocks =
   match expr with
-  | Literal i -> Int, SLiteral i
-  | BoolLit b -> Bool, SBoolLit b
-  | FloatLit f -> Float, SFloatLit f
-  | CharLit c -> Char, SCharLit c
-  | StringLit s -> String, SStringLit s
-  | Unit -> Unit, SUnit
+  | Literal i -> RInt, SLiteral i
+  | BoolLit b -> RBool, SBoolLit b
+  | FloatLit f -> RFloat, SFloatLit f
+  | CharLit c -> RChar, SCharLit c
+  | StringLit s -> RString, SStringLit s
+  | Unit -> RUnit, SUnit
   | Id id_name ->
     let t = find_var id_name envs.var_env in
     t, SId id_name
   | Tuple expr_list ->
     let sexpr_list = List.map (fun e -> check_expr e envs special_blocks) expr_list in
     let typs, _ = List.split sexpr_list in
-    Tuple typs, STuple sexpr_list
+    RTuple typs, STuple sexpr_list
   | List expr_list ->
     let sexpr_list = List.map (fun e -> check_expr e envs special_blocks) expr_list in
     let typs, _ = List.split sexpr_list in
@@ -202,7 +226,7 @@ and check_expr expr envs special_blocks =
        raise (Failure "Cannot infer type on empty list") (* TODO: Allow empty lists *)
      | first_typ :: rest ->
        if List.for_all (fun x -> x = first_typ) rest
-       then List first_typ, SList sexpr_list
+       then RList first_typ, SList sexpr_list
        else raise (Failure "Lists must only have 1 type"))
   | UDTInstance (udt_name, udt_members) ->
     let udt_def = find_udt udt_name envs.udt_env in
@@ -219,18 +243,18 @@ and check_expr expr envs special_blocks =
       if def_types = instance_types
       then (
         let skv_list = List.combine instance_names sexpr_list in
-        UserType udt_name, SUDTInstance (udt_name, skv_list))
+        RUserType udt_name, SUDTInstance (udt_name, skv_list))
       else raise (Failure ("Incorrect types used to instantiate " ^ udt_name)))
     else raise (Failure ("Incorrect ordering when instantiating " ^ udt_name))
   | Binop (e1, binop, e2) -> check_binop expr e1 binop e2 envs special_blocks
   | Unop (e, unop) ->
     let t, e' = check_expr e envs special_blocks in
-    if t <> Bool
+    if t <> RBool
     then raise (Failure "Trying to do NOT on a non-boolean expression")
-    else Bool, SUnop ((t, e'), unop)
+    else RBool, SUnop ((t, e'), unop)
   | UnopSideEffect (id_name, side_effect_op) ->
     let typ = find_var id_name envs.var_env in
-    if typ = Int || typ = Float
+    if typ = RInt || typ = RFloat
     then typ, SUnopSideEffect (id_name, side_effect_op)
     else raise (Failure "Trying to do increment/decrement on a non-numeric expression")
   | FunctionCall (func_name, func_args) ->
@@ -240,12 +264,13 @@ and check_expr expr envs special_blocks =
     t.rtyp, SFunctionCall (func_name, sfunc_args)
   | UDTAccess (id_name, udt_accessed_member) ->
     let udt_typ = find_var id_name envs.var_env in
-    let udt_def = find_udt (string_of_type udt_typ) envs.udt_env in
+    let udt_def = find_udt (string_of_resolved_type udt_typ) envs.udt_env in
     (match udt_accessed_member with
      | UDTVariable udt_var ->
        (match List.assoc_opt udt_var udt_def.members with
         | Some accessed_type -> accessed_type, SUDTAccess (id_name, SUDTVariable udt_var)
-        | None -> raise (Failure (udt_var ^ "is not in " ^ string_of_type udt_typ)))
+        | None ->
+          raise (Failure (udt_var ^ "is not in " ^ string_of_resolved_type udt_typ)))
      | UDTFunction udt_func ->
        (match List.find_opt (fun x -> x = fst udt_func) udt_def.methods with
         | Some _ ->
@@ -260,7 +285,9 @@ and check_expr expr envs special_blocks =
           else raise (Failure "Incorrect types passed to this method")
         | None ->
           raise
-            (Failure (fst udt_func ^ "is not a method bound to " ^ string_of_type udt_typ))))
+            (Failure
+               (fst udt_func ^ "is not a method bound to "
+                ^ string_of_resolved_type udt_typ))))
   | UDTStaticAccess (udt_name, (func_name, args)) ->
     let udt_typ = find_udt udt_name envs.udt_env in
     (match List.find_opt (fun x -> x = func_name) udt_typ.methods with
@@ -287,16 +314,16 @@ and check_expr expr envs special_blocks =
     in
     if not variant_exists
     then raise (Failure ("Undefined variant " ^ variant ^ " in enum " ^ enum_name))
-    else Int, SEnumAccess (enum_name, variant)
+    else REnumType enum_name, SEnumAccess (enum_name, variant)
   | Index (e1, e2) ->
     let t1, e1' = check_expr e1 envs special_blocks in
     let t2, e2' = check_expr e2 envs special_blocks in
     (match t1 with
-     | List x -> x, SIndex ((t1, e1'), (t2, e2'))
+     | RList x -> x, SIndex ((t1, e1'), (t2, e2'))
      (* This is a very weird edge case. We need to find the type of member that was accessed.
     But we can't compute the actual index the user wants in this phase??? *)
-     (* | Tuple typ_list -> 
-      if List.length typ_list <= 
+     (* | Tuple typ_list ->
+      if List.length typ_list <=
       (y, SIndex ((t1, e1'), (t2, e2'))) *)
      | _ -> raise (Failure "Trying to index into an non-indexable expression"))
   | Match (matched_expr, match_arms) ->
@@ -322,50 +349,55 @@ and check_expr expr envs special_blocks =
        else raise (Failure "All match arms must return the same type"))
   | Wildcard ->
     if StringSet.mem "wildcard" special_blocks
-    then Unit, SWildcard
+    then RUnit, SWildcard
     else raise (Failure "Unallowed wildcard")
   | TypeCast (target_typ, e) ->
     (* There is some really weird type casting allowed. Might need further discussion *)
     let t, e' = check_expr e envs special_blocks in
     let sexpr = t, e' in
-    let _ =
+    let result_type =
       match t, target_typ with
       (* we can throw away the result of the match because we have target_typ *)
-      | Int, Int -> Int
-      | Int, Float -> Float
-      | Int, Bool -> Bool
-      | Int, String -> String
-      | Int, Char -> Char
-      | Float, Int -> Int
-      | Float, Bool -> Bool
-      | Float, String -> String
-      | Bool, Int -> Int
-      | Bool, Float -> Float
-      | Bool, String -> String
-      | Char, Int -> Int
-      | Char, String -> String
-      | String, Int -> Int
-      | String, Bool -> Bool
-      | String, Char -> Char
+      | RInt, Int -> RInt
+      | RInt, Float -> RFloat
+      | RInt, Bool -> RBool
+      | RInt, String -> RString
+      | RInt, Char -> RChar
+      | RFloat, Int -> RInt
+      | RFloat, Bool -> RBool
+      | RFloat, String -> RString
+      | RBool, Int -> RInt
+      | RBool, Float -> RFloat
+      | RBool, String -> RString
+      | RChar, Int -> RInt
+      | RChar, String -> RString
+      | RString, Int -> RInt
+      | RString, Bool -> RBool
+      | RString, Char -> RChar
       | _, _ -> raise (Failure "Invalid type casting")
     in
-    target_typ, STypeCast (target_typ, sexpr)
+    result_type, STypeCast (result_type, sexpr)
 
 and check_block block envs special_blocks func_ret_type =
+  (* let res_typ = resolve_typ  *)
   match block with
   | MutDeclTyped (var_name, t, e) ->
+    let rt = resolve_typ t envs in
     let annotated_e = check_expr e envs special_blocks in
     let typ, _ = annotated_e in
-    if typ <> t
+    if typ <> rt
     then
       raise
         (Failure
            (var_name ^ " is supposed to have type " ^ string_of_type t
-          ^ " but expression has type " ^ string_of_type typ))
+          ^ " but expression has type " ^ string_of_resolved_type typ))
     else (
-      let new_var_env = var_dec_helper var_name t envs in
+      let new_var_env = var_dec_helper var_name rt envs in
       let updated_envs = { envs with var_env = new_var_env } in
-      updated_envs, special_blocks, func_ret_type, SMutDeclTyped (var_name, t, annotated_e))
+      ( updated_envs
+      , special_blocks
+      , func_ret_type
+      , SMutDeclTyped (var_name, rt, annotated_e) ))
   | MutDeclInfer (var_name, e) ->
     let annotated_e = check_expr e envs special_blocks in
     let typ, _ = annotated_e in
@@ -373,18 +405,19 @@ and check_block block envs special_blocks func_ret_type =
     let updated_envs = { envs with var_env = new_var_env } in
     updated_envs, special_blocks, func_ret_type, SMutDeclTyped (var_name, typ, annotated_e)
   | DeclTyped (var_name, t, e) ->
+    let rt = resolve_typ t envs in
     let annotated_e = check_expr e envs special_blocks in
     let typ, _ = annotated_e in
-    if typ <> t
+    if typ <> rt
     then
       raise
         (Failure
            (var_name ^ " is supposed to have type " ^ string_of_type t
-          ^ " but expression has type " ^ string_of_type typ))
+          ^ " but expression has type " ^ string_of_resolved_type typ))
     else (
-      let new_var_env = var_dec_helper var_name t envs in
+      let new_var_env = var_dec_helper var_name rt envs in
       let updated_envs = { envs with var_env = new_var_env } in
-      updated_envs, special_blocks, func_ret_type, SDeclTyped (var_name, t, annotated_e))
+      updated_envs, special_blocks, func_ret_type, SDeclTyped (var_name, rt, annotated_e))
   | DeclInfer (var_name, e) ->
     let annotated_e = check_expr e envs special_blocks in
     let typ, _ = annotated_e in
@@ -396,10 +429,14 @@ and check_block block envs special_blocks func_ret_type =
     let annotated_e2 = check_expr e2 envs special_blocks in
     envs, special_blocks, func_ret_type, SAssign (annotated_e1, op, annotated_e2)
   | FunctionDefinition (rtyp, func_name, func_args, func_body) ->
-    let new_func_env = func_def_helper func_name func_args rtyp envs in
+    let rt = resolve_typ rtyp envs in
+    let args =
+      List.map (fun formal -> fst formal, resolve_typ (snd formal) envs) func_args
+    in
+    let new_func_env = func_def_helper func_name args rt envs in
     (* add function name to environment *)
     let updated_envs1 = { envs with func_env = new_func_env } in
-    let new_var_env = add_func_args func_args updated_envs1 in
+    let new_var_env = add_func_args args updated_envs1 in
     (* add function arguments to environment *)
     let updated_envs2 = { updated_envs1 with var_env = new_var_env } in
     let updated_special_blocks =
@@ -413,12 +450,17 @@ and check_block block envs special_blocks func_ret_type =
     ( updated_envs2
     , updated_special_blocks
     , rtyp
-    , SFunctionDefinition (rtyp, func_name, func_args, checked_func_body) )
+    , SFunctionDefinition (rt, func_name, args, checked_func_body) )
   | BoundFunctionDefinition (rtyp, func_name, func_args, func_body, bound_type) ->
-    let new_func_env = func_def_helper func_name func_args rtyp envs in
+    let rt = resolve_typ rtyp envs in
+    let args =
+      List.map (fun formal -> fst formal, resolve_typ (snd formal) envs) func_args
+    in
+    let bound_type = resolve_typ bound_type envs in
+    let new_func_env = func_def_helper func_name args rt envs in
     (* add function name to environment *)
     let updated_envs1 = { envs with func_env = new_func_env } in
-    let new_var_env = add_func_args func_args updated_envs1 in
+    let new_var_env = add_func_args args updated_envs1 in
     (* add function arguments to environment *)
     let updated_envs2 = { updated_envs1 with var_env = new_var_env } in
     let updated_special_blocks =
@@ -429,13 +471,14 @@ and check_block block envs special_blocks func_ret_type =
     let checked_func_body =
       check_block_list func_body updated_envs2 updated_special_blocks rtyp
     in
-    let new_udt_env = add_bound_func_def func_name (string_of_type bound_type) envs in
+    let new_udt_env =
+      add_bound_func_def func_name (string_of_resolved_type bound_type) envs
+    in
     let updated_envs3 = { updated_envs2 with udt_env = new_udt_env } in
     ( updated_envs3
     , updated_special_blocks
     , rtyp
-    , SBoundFunctionDefinition (rtyp, func_name, func_args, checked_func_body, bound_type)
-    )
+    , SBoundFunctionDefinition (rt, func_name, args, checked_func_body, bound_type) )
   | EnumDeclaration (enum_name, enum_variants) ->
     let new_enum_env = enum_dec_helper enum_name enum_variants envs in
     let updated_envs = { envs with enum_env = new_enum_env } in
@@ -449,15 +492,19 @@ and check_block block envs special_blocks func_ret_type =
     , func_ret_type
     , SEnumDeclaration (enum_name, senum_variants) )
   | UDTDef (udt_name, udt_members) ->
-    let initial_udt_def = { members = udt_members; methods = [] } in
+    let members =
+      List.map (fun formal -> fst formal, resolve_typ (snd formal) envs) udt_members
+    in
+
+    let initial_udt_def = { members; methods = [] } in
     (* follow type definition udt_def above *)
     let new_udt_env = udt_def_helper udt_name initial_udt_def envs in
     let updated_envs = { envs with udt_env = new_udt_env } in
-    updated_envs, special_blocks, func_ret_type, SUDTDef (udt_name, udt_members)
+    updated_envs, special_blocks, func_ret_type, SUDTDef (udt_name, members)
   | IfEnd (condition, body) ->
     let checked_condition = check_expr condition envs special_blocks in
     let t, _ = checked_condition in
-    if t <> Bool
+    if t <> RBool
     then raise (Failure (format_ifelif_error condition t))
     else (
       let checked_body = check_block_list body envs special_blocks func_ret_type in
@@ -465,7 +512,7 @@ and check_block block envs special_blocks func_ret_type =
   | IfNonEnd (condition, body, other_arm) ->
     let checked_condition = check_expr condition envs special_blocks in
     let t, _ = checked_condition in
-    if t <> Bool
+    if t <> RBool
     then raise (Failure (format_ifelif_error condition t))
     else (
       let checked_body = check_block_list body envs special_blocks func_ret_type in
@@ -479,7 +526,7 @@ and check_block block envs special_blocks func_ret_type =
   | ElifNonEnd (condition, body, other_arm) ->
     let checked_condition = check_expr condition envs special_blocks in
     let t, _ = checked_condition in
-    if t <> Bool
+    if t <> RBool
     then raise (Failure (format_ifelif_error condition t))
     else (
       let checked_body = check_block_list body envs special_blocks func_ret_type in
@@ -493,7 +540,7 @@ and check_block block envs special_blocks func_ret_type =
   | ElifEnd (condition, body) ->
     let checked_condition = check_expr condition envs special_blocks in
     let t, _ = checked_condition in
-    if t <> Bool
+    if t <> RBool
     then raise (Failure (format_ifelif_error condition t))
     else (
       let checked_body = check_block_list body envs special_blocks func_ret_type in
@@ -504,12 +551,12 @@ and check_block block envs special_blocks func_ret_type =
   | While (condition, body) ->
     let checked_condition = check_expr condition envs special_blocks in
     let t, _ = checked_condition in
-    if t <> Bool
+    if t <> RBool
     then
       raise
         (Failure
-           ("Expression: '" ^ string_of_expr condition ^ "' has type " ^ string_of_type t
-          ^ ", but while loop conditions must be bool"))
+           ("Expression: '" ^ string_of_expr condition ^ "' has type "
+          ^ string_of_resolved_type t ^ ", but while loop conditions must be bool"))
     else (
       let updated_special_blocks =
         StringSet.add "break" (StringSet.add "continue" special_blocks)
@@ -526,8 +573,8 @@ and check_block block envs special_blocks func_ret_type =
     let checked_iterable = check_expr iterable envs special_blocks in
     let t, _ = checked_iterable in
     (match t with
-     | List _ | Tuple _ ->
-       let new_var_env = var_dec_helper loop_var Int envs in
+     | RList _ | RTuple _ ->
+       let new_var_env = var_dec_helper loop_var RInt envs in
        let updated_envs = { envs with var_env = new_var_env } in
        let updated_special_blocks =
          StringSet.add "break" (StringSet.add "continue" special_blocks)
@@ -542,8 +589,8 @@ and check_block block envs special_blocks func_ret_type =
      | _ ->
        raise
          (Failure
-            ("Expression '" ^ string_of_expr iterable ^ "' has type " ^ string_of_type t
-           ^ " and is not iterable")))
+            ("Expression '" ^ string_of_expr iterable ^ "' has type "
+           ^ string_of_resolved_type t ^ " and is not iterable")))
   | Break ->
     if StringSet.mem "break" special_blocks
     then envs, special_blocks, func_ret_type, SBreak
@@ -562,12 +609,14 @@ and check_block block envs special_blocks func_ret_type =
      | Some _ ->
        let checked_expr = check_expr return_expr envs special_blocks in
        let t, _ = checked_expr in
-       if t <> func_ret_type
+       let rfunc_ret_type = resolve_typ func_ret_type envs in
+       if t <> rfunc_ret_type
        then
          raise
            (Failure
               ("Expression '" ^ string_of_expr return_expr ^ "' has type "
-             ^ string_of_type t ^ "but expected " ^ string_of_type func_ret_type))
+             ^ string_of_resolved_type t ^ " but expected " ^ string_of_type func_ret_type
+              ))
        else envs, special_blocks, func_ret_type, SReturnVal checked_expr)
   | Expr expr ->
     let checked_expr = check_expr expr envs special_blocks in
@@ -595,7 +644,7 @@ let check block_list =
   in
 
   (* Add "print" function *)
-  let new_func_env = func_def_helper Sast.print_func_name [] Ast.Unit initial_envs in
+  let new_func_env = func_def_helper Sast.print_func_name [] Sast.RUnit initial_envs in
   let envs = { initial_envs with func_env = new_func_env } in
 
   (* Special blocks are limited to return, continue, break, wildcard.

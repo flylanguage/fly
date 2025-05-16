@@ -94,7 +94,7 @@ let rec string_of_type = function
   | List t -> "list<" ^ string_of_type t ^ ">"
   | Tuple t_list -> "tuple<" ^ String.concat ", " (List.map string_of_type t_list) ^ ">"
   | Unit -> "()"
-  | TypeName _ -> "TypeName"
+  | TypeName name -> name
 ;;
 
 let rec string_of_resolved_type = function
@@ -107,8 +107,8 @@ let rec string_of_resolved_type = function
   | RTuple t_list ->
     "tuple<" ^ String.concat ", " (List.map string_of_resolved_type t_list) ^ ">"
   | RUnit -> "()"
-  | REnumType _ -> "Enum"
-  | RUserType _ -> "UDT"
+  | REnumType name -> name
+  | RUserType name -> name
 ;;
 
 let string_of_op = function
@@ -375,15 +375,17 @@ let rec string_of_sblock = function
     ^ string_of_sexpr (snd e2)
     ^ ";\n"
   | SFunctionDefinition (rtyp, func_name, func_args, func_body) ->
-    "fun " ^ func_name ^ "(" ^ string_of_func_args func_args ^ ") -> "
-    ^ string_of_resolved_type rtyp ^ " {\n"
+    "fun " ^ func_name ^ "("
+    ^ string_of_resolved_func_args func_args
+    ^ ") -> " ^ string_of_resolved_type rtyp ^ " {\n"
     ^ String.concat "" (List.map string_of_sblock func_body)
     ^ "\n}\n"
   | SBoundFunctionDefinition (rtyp, func_name, func_args, func_body, bound_type) ->
     "bind " ^ func_name ^ "<"
     ^ string_of_resolved_type bound_type
-    ^ ">" ^ "(" ^ string_of_func_args func_args ^ ") -> " ^ string_of_resolved_type rtyp
-    ^ " {\n"
+    ^ ">" ^ "("
+    ^ string_of_resolved_func_args func_args
+    ^ ") -> " ^ string_of_resolved_type rtyp ^ " {\n"
     ^ String.concat "" (List.map string_of_sblock func_body)
     ^ "\n}\n"
   | SUDTDef (udt_name, udt_members) ->

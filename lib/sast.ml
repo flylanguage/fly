@@ -12,6 +12,8 @@ type resolved_typ =
   | REnumType of string
   | RUserType of string
 
+type resolved_formal = string * resolved_typ
+
 type sexpr = resolved_typ * sx
 
 and sx =
@@ -55,12 +57,12 @@ type sblock =
   | SFunctionDefinition of
       resolved_typ
       * string
-      * formal list
+      * resolved_formal list
       * sblock list (* rtyp, func_name, func_args, func_body *)
   | SBoundFunctionDefinition of
       resolved_typ
       * string
-      * formal list
+      * resolved_formal list
       * sblock list
       * resolved_typ (* rtyp, func_name, func_args, func_body, bound_type *)
   | SEnumDeclaration of string * senum_variant list
