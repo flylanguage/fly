@@ -326,7 +326,7 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
     let elem_ptr = L.build_gep list_val [| index_val |] "elem_ptr" builder in
 
     (match fst expr with
-     | RInt | RFloat | RBool | RChar | REnumType _ ->
+     | RInt | RFloat | RString | RBool | REnumType _ ->
        L.build_load elem_ptr "elem_val" builder
      | RUserType _ -> elem_ptr
      | _ -> failwith "Unsupported list type for indexing")
