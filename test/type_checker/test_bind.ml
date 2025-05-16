@@ -15,19 +15,23 @@ let tests =
   "testing_return"
   >::: [ ("static_bind"
           >:: fun _ ->
-          let actual = check_program "type Person {name: string, age: int} bind new<Person>(name: string, age: int) -> Person { return Person {name: name, age: age}; }" in
+          let actual =
+            check_program
+              "type Person {name: string, age: int} bind new<Person>(name: string, age: \
+               int) -> Person { return Person {name: name, age: age}; }"
+          in
           let expected = "" in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("non_static_bind"
           >:: fun _ ->
           let actual =
             check_program
-              "type Person {name: string, age: int} bind get_age<Person>(self) -> int { return self.age; }"
+              "type Person {name: string, age: int} bind get_age<Person>(self) -> int { \
+               return self.age; }"
           in
           let expected = "" in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
-        
-      ; ("primitive_bind"
+       ; ("primitive_bind"
           >:: fun _ ->
           let actual =
             check_program
@@ -35,28 +39,25 @@ let tests =
           in
           let expected = "" in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
-      
-      ; ("non_primitive_bind"
+       ; ("non_primitive_bind"
           >:: fun _ ->
           let actual =
             check_program
               "bind search<list<int>>(self, target: value) -> bool \n\
               \ { \n\
-                for v := self { \n\
-              \   if (v == target) {
-              \     return true;
-              \   }
-              \ }
-              \ return false;
-              }\n\
-              
-              let x := [1,2,3,4,5];
-              let res := x.search(3);
-              "
+               for v := self { \n\
+              \   if (v == target) {\n\
+              \                   return true;\n\
+              \                 }\n\
+              \               }\n\
+              \               return false;\n\
+              \              }\n\n\
+              \              let x := [1,2,3,4,5];\n\
+              \              let res := x.search(3);\n\
+              \              "
           in
           let expected = "" in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
-       
        ]
 ;;
 
