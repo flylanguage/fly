@@ -49,6 +49,7 @@ let tests =
             \  } else { \n\
             \    return 0; \n\
             \  } \n\
+            \  return 0;
              }"
           in
           let sast = get_sast fly_code in
@@ -89,6 +90,7 @@ let tests =
             \      return 30; \n\
             \    } \n\
             \  } \n\
+            \  return 0; \n\
              }"
           in
           let sast = get_sast fly_code in
@@ -128,6 +130,7 @@ let tests =
             \    if (Sequence::Fifth == Sequence::Fifth) { return 22; } \n\
             \    return 99; \n\
             \  } \n\
+            \  return 0; \n\
              }"
           in
           let sast = get_sast fly_code in
