@@ -1,5 +1,5 @@
 (executable 
   (name fly) 
   (public_name fly) 
-  (modules fly) 
+  (modules fly wrapper) 
   (libraries fly_lib))
