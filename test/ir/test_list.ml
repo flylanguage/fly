@@ -49,6 +49,26 @@ let tests =
              }\n"
           in
           assert_equal expected actual ~printer)
+       ; ("local_bool_list"
+          >:: fun _ ->
+          let sast = get_sast "fun function() -> () {let a := [true, false];}" in
+          let mdl = Irgen.translate sast in
+          let actual = L.string_of_llmodule mdl in
+          let expected =
+            "; ModuleID = 'Fly'\n\
+             source_filename = \"Fly\"\n\n\
+             define void @function() {\n\
+             entry:\n\
+            \  %list = alloca i1, i32 2, align 1\n\
+            \  %index = getelementptr inbounds i1, i1* %list, i32 0\n\
+            \  store i1 true, i1* %index, align 1\n\
+            \  %index1 = getelementptr inbounds i1, i1* %list, i32 1\n\
+            \  store i1 false, i1* %index1, align 1\n\
+            \  %a = alloca i1*, align 8\n\
+            \  store i1* %list, i1** %a, align 8\n\
+             }\n"
+          in
+          assert_equal expected actual ~printer)
        ]
 ;;
 
