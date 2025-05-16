@@ -427,7 +427,6 @@ let add_global_val typ var (vars : variable StringMap.t) _ expr the_module =
       let init = L.const_int l_int i in
       L.define_global var init the_module
     | A.String, SStringLit s ->
-      Printf.printf "STRING: %s\n" s;
       (* Create fake temporary function to create a builder *)
       let temp_fn_type = L.function_type (L.void_type context) [||] in
       let temp_fn = L.define_function "temp_fn" temp_fn_type the_module in

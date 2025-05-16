@@ -180,7 +180,7 @@ let tests =
              declare %struct._IO_FILE* @get_stdin()\n\n\
              declare i8* @fgets(i8*, i32, %struct._IO_FILE*)\n"
           in
-          _write_to_file actual "actual.out";
+          (* _write_to_file actual "actual.out"; *)
           assert_equal expected actual ~printer)
        ]
 ;;
