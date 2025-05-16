@@ -125,7 +125,7 @@ let tests =
              entry:\n\
             \  %call_printf = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 \
              x i8], [4 x i8]* @str_fmt, i32 0, i32 0), i8* getelementptr inbounds ([6 x \
-             i8], [6 x i8]* @str.1, i32 0, i32 0))\n\
+             i8], [6 x i8]* @str, i32 0, i32 0))\n\
             \  ret i32 0\n\
              }\n\n\
              declare i32 @printf(i8*, ...)\n"
