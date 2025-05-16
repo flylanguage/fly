@@ -493,15 +493,15 @@ and check_block block envs special_blocks func_ret_type =
     let updated_checked_func_body =
       update_func_body checked_func_body func_name is_unit
     in
-    let new_udt_env = 
+    let new_udt_env =
       add_bound_func_def func_name (string_of_resolved_type bound_type) envs
     in
     let updated_envs3 = { updated_envs2 with udt_env = new_udt_env } in
     ( updated_envs3
     , updated_special_blocks
     , rtyp
-    , SBoundFunctionDefinition (rtyp, func_name, args, updated_checked_func_body, bound_type) )
-
+    , SBoundFunctionDefinition
+        (rtyp, func_name, args, updated_checked_func_body, bound_type) )
   | EnumDeclaration (enum_name, enum_variants) ->
     let new_enum_env = enum_dec_helper enum_name enum_variants envs in
     let updated_envs = { envs with enum_env = new_enum_env } in
