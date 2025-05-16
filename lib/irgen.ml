@@ -42,11 +42,32 @@ let ltype_of_typ = function
     raise (Failure (Printf.sprintf "type not implemented: %s" (Utils.string_of_type t)))
 ;;
 
-let l_printf : L.lltype = L.var_arg_function_type l_int [| L.pointer_type l_char |]
-let print_func the_module : L.llvalue = L.declare_function "printf" l_printf the_module
 let int_format_str builder = L.build_global_stringptr "%d\n" "int_fmt" builder
 let str_format_str builder = L.build_global_stringptr "%s\n" "str_fmt" builder
 let float_format_str builder = L.build_global_stringptr "%f\n" "float_fmt" builder
+
+(* Creates a binding to the llvm libc "printf" function *)
+let l_printf : L.lltype = L.var_arg_function_type l_int [| l_str |]
+let print_func the_module : L.llvalue = L.declare_function "printf" l_printf the_module
+
+(* Creates a binding to the llvm libc "strlen" function *)
+let l_strlen = Llvm.function_type l_int [| l_str |]
+let strlen_func the_module = Llvm.declare_function "strlen" l_strlen the_module
+
+(* Creates a binding to the llvm libc "scanf" function *)
+let l_scanf : L.lltype = L.var_arg_function_type l_int [| l_str |]
+let scanf_func the_module = L.declare_function "scanf" l_scanf the_module
+
+(* declare FILE c struct *)
+let file_type = L.named_struct_type context "struct._IO_FILE"
+let _ = L.struct_set_body file_type [||] false
+let file_ptr_type = Llvm.pointer_type file_type
+let get_stdin_type = L.function_type file_ptr_type [||]
+let get_stdin_fn the_module = L.declare_function "get_stdin" get_stdin_type the_module
+
+(* Creates a binding to the llvm libc "fgets" function *)
+let l_fgets : L.lltype = L.function_type l_str [| l_str; l_int; file_ptr_type |]
+let fgets_func the_module = L.declare_function "fgets" l_fgets the_module
 
 let get_lformals_arr (formals : A.formal list) =
   let lformal_list = List.map ltype_of_typ (List.map snd formals) in
@@ -170,7 +191,11 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
     let func_name = fst func in
 
     if func_name = print_func_name
-    then print func vars var_types the_module builder
+    then prelude_print func vars var_types the_module builder
+    else if func_name = len_func_name
+    then prelude_len func vars var_types the_module builder
+    else if func_name = input_func_name
+    then prelude_input func vars var_types the_module builder
     else raise (Failure "function calls not implemented")
   | SEnumAccess (enum_name, variant_name) ->
     let key = enum_name ^ "::" ^ variant_name in
@@ -233,6 +258,7 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
              (Printf.sprintf
                 "Boolean binary operator %s not yet implemented"
                 (Utils.string_of_op op)))
+      | A.String -> failwith "GOT A STRING\n"
       | _ ->
         failwith
           (Printf.sprintf
@@ -278,13 +304,13 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
 
    Preferrably this function should exist somewhere else, but it needs to be defined with build_expr
 *)
-and print (func : sfunc) vars var_types the_module builder =
+and prelude_print (func : sfunc) vars var_types the_module builder =
   if List.length (snd func) != 1
   then failwith "Incorrect number of args to print: expected 1"
   else (
     let func_arg = List.hd (snd func) in
     let lexpr = build_expr func_arg vars var_types the_module builder in
-    let arr =
+    let args =
       match fst func_arg with
       | A.Int -> [| int_format_str builder; lexpr |]
       | A.Bool ->
@@ -328,11 +354,38 @@ and print (func : sfunc) vars var_types the_module builder =
         [| str_format_str builder; lexpr |]
       | _ -> failwith "print not implemented for type"
     in
-    L.build_call
-      (print_func the_module)
-      arr
-      "printf" (* call the LLVM IR "printf" function *)
-      builder)
+    L.build_call (print_func the_module) args "call_printf" builder)
+
+and prelude_len (func : sfunc) vars var_types the_module builder =
+  let func_arg = List.hd (snd func) in
+  let lexpr = build_expr func_arg vars var_types the_module builder in
+  let args =
+    match fst func_arg with
+    | A.String -> [| lexpr |]
+    | t ->
+      failwith
+        (Printf.sprintf
+           "prelude_len not implemented for type: %s"
+           (Utils.string_of_type t))
+  in
+
+  L.build_call (strlen_func the_module) args "call_strlen" builder
+
+and prelude_input (_func : sfunc) _vars _var_types the_module builder =
+  (* The max buffer size for reading strings *)
+  let max_strlen = 100 in
+  let buffer_type = L.array_type l_char max_strlen in
+  let buffer = L.build_alloca buffer_type "buffer" builder in
+  let buffer_ptr =
+    L.build_gep buffer [| L.const_int l_int 0; L.const_int l_int 0 |] "buffer_ptr" builder
+  in
+
+  let stdin_val = L.build_call (get_stdin_fn the_module) [||] "stdin_val" builder in
+
+  let args = [| buffer_ptr; L.const_int l_int max_strlen; stdin_val |] in
+  ignore (L.build_call (fgets_func the_module) args "call_fgets" builder);
+
+  buffer_ptr
 ;;
 
 let assert_types typ1 typ2 =
