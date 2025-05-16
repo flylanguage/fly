@@ -133,7 +133,6 @@ let get_or_add_string_const s builder =
 ;;
 
 let rec build_expr expr (vars : variable StringMap.t) var_types the_module builder =
-  let resolved_typ = fst expr in
   let sx = snd expr in
   match sx with
   | SLiteral l -> L.const_int l_int l
@@ -314,8 +313,9 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
     instance
   | SUDTAccess (id, SUDTVariable field) ->
     let struct_ptr = lookup_value vars id in
+    let id_typ = lookup_type var_types id in
     let type_name =
-      match resolved_typ with
+      match id_typ with
       | RUserType n -> n
       | _ -> raise (Failure ("Expected user type for variable: " ^ id))
     in
