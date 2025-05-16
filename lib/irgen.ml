@@ -845,7 +845,6 @@ let translate (sast_toplevel_blocks : sblock list) : L.llmodule =
          := add_global_val typ id !global_vars !global_var_types expr_init the_module;
          global_var_types := StringMap.add id typ !global_var_types
        | SFunctionDefinition (ret_sast_typ, func_id, formals_sast, body_sblocks) ->
-         Printf.printf "[Translate Pass 1] Declaring function: %s\n" func_id;
          function_signatures
          := StringMap.add func_id (formals_sast, ret_sast_typ) !function_signatures;
 
@@ -866,15 +865,8 @@ let translate (sast_toplevel_blocks : sblock list) : L.llmodule =
            (Utils.string_of_sblock s_block))
     sast_toplevel_blocks;
 
-  Printf.printf
-    "[Translate] Starting Pass 2: Defining %d function bodies.\n"
-    (List.length !func_definitions_for_pass2);
-
   List.iter
     (fun (llvm_func_llvalue, formals_sast, body_sblocks) ->
-       Printf.printf
-         "[Translate Pass 2] Processing body for: %s\n"
-         (L.value_name llvm_func_llvalue);
        process_func_body
          llvm_func_llvalue
          formals_sast
