@@ -1,4 +1,4 @@
-(test 
+(test
   (name test_ir)
   (libraries fly_lib ounit2))
 
@@ -20,8 +20,8 @@
 
 (test
   (name test_udt)
-  (libraries fly_lib ounit2))
+  (libraries fly_lib ounit2 str))
 
 (test
   (name test_enums)
-  (libraries fly_lib ounit2))
+  (libraries fly_lib ounit2 str))
