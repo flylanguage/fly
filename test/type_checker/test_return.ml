@@ -33,6 +33,42 @@ let tests =
           let actual = check_program "fun main() -> () {}" in
           let expected = "" in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
+       ; ("if_else_ok"
+          >:: fun _ ->
+          let actual =
+            check_program
+              "fun main() -> int {let x := 5; if (x > 2) { return 0; } else { return 1; \
+               } }"
+          in
+          let expected = "" in
+          assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
+       ; ("if_elif_notok"
+          >:: fun _ ->
+          let actual =
+            check_program
+              "fun main() -> int {let x := 5; if (x > 2) { return 0; } else if (x > 1) { \
+               return 1; } }"
+          in
+          let expected = "Missing return statement in main" in
+          assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
+       ; ("if_elif_else_ok"
+          >:: fun _ ->
+          let actual =
+            check_program
+              "fun main() -> int {let x := 5; if (x > 2) { return 0; } else if (x > 1) { \
+               return 1; } else { return 2; } }"
+          in
+          let expected = "" in
+          assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
+       ; ("nested_if_else_ok"
+          >:: fun _ ->
+          let actual =
+            check_program
+              "fun main() -> int {let x := 5; if (x > 2) { if (x > 1) { return 0; } else \
+               { return 1; } } else if (x > 1) { return 2; } else { return 3; } }"
+          in
+          let expected = "" in
+          assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ]
 ;;
 
