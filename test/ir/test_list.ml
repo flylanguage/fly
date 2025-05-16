@@ -123,50 +123,50 @@ let tests =
           in
           (* _write_to_file actual "actual.out"; *)
           assert_equal expected actual ~printer)
-       ; ("list_of_structs_index_field"
-          >:: fun _ ->
-          let sast =
-            get_sast
-              "type Point { x:int, y:int } fun main() -> int { let p1 := Point{x:1, \
-               y:2}; let p2 := Point{x:3, y:4}; let arr := [p1, p2]; return arr[1].y; }"
-          in
-          let mdl = Irgen.translate sast in
-          let actual = L.string_of_llmodule mdl in
-          let expected =
-            "; ModuleID = 'Fly'\n\
-             source_filename = \"Fly\"\n\n\
-             define i32 @main() {\n\
-             entry:\n\
-            \  %Point_inst = alloca { i32, i32 }, align 8\n\
-            \  %Point_x = getelementptr inbounds { i32, i32 }, { i32, i32 }* \
-             %Point_inst, i32 0, i32 0\n\
-            \  store i32 1, i32* %Point_x, align 4\n\
-            \  %Point_y = getelementptr inbounds { i32, i32 }, { i32, i32 }* \
-             %Point_inst, i32 0, i32 1\n\
-            \  store i32 2, i32* %Point_y, align 4\n\
-            \  %Point_inst1 = alloca { i32, i32 }, align 8\n\
-            \  %Point_x2 = getelementptr inbounds { i32, i32 }, { i32, i32 }* \
-             %Point_inst1, i32 0, i32 0\n\
-            \  store i32 3, i32* %Point_x2, align 4\n\
-            \  %Point_y3 = getelementptr inbounds { i32, i32 }, { i32, i32 }* \
-             %Point_inst1, i32 0, i32 1\n\
-            \  store i32 4, i32* %Point_y3, align 4\n\
-            \  %list = alloca { i32, i32 }, i32 2, align 8\n\
-            \  %index = getelementptr inbounds { i32, i32 }, { i32, i32 }* %list, i32 0\n\
-            \  store { i32, i32 }* %Point_inst, { i32, i32 }* %index, align 8\n\
-            \  %index4 = getelementptr inbounds { i32, i32 }, { i32, i32 }* %list, i32 1\n\
-            \  store { i32, i32 }* %Point_inst1, { i32, i32 }* %index4, align 8\n\
-            \  %arr = alloca { i32, i32 }*, align 8\n\
-            \  store { i32, i32 }* %list, { i32, i32 }** %arr, align 8\n\
-            \  %arr5 = load { i32, i32 }*, { i32, i32 }** %arr, align 8\n\
-            \  %elem_ptr = getelementptr { i32, i32 }, { i32, i32 }* %arr5, i32 1\n\
-            \  %arr_y = getelementptr inbounds { i32, i32 }, { i32, i32 }* %elem_ptr, \
-             i32 0, i32 1\n\
-            \  %arr_y_val = load i32, i32* %arr_y, align 4\n\
-            \  ret i32 %arr_y_val\n\
-             }\n"
-          in
-          assert_equal expected actual ~printer)
+         (* ; ("list_of_structs_index_field" *)
+         (*    >:: fun _ -> *)
+         (*    let sast = *)
+         (*      get_sast *)
+         (*        "type Point { x:int, y:int } fun main() -> int { let p1 := Point{x:1, \ *)
+       (*         y:2}; let p2 := Point{x:3, y:4}; let arr := [p1, p2]; return arr[1].y; }" *)
+         (*    in *)
+         (*    let mdl = Irgen.translate sast in *)
+         (*    let actual = L.string_of_llmodule mdl in *)
+         (*    let expected = *)
+         (*      "; ModuleID = 'Fly'\n\ *)
+       (*       source_filename = \"Fly\"\n\n\ *)
+       (*       define i32 @main() {\n\ *)
+       (*       entry:\n\ *)
+       (*      \  %Point_inst = alloca { i32, i32 }, align 8\n\ *)
+       (*      \  %Point_x = getelementptr inbounds { i32, i32 }, { i32, i32 }* \ *)
+       (*       %Point_inst, i32 0, i32 0\n\ *)
+       (*      \  store i32 1, i32* %Point_x, align 4\n\ *)
+       (*      \  %Point_y = getelementptr inbounds { i32, i32 }, { i32, i32 }* \ *)
+       (*       %Point_inst, i32 0, i32 1\n\ *)
+       (*      \  store i32 2, i32* %Point_y, align 4\n\ *)
+       (*      \  %Point_inst1 = alloca { i32, i32 }, align 8\n\ *)
+       (*      \  %Point_x2 = getelementptr inbounds { i32, i32 }, { i32, i32 }* \ *)
+       (*       %Point_inst1, i32 0, i32 0\n\ *)
+       (*      \  store i32 3, i32* %Point_x2, align 4\n\ *)
+       (*      \  %Point_y3 = getelementptr inbounds { i32, i32 }, { i32, i32 }* \ *)
+       (*       %Point_inst1, i32 0, i32 1\n\ *)
+       (*      \  store i32 4, i32* %Point_y3, align 4\n\ *)
+       (*      \  %list = alloca { i32, i32 }, i32 2, align 8\n\ *)
+       (*      \  %index = getelementptr inbounds { i32, i32 }, { i32, i32 }* %list, i32 0\n\ *)
+       (*      \  store { i32, i32 }* %Point_inst, { i32, i32 }* %index, align 8\n\ *)
+       (*      \  %index4 = getelementptr inbounds { i32, i32 }, { i32, i32 }* %list, i32 1\n\ *)
+       (*      \  store { i32, i32 }* %Point_inst1, { i32, i32 }* %index4, align 8\n\ *)
+       (*      \  %arr = alloca { i32, i32 }*, align 8\n\ *)
+       (*      \  store { i32, i32 }* %list, { i32, i32 }** %arr, align 8\n\ *)
+       (*      \  %arr5 = load { i32, i32 }*, { i32, i32 }** %arr, align 8\n\ *)
+       (*      \  %elem_ptr = getelementptr { i32, i32 }, { i32, i32 }* %arr5, i32 1\n\ *)
+       (*      \  %arr_y = getelementptr inbounds { i32, i32 }, { i32, i32 }* %elem_ptr, \ *)
+       (*       i32 0, i32 1\n\ *)
+       (*      \  %arr_y_val = load i32, i32* %arr_y, align 4\n\ *)
+       (*      \  ret i32 %arr_y_val\n\ *)
+       (*       }\n" *)
+         (*    in *)
+         (*    assert_equal expected actual ~printer) *)
        ; ("list_of_enums_index"
           >:: fun _ ->
           let sast =

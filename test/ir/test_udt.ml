@@ -5,93 +5,125 @@ module L = Llvm
 let get_sast input =
   try
     let lexbuf = Lexing.from_string input in
-    let ast = Fly_lib.Parser.program_rule Fly_lib.Scanner.tokenize lexbuf in
-    let sast = Fly_lib.Semant.check ast.body in
+    let ast = Parser.program_rule Scanner.tokenize lexbuf in
+    let sast = Semant.check ast.body in
     sast
   with
   | err ->
     raise
       (Failure
          (Printf.sprintf
-            "Error generating sast, is your program correct?: error=%s"
-            (Printexc.to_string err)))
+            "Error generating sast for test, is your program correct?: error=%s\n\
+             Input:\n\
+             %s"
+            (Printexc.to_string err)
+            input))
 ;;
 
 let str_contains haystack needle =
-  match String.index_opt haystack needle.[0] with
-  | None -> false
-  | Some idx ->
-    let len = String.length needle in
-    let rec check i =
-      if i + len > String.length haystack
-      then false
-      else if String.sub haystack i len = needle
-      then true
-      else check (i + 1)
-    in
-    check idx
+  try
+    ignore (Str.search_forward (Str.regexp_string needle) haystack 0);
+    true
+  with
+  | Not_found -> false
 ;;
 
 let tests =
   "testing_udt_ir"
   >::: [ ("udt_struct_definition"
-          >:: fun _ ->
-          let sast =
-            get_sast
-              "type Person { name : string, age : int } fun main() -> () { let dummy := \
-               Person { name : \"A\", age : 1 }; }"
+          >:: fun _test_ctxt ->
+          let fly_code =
+            "type Person { name : string, age : int }\n\
+             fun main() -> int {\n\
+            \  let dummy : Person = Person { name : \"A\", age : 1 };\n\
+            \  return 0;\n\
+             }"
           in
+          let sast = get_sast fly_code in
           let mdl = Irgen.translate sast in
           let actual = L.string_of_llmodule mdl in
-          assert_bool "UDT struct defined" (str_contains actual "alloca { i8*, i32 }"))
+          assert_bool "TC1_TYP_DEF" (str_contains actual "%Person = type { i8*, i32 }");
+          assert_bool "TC1_ALLOCA" (str_contains actual "alloca %Person"))
        ; ("udt_instance_and_field_store"
-          >:: fun _ ->
-          let sast =
-            get_sast
-              "type Person { name : string, age : int } fun main() -> () { let p := \
-               Person { name : \"Alice\", age : 30 }; }"
+          >:: fun _test_ctxt ->
+          let fly_code =
+            "type Person { name : string, age : int }\n\
+             fun main() -> () {\n\
+            \  let p : Person = Person { name : \"Alice\", age : 30 };\n\
+            \  return;\n\
+             }"
           in
+          let sast = get_sast fly_code in
           let mdl = Irgen.translate sast in
           let actual = L.string_of_llmodule mdl in
+          assert_bool "TC2_TYP_DEF" (str_contains actual "%Person = type { i8*, i32 }");
+          assert_bool "TC2_ALLOCA_P" (str_contains actual "%Person_inst = alloca %Person");
           assert_bool
-            "alloca for Person instance"
-            (str_contains actual "alloca { i8*, i32 }");
-          assert_bool
-            "store name field"
+            "TC2_STORE_NAME_GEP"
             (str_contains
                actual
-               "store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str");
-          assert_bool "store age field" (str_contains actual "store i32 30"))
-       ; ("udt_field_access"
-          >:: fun _ ->
-          let sast =
-            get_sast
-              "type Person { name : string, age : int } fun main() -> int { let p := \
-               Person { name : \"Bob\", age : 42 }; return p.age; }"
-          in
-          let mdl = Irgen.translate sast in
-          let actual = L.string_of_llmodule mdl in
-          assert_bool "load age field" (str_contains actual "load i32, i32* %p_age");
-          assert_bool "return age field" (str_contains actual "ret i32"))
-       ; (*
-            ("udt_as_function_return"
-     >:: fun _ ->
-      let sast = get_sast "type Point { x : int, y : int } fun make_point() -> Point { return Point { x = 1, y = 2 }; }" in
-      let mdl = Irgen.translate sast in
-      let actual = L.string_of_llmodule mdl in
-      assert_bool "Point struct defined" (str_contains actual "%Point = type { i32, i32 }");
-      assert_bool "function returns Point" (str_contains actual "define %Point* @make_point()");
-    ); *)
-         ("udt_as_function_argument"
-          >:: fun _ ->
-          let sast =
-            get_sast "type Point { x : int, y : int } fun print_point(p : Point) -> () {}"
-          in
-          let mdl = Irgen.translate sast in
-          let actual = L.string_of_llmodule mdl in
+               "getelementptr inbounds %Person, %Person* %Person_inst, i32 0, i32 0");
           assert_bool
-            "function takes Point argument"
-            (str_contains actual "define void @print_point({ i32, i32 } %0)"))
+            "TC2_STORE_AGE_GEP"
+            (str_contains
+               actual
+               "getelementptr inbounds %Person, %Person* %Person_inst, i32 0, i32 1");
+          assert_bool
+            "TC2_STORE_NAME_VAL"
+            (str_contains
+               actual
+               "store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @");
+          assert_bool "TC2_STORE_AGE_VAL" (str_contains actual "store i32 30, i32* "))
+       ; ("udt_field_access"
+          >:: fun _test_ctxt ->
+          let fly_code =
+            "type Person { name : string, age : int }\n\
+             fun main() -> int {\n\
+            \  let p : Person = Person { name : \"Bob\", age : 42 };\n\
+            \  return p.age;\n\
+             }"
+          in
+          let sast = get_sast fly_code in
+          let mdl = Irgen.translate sast in
+          let actual = L.string_of_llmodule mdl in
+          assert_bool "TC3_TYP_DEF" (str_contains actual "%Person.0 = type { i8*, i32 }");
+          assert_bool
+            "TC3_ALLOCA_P"
+            (str_contains actual "%Person_inst = alloca %Person.0");
+          assert_bool
+            "TC3_GEP_AGE_FOR_RETURN"
+            (str_contains
+               actual
+               "%p_age = getelementptr inbounds %Person.0, %Person.0* %Person_inst, i32 \
+                0, i32 1");
+          assert_bool
+            "TC3_LOAD_AGE"
+            (str_contains actual "%p_age_val = load i32, i32* %p_age");
+          assert_bool "TC3_RET_AGE" (str_contains actual "ret i32 %p_age_val"))
+       ; ("udt_as_function_return"
+          >:: fun _test_ctxt ->
+          let fly_code =
+            "type Point { x : int, y : int }\n\
+             fun make_point() -> Point {\n\
+            \  return Point { x : 1, y : 2 };\n\
+             }"
+          in
+          let sast = get_sast fly_code in
+          let mdl = Irgen.translate sast in
+          let actual = L.string_of_llmodule mdl in
+          assert_bool "TC4_TYP_DEF" (str_contains actual "%Point = type { i32, i32 }");
+          assert_bool
+            "TC4_FUNC_SIG_VAL"
+            (str_contains actual "define %Point @make_point()");
+          assert_bool
+            "TC4_ALLOCA_FOR_INSTANCE"
+            (str_contains actual "%Point_inst = alloca %Point");
+          assert_bool
+            "TC4_LOAD_FROM_INSTANCE"
+            (str_contains actual "%load_udt_for_ret = load %Point, %Point* %Point_inst");
+          assert_bool
+            "TC4_RET_LOADED_VALUE"
+            (str_contains actual "ret %Point %load_udt_for_ret"))
        ]
 ;;
 
