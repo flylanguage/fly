@@ -1,6 +1,20 @@
 open Ast
 
-type sexpr = typ * sx
+type resolved_typ =
+  | RInt
+  | RBool
+  | RChar
+  | RFloat
+  | RString
+  | RUnit
+  | RList of resolved_typ
+  | RTuple of resolved_typ list
+  | REnumType of string
+  | RUserType of string
+
+type resolved_formal = string * resolved_typ
+
+type sexpr = resolved_typ * sx
 
 and sx =
   | SLiteral of int
@@ -23,7 +37,7 @@ and sx =
   | SList of sexpr list
   | SMatch of sexpr * (pattern * sexpr) list
   | SWildcard
-  | STypeCast of typ * sexpr
+  | STypeCast of resolved_typ * sexpr
 
 and sfunc = string * sexpr list
 and skv_list = (string * sexpr) list (* for user defined types *)
@@ -37,19 +51,22 @@ type senum_variant =
   | SEnumVariantExplicit of string * int
 
 type sblock =
-  | SMutDeclTyped of string * typ * sexpr
-  | SDeclTyped of string * typ * sexpr
+  | SMutDeclTyped of string * resolved_typ * sexpr
+  | SDeclTyped of string * resolved_typ * sexpr
   | SAssign of sexpr * assign_op * sexpr
   | SFunctionDefinition of
-      typ * string * formal list * sblock list (* rtyp, func_name, func_args, func_body *)
-  | SBoundFunctionDefinition of
-      typ
+      resolved_typ
       * string
-      * formal list
+      * resolved_formal list
+      * sblock list (* rtyp, func_name, func_args, func_body *)
+  | SBoundFunctionDefinition of
+      resolved_typ
+      * string
+      * resolved_formal list
       * sblock list
-      * typ (* rtyp, func_name, func_args, func_body, bound_type *)
+      * resolved_typ (* rtyp, func_name, func_args, func_body, bound_type *)
   | SEnumDeclaration of string * senum_variant list
-  | SUDTDef of string * (string * typ) list
+  | SUDTDef of string * (string * resolved_typ) list
   | SIfEnd of sexpr * sblock list
   | SIfNonEnd of sexpr * sblock list * sblock
   | SElifNonEnd of sexpr * sblock list * sblock
