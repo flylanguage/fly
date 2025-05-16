@@ -106,20 +106,19 @@ let tests =
           let expected =
             "; ModuleID = 'Fly'\n\
              source_filename = \"Fly\"\n\n\
-             @str = private unnamed_addr constant [6 x i8] c\"hello\\00\", align 1\n\
-             @str.1 = private unnamed_addr constant [6 x i8] c\"world\\00\", align 1\n\n\
-             define void @function() {\n\
+             define i32 @function() {\n\
              entry:\n\
-            \  %list = alloca i8*, i32 2, align 8\n\
-            \  %index = getelementptr inbounds i8*, i8** %list, i32 0\n\
-            \  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str, i32 0, i32 \
-             0), i8** %index, align 8\n\
-            \  %index1 = getelementptr inbounds i8*, i8** %list, i32 1\n\
-            \  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str.1, i32 0, i32 \
-             0), i8** %index1, align 8\n\
-            \  %a = alloca i8**, align 8\n\
-            \  store i8** %list, i8*** %a, align 8\n\
-            \  ret void\n\
+            \  %list = alloca i32, i32 2, align 4\n\
+            \  %index = getelementptr inbounds i32, i32* %list, i32 0\n\
+            \  store i32 1, i32* %index, align 4\n\
+            \  %index1 = getelementptr inbounds i32, i32* %list, i32 1\n\
+            \  store i32 2, i32* %index1, align 4\n\
+            \  %a = alloca i32*, align 8\n\
+            \  store i32* %list, i32** %a, align 8\n\
+            \  %a2 = load i32*, i32** %a, align 8\n\
+            \  %elem_ptr = getelementptr i32, i32* %a2, i32 0\n\
+            \  %elem_val = load i32, i32* %elem_ptr, align 4\n\
+            \  ret i32 %elem_val\n\
              }\n"
           in
           (* _write_to_file actual "actual.out"; *)
