@@ -23,7 +23,7 @@ let tests =
        ; ("float_div_float"
           >:: fun _ ->
           let actual =
-            check_program "fun main() -> float {let a := 5.0;\nlet b := 1.0;\na/b;}"
+            check_program "fun main() -> float {let a := 5.0;\nlet b := 1.0;\nreturn a/b;}"
           in
           let expected = "" in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))

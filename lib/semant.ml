@@ -178,7 +178,31 @@ and check_pattern pattern envs =
     then
       raise (Failure (Printf.sprintf "Enum %s has no variant %s" enum_name variant_name));
     PEnumAccess (enum_name, variant_name)
-
+and update_func_body checked_func_body func_name is_unit = 
+  let rec walk_body body = 
+    begin match body with
+    | curr_block :: rest ->
+      if is_unit then
+        begin match curr_block with
+        | SReturnUnit -> true
+        | _ -> walk_body rest
+        end
+      else
+        begin match curr_block with
+        | SReturnVal _ -> true
+        | _ -> walk_body rest
+        end
+    | [] -> false
+    end
+  in
+  let found_ret = walk_body checked_func_body in
+  if found_ret = false && not is_unit then
+    raise (Failure ("Missing return statement in " ^ func_name))
+  else if found_ret = false && is_unit then
+    checked_func_body @ [SReturnUnit]
+  else
+    checked_func_body
+    
 and check_expr expr envs special_blocks =
   match expr with
   | Literal i -> Int, SLiteral i
@@ -402,10 +426,14 @@ and check_block block envs special_blocks func_ret_type =
     let checked_func_body =
       check_block_list func_body updated_envs2 updated_special_blocks rtyp
     in
+    let is_unit = (rtyp = Unit) in
+    let updated_checked_func_body = 
+      update_func_body checked_func_body func_name is_unit
+    in
     ( updated_envs2
     , updated_special_blocks
     , rtyp
-    , SFunctionDefinition (rtyp, func_name, func_args, checked_func_body) )
+    , SFunctionDefinition (rtyp, func_name, func_args, updated_checked_func_body) )
   | BoundFunctionDefinition (rtyp, func_name, func_args, func_body, bound_type) ->
     let new_func_env = func_def_helper func_name func_args rtyp envs in
     (* add function name to environment *)
@@ -421,12 +449,16 @@ and check_block block envs special_blocks func_ret_type =
     let checked_func_body =
       check_block_list func_body updated_envs2 updated_special_blocks rtyp
     in
+    let is_unit = rtyp = Unit in
+    let updated_checked_func_body = 
+      update_func_body checked_func_body func_name is_unit
+    in
     let new_udt_env = add_bound_func_def func_name (string_of_type bound_type) envs in
     let updated_envs3 = { updated_envs2 with udt_env = new_udt_env } in
     ( updated_envs3
     , updated_special_blocks
     , rtyp
-    , SBoundFunctionDefinition (rtyp, func_name, func_args, checked_func_body, bound_type)
+    , SBoundFunctionDefinition (rtyp, func_name, func_args, updated_checked_func_body, bound_type)
     )
   | EnumDeclaration (enum_name, enum_variants) ->
     let new_enum_env = enum_dec_helper enum_name enum_variants envs in
@@ -559,7 +591,7 @@ and check_block block envs special_blocks func_ret_type =
          raise
            (Failure
               ("Expression '" ^ string_of_expr return_expr ^ "' has type "
-             ^ string_of_type t ^ "but expected " ^ string_of_type func_ret_type))
+             ^ string_of_type t ^ " but expected " ^ string_of_type func_ret_type))
        else envs, special_blocks, func_ret_type, SReturnVal checked_expr)
   | Expr expr ->
     let checked_expr = check_expr expr envs special_blocks in
