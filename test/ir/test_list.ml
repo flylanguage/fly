@@ -161,50 +161,64 @@ let tests =
           in
           (* _write_to_file actual "actual.out"; *)
           assert_equal expected actual ~printer)
-       ; ("local_string_list_index"
+       ; ("list_of_structs_index_field"
           >:: fun _ ->
           let sast =
             get_sast
-              "fun function() -> string {let a := [\"hello\", \"world\"]; return a[0];}"
+              "type Point { x:int, y:int } fun main() -> int { let p1 := Point{x:1, \
+               y:2}; let p2 := Point{x:3, y:4}; let arr := [p1, p2]; return arr[1].y; }"
           in
           let mdl = Irgen.translate sast in
           let actual = L.string_of_llmodule mdl in
           let expected =
             "; ModuleID = 'Fly'\n\
              source_filename = \"Fly\"\n\n\
-             @str = private unnamed_addr constant [6 x i8] c\"hello\\00\", align 1\n\
-             @str.1 = private unnamed_addr constant [6 x i8] c\"world\\00\", align 1\n\n\
-             define i8* @function() {\n\
+             define i32 @main() {\n\
              entry:\n\
+            \  %Point_inst = alloca { i32, i32 }, align 8\n\
+            \  %Point_x = getelementptr inbounds { i32, i32 }, { i32, i32 }* \
+             %Point_inst, i32 0, i32 0\n\
+            \  store i32 1, i32* %Point_x, align 4\n\
+            \  %Point_y = getelementptr inbounds { i32, i32 }, { i32, i32 }* \
+             %Point_inst, i32 0, i32 1\n\
+            \  store i32 2, i32* %Point_y, align 4\n\
+            \  %Point_inst1 = alloca { i32, i32 }, align 8\n\
+            \  %Point_x2 = getelementptr inbounds { i32, i32 }, { i32, i32 }* \
+             %Point_inst1, i32 0, i32 0\n\
+            \  store i32 3, i32* %Point_x2, align 4\n\
+            \  %Point_y3 = getelementptr inbounds { i32, i32 }, { i32, i32 }* \
+             %Point_inst1, i32 0, i32 1\n\
+            \  store i32 4, i32* %Point_y3, align 4\n\
             \  %list_shell = alloca { i32, i8* }, align 8\n\
             \  %len_ptr = getelementptr inbounds { i32, i8* }, { i32, i8* }* \
              %list_shell, i32 0, i32 0\n\
             \  store i32 2, i32* %len_ptr, align 4\n\
-            \  %list = alloca i8*, i32 2, align 8\n\
-            \  %llist_cast = bitcast i8** %list to i8*\n\
+            \  %list = alloca { i32, i32 }, i32 2, align 8\n\
+            \  %llist_cast = bitcast { i32, i32 }* %list to i8*\n\
             \  %data_ptr = getelementptr inbounds { i32, i8* }, { i32, i8* }* \
              %list_shell, i32 0, i32 1\n\
             \  store i8* %llist_cast, i8** %data_ptr, align 8\n\
-            \  %index = getelementptr inbounds i8*, i8** %list, i32 0\n\
-            \  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str, i32 0, i32 \
-             0), i8** %index, align 8\n\
-            \  %index1 = getelementptr inbounds i8*, i8** %list, i32 1\n\
-            \  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str.1, i32 0, i32 \
-             0), i8** %index1, align 8\n\
-            \  %a = alloca { i32, i8* }*, align 8\n\
-            \  store { i32, i8* }* %list_shell, { i32, i8* }** %a, align 8\n\
-            \  %loaded_list = load { i32, i8* }*, { i32, i8* }** %a, align 8\n\
+            \  %index = getelementptr inbounds { i32, i32 }, { i32, i32 }* %list, i32 0\n\
+            \  store { i32, i32 }* %Point_inst, { i32, i32 }* %index, align 8\n\
+            \  %index4 = getelementptr inbounds { i32, i32 }, { i32, i32 }* %list, i32 1\n\
+            \  store { i32, i32 }* %Point_inst1, { i32, i32 }* %index4, align 8\n\
+            \  %arr = alloca { i32, i8* }*, align 8\n\
+            \  store { i32, i8* }* %list_shell, { i32, i8* }** %arr, align 8\n\
+            \  %loaded_list = load { i32, i8* }*, { i32, i8* }** %arr, align 8\n\
             \  %raw_arr_ptr = getelementptr inbounds { i32, i8* }, { i32, i8* }* \
              %loaded_list, i32 0, i32 1\n\
             \  %i8_arr = load i8*, i8** %raw_arr_ptr, align 8\n\
-            \  %arr_ptr = bitcast i8* %i8_arr to i8**\n\
-            \  %elem_ptr = getelementptr i8*, i8** %arr_ptr, i32 0\n\
-            \  %elem_val = load i8*, i8** %elem_ptr, align 8\n\
-            \  ret i8* %elem_val\n\
+            \  %arr_ptr = bitcast i8* %i8_arr to { i32, i32 }*\n\
+            \  %elem_ptr = getelementptr { i32, i32 }, { i32, i32 }* %arr_ptr, i32 1\n\
+            \  %arr_y = getelementptr inbounds { i32, i32 }, { i32, i32 }* %elem_ptr, \
+             i32 0, i32 1\n\
+            \  %arr_y_val = load i32, i32* %arr_y, align 4\n\
+            \  ret i32 %arr_y_val\n\
              }\n"
           in
           _write_to_file actual "actual.out";
           _write_to_file expected "expected.out";
+          (* _write_to_file actual "actual.out"; *)
           assert_equal expected actual ~printer)
          (* ; ("global_int_list" *)
          (*    >:: fun _ -> *)
@@ -237,6 +251,29 @@ let tests =
        (*       }\n" *)
          (*    in *)
          (*    assert_equal expected actual ~printer) *)
+       ; ("list_of_enums_index"
+          >:: fun _ ->
+          let sast =
+            get_sast
+              "enum Color { Red, Green, Blue } fun main() -> Color { let arr := \
+               [Color::Red, Color::Blue]; return arr[1]; }"
+          in
+          let mdl = Irgen.translate sast in
+          let actual = L.string_of_llmodule mdl in
+          assert_bool
+            "alloca for enum list"
+            (try
+               ignore (Str.search_forward (Str.regexp "alloca i32, i32 2") actual 0);
+               true
+             with
+             | Not_found -> false);
+          assert_bool
+            "return enum value"
+            (try
+               ignore (Str.search_forward (Str.regexp "ret i32") actual 0);
+               true
+             with
+             | Not_found -> false))
        ]
 ;;
 

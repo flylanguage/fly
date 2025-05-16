@@ -64,9 +64,9 @@ type expr =
   | UnopSideEffect of string * op (* this is for postincr, postdecr, preincr, postdecr *)
   | FunctionCall of func
   | UDTInstance of string * kv_list
-  | UDTAccess of string * udt_access
+  | UDTAccess of expr * udt_access
   | UDTStaticAccess of string * func
-  | EnumAccess of string * string
+  | EnumAccess of expr * string
   | Index of expr * expr
   | List of expr list
   | Match of expr * (pattern * expr) list
