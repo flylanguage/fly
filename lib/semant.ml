@@ -71,7 +71,7 @@ and var_dec_helper var_name t envs =
     ]
   in
   if List.exists (fun x -> x) env_checks
-  then raise (Failure (var_name ^ "already exists"))
+  then raise (Failure (var_name ^ " already exists"))
   else StringMap.add var_name t envs.var_env
 
 and func_def_helper func_name args rtyp envs =

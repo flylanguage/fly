@@ -131,13 +131,6 @@ let define_udt_type name members =
   L.struct_set_body struct_ll_type field_ll_types_array false
 ;;
 
-(* let define_udt_type name members = *)
-(*   let field_types = List.map (fun (_, t) -> ltype_of_typ t) members in *)
-(*   let struct_type = L.struct_type context (Array.of_list field_types) in *)
-(*   Hashtbl.add udt_structs name struct_type; *)
-(*   Hashtbl.add udt_field_indices name (List.mapi (fun i (name, _) -> name, i) members) *)
-(* ;; *)
-
 let build_udt_access typ var_name field_name vars builder =
   let struct_ptr = lookup_value vars var_name in
   let var_typ =
@@ -217,6 +210,7 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
      | A.Postincr | A.Postdecr -> ll_original_val
      | A.Preincr | A.Predecr -> ll_new_val
      | _ -> failwith "Could apply incr/decr to variable")
+    (* In build_expr, replacing the SFunctionCall case *)
   | SFunctionCall (func_name, actual_s_exprs_list) ->
     if func_name = print_func_name
     then prelude_print (func_name, actual_s_exprs_list) vars var_types the_module builder
@@ -229,46 +223,81 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
         match L.lookup_function func_name the_module with
         | Some f -> f
         | None ->
-          failwith
-            (Printf.sprintf
-               "IRgen build_expr: Function '%s' not found in LLVM module. (Was it \
-                declared in Pass 1?)"
-               func_name)
+          raise (Failure (Printf.sprintf "IRgen: Function '%s' not declared" func_name))
       in
-      let exp_formals, exp_ret_typ =
+      let sast_expected_formals, sast_expected_return_typ =
         try StringMap.find func_name !function_signatures with
         | Not_found ->
-          failwith
-            (Printf.sprintf
-               "IRgen build_expr: SAST signature for function '%s' not found."
-               func_name)
+          raise
+            (Failure (Printf.sprintf "IRgen: SAST signature for '%s' not found" func_name))
       in
-      if List.length exp_formals <> List.length actual_s_exprs_list
+      if List.length sast_expected_formals <> List.length actual_s_exprs_list
       then
         failwith
           (Printf.sprintf
-             "IRgen build_expr: Arity mismatch for function '%s'. Expected %d args, got \
-              %d."
+             "IRgen: Arity mismatch for %s. Expected %d, Got %d"
              func_name
-             (List.length exp_formals)
+             (List.length sast_expected_formals)
              (List.length actual_s_exprs_list));
 
-      let evaluated_ll_args_list : L.llvalue list =
-        List.map2
-          (fun (sexpr_arg : sexpr) (_formal_name, resolved_type) ->
-             let act_type = fst sexpr_arg in
-             assert_types act_type resolved_type;
-             build_expr sexpr_arg vars var_types the_module builder)
+      let callee_llvm_func_type = L.element_type (L.type_of callee_lfunc) in
+      let callee_llvm_param_types_array = L.param_types callee_llvm_func_type in
+
+      let final_ll_args_for_call : L.llvalue list =
+        List.mapi
+          (fun i (actual_arg_sexpr : sexpr) ->
+             let _sast_formal_name, sast_formal_typ = List.nth sast_expected_formals i in
+             let sast_actual_arg_typ, _ = actual_arg_sexpr in
+
+             assert_types sast_actual_arg_typ sast_formal_typ;
+
+             let ll_val_from_arg_expr =
+               build_expr actual_arg_sexpr vars var_types the_module builder
+             in
+             let expected_llvm_param_type_in_callee = callee_llvm_param_types_array.(i) in
+             let type_of_ll_val_from_arg_expr = L.type_of ll_val_from_arg_expr in
+
+             match sast_actual_arg_typ with
+             | RUserType _ ->
+               if
+                 L.classify_type type_of_ll_val_from_arg_expr = L.TypeKind.Pointer
+                 && L.classify_type expected_llvm_param_type_in_callee = L.TypeKind.Struct
+               then
+                 L.build_load
+                   ll_val_from_arg_expr
+                   ("load_arg_" ^ _sast_formal_name)
+                   builder
+               else if type_of_ll_val_from_arg_expr <> expected_llvm_param_type_in_callee
+               then
+                 failwith
+                   (Printf.sprintf
+                      "IRgen SFunctionCall: UDT Arg LLVM type mismatch for %s. Got %s, \
+                       Callee expects %s"
+                      _sast_formal_name
+                      (L.string_of_lltype type_of_ll_val_from_arg_expr)
+                      (L.string_of_lltype expected_llvm_param_type_in_callee))
+               else ll_val_from_arg_expr
+             | _ ->
+               if type_of_ll_val_from_arg_expr <> expected_llvm_param_type_in_callee
+               then
+                 failwith
+                   (Printf.sprintf
+                      "IRgen SFunctionCall: Non-UDT Arg LLVM type mismatch for %s. Got \
+                       %s, Callee expects %s"
+                      _sast_formal_name
+                      (L.string_of_lltype type_of_ll_val_from_arg_expr)
+                      (L.string_of_lltype expected_llvm_param_type_in_callee));
+               ll_val_from_arg_expr)
           actual_s_exprs_list
-          exp_formals
       in
-      let evaluated_ll_args_array : L.llvalue array =
-        Array.of_list evaluated_ll_args_list
+      let final_ll_args_array = Array.of_list final_ll_args_for_call in
+      let sast_expr_node_return_typ = fst expr in
+      assert_types sast_expr_node_return_typ sast_expected_return_typ;
+
+      let call_result_name =
+        if sast_expected_return_typ = RUnit then "" else func_name ^ "_result"
       in
-      let ret_typ = fst expr in
-      assert_types ret_typ exp_ret_typ;
-      let call_result_name = if exp_ret_typ = RUnit then "" else func_name ^ "_result" in
-      L.build_call callee_lfunc evaluated_ll_args_array call_result_name builder)
+      L.build_call callee_lfunc final_ll_args_array call_result_name builder)
   | SEnumAccess (enum_name, variant_name) ->
     let key = extract_id_from_sexpr enum_name ^ "::" ^ variant_name in
     let vbl =
