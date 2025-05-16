@@ -66,10 +66,10 @@ side_effect_expr:
   | DECR ID                           { UnopSideEffect($2, Predecr)  }
 
 access_expr:
-  | ID DOT udt_access                   { UDTAccess($1, $3) }
+  | expr DOT udt_access                   { UDTAccess($1, $3) }
   | ID DCOLON func_call                 { UDTStaticAccess($1, $3) }
-  | SELF DOT udt_access                 { UDTAccess ("self", $3) }
-  | ID DCOLON ID                        { EnumAccess($1, $3) }
+  | SELF DOT udt_access                 { UDTAccess (Id("self"), $3) }
+  | ID DCOLON ID                        { EnumAccess(Id($1), $3) }
   | expr LBRACKET expr RBRACKET     { Index($1, $3) }
 
 udt_access:

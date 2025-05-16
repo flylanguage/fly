@@ -165,7 +165,8 @@ let rec string_of_expr = function
     func_name ^ "(" ^ String.concat ", " (List.map string_of_expr func_args) ^ ")"
   | UDTInstance (udt_name, udt_members) ->
     udt_name ^ "{" ^ string_of_udt_instance udt_members ^ "}"
-  | UDTAccess (udt_name, udt_access) -> udt_name ^ "." ^ string_of_udt_access udt_access
+  | UDTAccess (udt_expr, udt_access) ->
+    string_of_expr udt_expr ^ "." ^ string_of_udt_access udt_access
   | UDTStaticAccess (udt_name, udt_function) ->
     udt_name ^ "::" ^ fst udt_function ^ "("
     ^ String.concat ", " (List.map string_of_expr (snd udt_function))
@@ -175,7 +176,7 @@ let rec string_of_expr = function
   | Match (e1, case_list) ->
     "match (" ^ string_of_expr e1 ^ ") {\n" ^ string_of_case_list case_list ^ "}"
   | Wildcard -> "_"
-  | EnumAccess (enum_name, enum_variant) -> enum_name ^ "::" ^ enum_variant
+  | EnumAccess (enum_expr, enum_variant) -> string_of_expr enum_expr ^ "::" ^ enum_variant
   | TypeCast (type_name, e) -> string_of_expr e ^ " as " ^ string_of_type type_name
 
 and string_of_pattern = function
@@ -323,7 +324,8 @@ let rec string_of_sexpr = function
     ^ ")"
   | SUDTInstance (udt_name, udt_members) ->
     udt_name ^ "{" ^ string_of_sudt_instance udt_members ^ "}"
-  | SUDTAccess (udt_name, udt_access) -> udt_name ^ "." ^ string_of_udt_access udt_access
+  | SUDTAccess (udt_expr, udt_access) ->
+    string_of_sexpr (snd udt_expr) ^ "." ^ string_of_udt_access udt_access
   | SUDTStaticAccess (udt_name, udt_function) ->
     udt_name ^ "::" ^ fst udt_function ^ "("
     ^ String.concat ", " (List.map string_of_sexpr (List.map snd (snd udt_function)))
@@ -333,7 +335,8 @@ let rec string_of_sexpr = function
   | SMatch (e1, case_list) ->
     "match (" ^ string_of_sexpr (snd e1) ^ ") {\n" ^ string_of_scase_list case_list ^ "}"
   | SWildcard -> "_"
-  | SEnumAccess (enum_name, enum_variant) -> enum_name ^ "::" ^ enum_variant
+  | SEnumAccess (enum_expr, enum_variant) ->
+    string_of_sexpr (snd enum_expr) ^ "::" ^ enum_variant
   | STypeCast (type_name, e) ->
     string_of_sexpr (snd e) ^ " as " ^ string_of_resolved_type type_name
 
