@@ -46,6 +46,7 @@ let tests =
             \  store i32 30, i32* %index2, align 4\n\
             \  %a = alloca i32*, align 8\n\
             \  store i32* %list, i32** %a, align 8\n\
+            \  ret void\n\
              }\n"
           in
           assert_equal expected actual ~printer)
@@ -66,6 +67,7 @@ let tests =
             \  store i1 false, i1* %index1, align 1\n\
             \  %a = alloca i1*, align 8\n\
             \  store i1* %list, i1** %a, align 8\n\
+            \  ret void\n\
              }\n"
           in
           _write_to_file actual "actual.out";
@@ -91,6 +93,7 @@ let tests =
              0), i8** %index1, align 8\n\
             \  %a = alloca i8**, align 8\n\
             \  store i8** %list, i8*** %a, align 8\n\
+            \  ret void\n\
              }\n"
           in
           (* _write_to_file actual "actual.out"; *)

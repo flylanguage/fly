@@ -26,7 +26,7 @@ and l_float = L.float_type context
 
 let l_str = L.pointer_type l_char
 
-let ltype_of_typ = function
+let rec ltype_of_typ = function
   | RInt -> l_int
   | RBool -> l_bool
   | RFloat -> l_float
@@ -34,6 +34,7 @@ let ltype_of_typ = function
   | RUnit -> l_unit
   | RString -> l_str
   | REnumType _ -> l_int
+  | RList typ -> L.pointer_type (ltype_of_typ typ)
   | RUserType name ->
     (try Hashtbl.find udt_structs name with
      | Not_found -> raise (Failure ("Unknown user type: " ^ name)))
