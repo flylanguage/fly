@@ -120,7 +120,6 @@ let tests =
             "; ModuleID = 'Fly'\n\
              source_filename = \"Fly\"\n\n\
              @str = private unnamed_addr constant [6 x i8] c\"hello\\00\", align 1\n\
-             @str.1 = private unnamed_addr constant [6 x i8] c\"hello\\00\", align 1\n\
              @str_fmt = private unnamed_addr constant [4 x i8] c\"%s\\0A\\00\", align 1\n\n\
              define i32 @main() {\n\
              entry:\n\
