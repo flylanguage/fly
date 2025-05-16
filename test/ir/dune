@@ -1,31 +1,36 @@
 (test
-  (name test_ir)
-  (libraries fly_lib ounit2))
+ (name test_ir)
+ (libraries fly_lib ounit2))
 
 (test
-  (name test_cond)
-  (libraries fly_lib ounit2))
+ (name test_cond)
+ (libraries fly_lib ounit2))
 
 (test
-  (name test_vars)
-  (libraries fly_lib ounit2))
+ (name test_vars)
+ (libraries fly_lib ounit2))
 
 (test
-  (name test_string)
-  (libraries fly_lib ounit2))
+ (name test_string)
+ (libraries fly_lib ounit2))
 
 (test
-  (name test_prelude)
-  (libraries fly_lib ounit2))
+ (name test_prelude)
+ (libraries fly_lib ounit2))
 
 (test
-  (name test_udt)
-  (libraries fly_lib ounit2 str))
+ (name test_udt)
+ (libraries fly_lib ounit2))
 
 (test
-  (name test_enums)
-  (libraries fly_lib ounit2))
+ (name test_enums)
+ (libraries fly_lib ounit2 str))
 
 (test
   (name test_for)
   (libraries fly_lib ounit2))
+
+(test
+ (name test_list)
+ (libraries fly_lib ounit2))
+

@@ -38,7 +38,7 @@ and l_float = L.float_type context
 
 let l_str = L.pointer_type l_char
 
-let ltype_of_typ = function
+let rec ltype_of_typ = function
   | RInt -> l_int
   | RBool -> l_bool
   | RFloat -> l_float
@@ -46,6 +46,7 @@ let ltype_of_typ = function
   | RUnit -> l_unit
   | RString -> l_str
   | REnumType _ -> l_int
+  | RList typ -> L.pointer_type (ltype_of_typ typ)
   | RUserType name ->
     (try Hashtbl.find udt_structs name with
      | Not_found -> raise (Failure ("Unknown user type: " ^ name)))
@@ -58,9 +59,6 @@ let str_format_str builder = L.build_global_stringptr "%s\n" "str_fmt" builder
 let float_format_str builder = L.build_global_stringptr "%f\n" "float_fmt" builder
 
 (* Creates a binding to the llvm libc "printf" function *)
-(* let l_printf : L.lltype = L.var_arg_function_type l_int [| l_str |] *)
-(* let print_func the_module : L.llvalue = L.declare_function "printf" l_printf the_module *)
-
 let l_printf : L.lltype = L.var_arg_function_type l_int [| l_str |]
 let print_func the_module : L.llvalue = L.declare_function "printf" l_printf the_module
 
@@ -320,6 +318,19 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
     let field_ptr = L.build_struct_gep struct_ptr idx (id ^ "_" ^ field) builder in
     let field_val = L.build_load field_ptr (field ^ "_val") builder in
     field_val
+  | SList list ->
+    let typ = fst (List.hd list) in
+    let lval = L.const_int l_int (List.length list) in
+    let llist = L.build_array_alloca (ltype_of_typ typ) lval "list" builder in
+    List.iteri
+      (fun idx item ->
+         let litem = build_expr item vars var_types the_module builder in
+         let lidx =
+           L.build_in_bounds_gep llist [| L.const_int l_int idx |] "index" builder
+         in
+         ignore (L.build_store litem lidx builder))
+      list;
+    llist
   | SStringLit s -> L.build_global_stringptr s "str" builder
   | e ->
     raise (Failure (Printf.sprintf "expr not implemented: %s" (Utils.string_of_sexpr e)))
