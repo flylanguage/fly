@@ -298,8 +298,6 @@ let add_global_val typ var (vars : variable StringMap.t) expr the_module =
       (* Create fake temporary function to create a builder *)
       let temp_fn_type = L.function_type (L.void_type context) [||] in
       let temp_fn = L.define_function "temp_fn" temp_fn_type the_module in
-
-      (* Create a temporary builder *)
       let builder = L.builder context in
       L.position_at_end (L.entry_block temp_fn) builder;
 
@@ -348,7 +346,7 @@ let translate blocks =
     | [] -> func_blocks
     | SFunctionDefinition (typ, id, formals, body) :: rest ->
         let func_blocks' = declare_function typ id formals body func_blocks in
-        (* for nested functions *)
+        (* nested case *)
         let func_blocks'' = collect_func_decls body func_blocks' in
         collect_func_decls rest func_blocks''
     | SIfEnd (_, blks) :: rest ->
@@ -442,7 +440,6 @@ let translate blocks =
       ignore (build_expr expr vars the_module (Option.get builder) func_blocks);
       vars, curr_func, func_blocks, builder
     | SIfEnd (expr, blks) ->
-      (* expression should be bool *)
       let bool_val = build_expr expr vars the_module (Option.get builder) func_blocks in
 
       (* We require curr_func to be Some - no if-else in global scope *)
@@ -458,7 +455,6 @@ let translate blocks =
       let u_builder = Some (L.builder_at_end context end_bb) in
       vars, curr_func, func_blocks, u_builder
     | SIfNonEnd (expr, blks, else_blk) ->
-      (* expression should be bool *)
       assert_types (fst expr) A.Bool;
 
       let bool_val = build_expr expr vars the_module (Option.get builder) func_blocks in
@@ -469,8 +465,8 @@ let translate blocks =
 
       let end_bb = L.append_block context "if_end" (Option.get curr_func) in
 
-      (* We won't deal with this "if_end" basic block here, 
-         either ElseEnd or ElifEnd will have to process it *)
+      (* skip this "if_end", ElseEnd or ElifEnd will process it *)
+      (* We require curr_func to be Some - no if-else in global scope *)
       let else_bb = L.append_block context "else" (Option.get curr_func) in
       let else_builder = Some (L.builder_at_end context else_bb) in
       ignore (L.build_cond_br bool_val then_bb else_bb (Option.get builder));
@@ -562,7 +558,6 @@ let translate blocks =
       let else_builder = Some (L.builder_at_end context else_bb) in
       ignore (L.build_cond_br bool_val then_bb else_bb (Option.get builder));
 
-      (* We haven't reached the End - let's keep going *)
       let u_builder =
         process_elseifs vars else_blk end_bb curr_func func_blocks else_builder
       in
@@ -584,7 +579,6 @@ let translate blocks =
     aux blocks vars
   in
 
-  (* start by collecting func declarations *)
   let func_blocks = collect_func_decls blocks [] in
   
   (*(* Debug print: print all function names in func_blocks *)
@@ -594,7 +588,6 @@ let translate blocks =
   process_func_blocks func_blocks local_vars;*)
   let vars_with_globals = process_globals blocks local_vars in
   
-  (* process all functions *)
   process_func_blocks func_blocks vars_with_globals;
   the_module
 ;;
