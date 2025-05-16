@@ -500,8 +500,8 @@ and check_block block envs special_blocks func_ret_type =
     ( updated_envs3
     , updated_special_blocks
     , rtyp
-    , SBoundFunctionDefinition
-        (rt, func_name, args, updated_checked_func_body, bound_type) )
+    , SBoundFunctionDefinition (rt, func_name, args, updated_checked_func_body, bound_type)
+    )
   | EnumDeclaration (enum_name, enum_variants) ->
     let new_enum_env = enum_dec_helper enum_name enum_variants envs in
     let updated_envs = { envs with enum_env = new_enum_env } in

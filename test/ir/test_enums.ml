@@ -49,8 +49,8 @@ let tests =
             \  } else { \n\
             \    return 0; \n\
             \  } \n\
-            \  return 0;
-             }"
+            \  return 0;\n\
+            \             }"
           in
           let sast = get_sast fly_code in
           let mdl = Irgen.translate sast in
