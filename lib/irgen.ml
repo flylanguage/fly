@@ -46,6 +46,14 @@ let int_format_str builder = L.build_global_stringptr "%d\n" "int_fmt" builder
 let str_format_str builder = L.build_global_stringptr "%s\n" "str_fmt" builder
 let float_format_str builder = L.build_global_stringptr "%f\n" "float_fmt" builder
 
+let rec extract_id_from_sexpr (sexpr : sexpr) : string =
+  match snd sexpr with
+  | SId id -> id
+  | SUDTAccess (base, _) -> extract_id_from_sexpr base
+  | SIndex (base, _) -> extract_id_from_sexpr base
+  | _ -> raise (Failure "Expected an identifier or access expression")
+;;
+
 (* Creates a binding to the llvm libc "printf" function *)
 let l_printf : L.lltype = L.var_arg_function_type l_int [| l_str |]
 let print_func the_module : L.llvalue = L.declare_function "printf" l_printf the_module
@@ -123,14 +131,14 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
   | SFloatLit f -> L.const_float l_float f
   | SId var ->
     let vbl = lookup vars var in
-    (* strings are pointers, they should not be load-ed like other variables
-       Now, local strings already exist in a variable in the function scope,
-       and build_load is okay here as we're loading from the variable, not
-       the raw pointer.
-       Therefore, we have this special case for Global strings
-    *)
     if vbl.v_scope == Global && vbl.v_type == RString
     then vbl.v_value
+    else if
+      vbl.v_type
+      |> function
+      | RUserType _ -> true
+      | _ -> false
+    then vbl.v_value (* For structs, return the pointer, not a load *)
     else L.build_load vbl.v_value var builder
   | SUnop (e, op) ->
     let llval = build_expr e vars var_types the_module builder in
@@ -189,14 +197,14 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
     then prelude_input func vars var_types the_module builder
     else raise (Failure "function calls not implemented")
   | SEnumAccess (enum_name, variant_name) ->
-    let key = enum_name ^ "::" ^ variant_name in
+    let key = extract_id_from_sexpr enum_name ^ "::" ^ variant_name in
     let vbl =
       try StringMap.find key vars with
       | Not_found ->
         failwith
           (Printf.sprintf
              "IRgen: Enum variant %s::%s not found in vars map during SEnumAccess"
-             enum_name
+             (extract_id_from_sexpr enum_name)
              variant_name)
     in
     if L.type_of vbl.v_value <> L.pointer_type l_int
@@ -294,17 +302,23 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
       fields;
     instance
   | SUDTAccess (id, SUDTVariable field) ->
-    let struct_ptr = lookup_value vars id in
-    let id_typ = lookup_type var_types id in
+    let struct_ptr = build_expr id vars var_types the_module builder in
+    let id_typ = fst id in
     let type_name =
       match id_typ with
       | RUserType n -> n
-      | _ -> raise (Failure ("Expected user type for variable: " ^ id))
+      | _ ->
+        raise (Failure ("Expected user type for variable: " ^ extract_id_from_sexpr id))
     in
+
     let field_indices = Hashtbl.find udt_field_indices type_name in
     let idx = List.assoc field field_indices in
-    let field_ptr = L.build_struct_gep struct_ptr idx (id ^ "_" ^ field) builder in
-    let field_val = L.build_load field_ptr (field ^ "_val") builder in
+    let field_ptr =
+      L.build_struct_gep struct_ptr idx (extract_id_from_sexpr id ^ "_" ^ field) builder
+    in
+    let field_val =
+      L.build_load field_ptr (extract_id_from_sexpr id ^ "_" ^ field ^ "_val") builder
+    in
     field_val
   | SList list ->
     let typ = fst (List.hd list) in
@@ -320,6 +334,15 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
       list;
     llist
   | SStringLit s -> L.build_global_stringptr s "str" builder
+  | SIndex (list_expr, index_expr) ->
+    let list_val = build_expr list_expr vars var_types the_module builder in
+    let index_val = build_expr index_expr vars var_types the_module builder in
+    let elem_ptr = L.build_gep list_val [| index_val |] "elem_ptr" builder in
+    (match fst expr with
+     | RInt | RFloat | RString | RBool | REnumType _ ->
+       L.build_load elem_ptr "elem_val" builder
+     | RUserType _ -> elem_ptr
+     | _ -> failwith "Unsupported list element type for indexing")
   | e ->
     raise (Failure (Printf.sprintf "expr not implemented: %s" (Utils.string_of_sexpr e)))
 
