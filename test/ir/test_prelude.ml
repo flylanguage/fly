@@ -85,7 +85,6 @@ let tests =
           let sast = get_sast "fun main() -> int {print(true); return 0;}" in
           let mdl = Irgen.translate sast in
           let actual = L.string_of_llmodule mdl in
-
           (* Ok this is getting absurd *)
           let expected =
             "; ModuleID = 'Fly'\n\
@@ -149,9 +148,9 @@ let tests =
             \  %str = alloca i8*, align 8\n\
             \  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str, i32 0, i32 \
              0), i8** %str, align 8\n\
-            \  %strlen = alloca i32, align 4\n\
             \  %str1 = load i8*, i8** %str, align 8\n\
             \  %call_strlen = call i32 @strlen(i8* %str1)\n\
+            \  %strlen = alloca i32, align 4\n\
             \  store i32 %call_strlen, i32* %strlen, align 4\n\
              }\n\n\
              declare i32 @strlen(i8*)\n"
@@ -169,19 +168,19 @@ let tests =
              %struct._IO_FILE = type {}\n\n\
              define void @main() {\n\
              entry:\n\
-            \  %str = alloca i8*, align 8\n\
             \  %buffer = alloca [100 x i8], align 1\n\
             \  %buffer_ptr = getelementptr [100 x i8], [100 x i8]* %buffer, i32 0, i32 0\n\
             \  %stdin_val = call %struct._IO_FILE* @get_stdin()\n\
             \  %call_fgets = call i8* @fgets(i8* %buffer_ptr, i32 100, %struct._IO_FILE* \
              %stdin_val)\n\
+            \  %str = alloca i8*, align 8\n\
             \  store i8* %buffer_ptr, i8** %str, align 8\n\
             \  ret void\n\
              }\n\n\
              declare %struct._IO_FILE* @get_stdin()\n\n\
              declare i8* @fgets(i8*, i32, %struct._IO_FILE*)\n"
           in
-          (* _write_to_file actual "actual.out"; *)
+          _write_to_file actual "actual.out";
           assert_equal expected actual ~printer)
        ]
 ;;

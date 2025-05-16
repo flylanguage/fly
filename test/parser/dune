@@ -1,4 +1,8 @@
 (test
+  (name test_fun_args)
+  (libraries fly_lib ounit2)) 
+
+(test
   (name test_and)
   (libraries fly_lib ounit2)) 
 
