@@ -257,9 +257,9 @@ and update_func_body checked_func_body func_name is_unit rtyp envs =
         let enum_variant = List.hd (StringMap.find name envs.enum_env) in
         (match enum_variant with
          | EnumVariantDefault variant_name ->
-           REnumType name, SEnumAccess (name, variant_name)
+           REnumType name, SEnumAccess ((REnumType name, SId name), variant_name)
          | EnumVariantExplicit (variant_name, _) ->
-           REnumType name, SEnumAccess (name, variant_name))
+           REnumType name, SEnumAccess ((REnumType name, SId name), variant_name))
       | Sast.RUserType name ->
         let udt_info = StringMap.find name envs.udt_env in
         let udt_members = udt_info.members in
@@ -289,8 +289,15 @@ and check_expr expr envs special_blocks =
   | StringLit s -> RString, SStringLit s
   | Unit -> RUnit, SUnit
   | Id id_name ->
-    let t = find_var id_name envs.var_env in
-    t, SId id_name
+    if StringMap.mem id_name envs.var_env
+    then (
+      let t = find_var id_name envs.var_env in
+      t, SId id_name)
+    else if StringMap.mem id_name envs.enum_env
+    then REnumType id_name, SId id_name
+    else if StringMap.mem id_name envs.udt_env
+    then RUserType id_name, SId id_name
+    else raise (Failure ("Undeclared variable or type " ^ id_name))
   | Tuple expr_list ->
     let sexpr_list = List.map (fun e -> check_expr e envs special_blocks) expr_list in
     let typs, _ = List.split sexpr_list in
@@ -331,13 +338,14 @@ and check_expr expr envs special_blocks =
     let t = find_func func_name envs.func_env in
     (* t is return type of this function call *)
     t.rtyp, SFunctionCall (func_name, sfunc_args)
-  | UDTAccess (id_name, udt_accessed_member) ->
-    let udt_typ = find_var id_name envs.var_env in
+  | UDTAccess (udt_expr, udt_accessed_member) ->
+    let udt_typ, checked_udt_expr = check_expr udt_expr envs special_blocks in
     let udt_def = find_udt (string_of_resolved_type udt_typ) envs.udt_env in
     (match udt_accessed_member with
      | UDTVariable udt_var ->
        (match List.assoc_opt udt_var udt_def.members with
-        | Some accessed_type -> accessed_type, SUDTAccess (id_name, SUDTVariable udt_var)
+        | Some accessed_type ->
+          accessed_type, SUDTAccess ((udt_typ, checked_udt_expr), SUDTVariable udt_var)
         | None ->
           raise (Failure (udt_var ^ "is not in " ^ string_of_resolved_type udt_typ)))
      | UDTFunction udt_func ->
@@ -350,7 +358,10 @@ and check_expr expr envs special_blocks =
           in
           let arg_types, _ = List.split sexpr_list in
           if arg_types = def_arg_types
-          then func_sig.rtyp, SUDTAccess (id_name, SUDTFunction (fst udt_func, sexpr_list))
+          then
+            ( func_sig.rtyp
+            , SUDTAccess
+                ((udt_typ, checked_udt_expr), SUDTFunction (fst udt_func, sexpr_list)) )
           else raise (Failure "Incorrect types passed to this method")
         | None ->
           raise
@@ -369,7 +380,15 @@ and check_expr expr envs special_blocks =
        then func_sig.rtyp, SUDTStaticAccess (udt_name, (func_name, sexpr_list))
        else raise (Failure "Incorrect types passed to this method")
      | None -> raise (Failure (func_name ^ "is not a method bound to " ^ udt_name)))
-  | EnumAccess (enum_name, variant) ->
+  | EnumAccess (enum_expr, variant) ->
+    let t_enum, checked_enum_expr = check_expr enum_expr envs special_blocks in
+    let enum_name =
+      match enum_expr with
+      | Id name -> name
+      | _ ->
+        Printf.eprintf "EnumAccess base: %s\n" (Utils.string_of_expr enum_expr);
+        failwith "EnumAccess base must be an identifier"
+    in
     let enum_variants =
       try StringMap.find enum_name envs.enum_env with
       | Not_found -> raise (Failure ("Undefined enum " ^ enum_name))
@@ -383,7 +402,7 @@ and check_expr expr envs special_blocks =
     in
     if not variant_exists
     then raise (Failure ("Undefined variant " ^ variant ^ " in enum " ^ enum_name))
-    else REnumType enum_name, SEnumAccess (enum_name, variant)
+    else REnumType enum_name, SEnumAccess ((t_enum, checked_enum_expr), variant)
   | Index (e1, e2) ->
     let t1, e1' = check_expr e1 envs special_blocks in
     let t2, e2' = check_expr e2 envs special_blocks in
