@@ -661,6 +661,5 @@ let translate blocks =
   (* ..and start off with no builder.. *)
   let builder = None in
   process_blocks blocks local_vars var_types curr_func func_blocks builder;
-  print_endline (L.string_of_llmodule the_module);
   the_module
 ;;

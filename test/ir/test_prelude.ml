@@ -152,6 +152,7 @@ let tests =
             \  %call_strlen = call i32 @strlen(i8* %str1)\n\
             \  %strlen = alloca i32, align 4\n\
             \  store i32 %call_strlen, i32* %strlen, align 4\n\
+            \  ret void\n\
              }\n\n\
              declare i32 @strlen(i8*)\n"
           in

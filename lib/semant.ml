@@ -599,11 +599,11 @@ and check_block_list block_list envs special_blocks func_ret_type =
   match block_list with
   | [] -> []
   | curr_block :: rest ->
-    let updated_envs, updated_special_blocks, updated_func_ret_type, sblock =
+    let updated_envs, updated_special_blocks, _, sblock =
       check_block curr_block envs special_blocks func_ret_type
     in
     sblock
-    :: check_block_list rest updated_envs updated_special_blocks updated_func_ret_type
+    :: check_block_list rest updated_envs updated_special_blocks func_ret_type
 ;;
 
 let check block_list =

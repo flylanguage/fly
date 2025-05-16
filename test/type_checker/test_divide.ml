@@ -23,22 +23,21 @@ let tests =
        ; ("float_div_float"
           >:: fun _ ->
           let actual =
-            check_program
-              "fun main() -> float {let a := 5.0;\nlet b := 1.0;\nreturn a/b;}"
+            check_program "fun main() -> float {let a := 5.0;\nlet b := 1.0;\nreturn a/b;}"
           in
           let expected = "" in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("int_div_float"
           >:: fun _ ->
           let actual =
-            check_program "fun main() -> int {let a := 5;\nlet b := 1.0;\na/b;}"
+            check_program "fun main() -> int {let a := 5;\nlet b := 1.0;\nreturn a/b;}"
           in
           let expected = "Expression: 'a / b' LHS: int, RHS: float" in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
        ; ("float_div_int"
           >:: fun _ ->
           let actual =
-            check_program "fun main() -> float {let a := 5.0;\nlet b := 1;\na/b;}"
+            check_program "fun main() -> float {let a := 5.0;\nlet b := 1;\nreturn a/b;}"
           in
           let expected = "Expression: 'a / b' LHS: float, RHS: int" in
           assert_equal expected actual ~printer:(fun s -> "\"" ^ s ^ "\""))
