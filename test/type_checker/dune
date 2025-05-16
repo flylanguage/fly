@@ -13,3 +13,7 @@
  (test
   (name test_return)
   (libraries fly_lib ounit2))
+ 
+(test
+ (name test_function)
+ (libraries fly_lib ounit2))
