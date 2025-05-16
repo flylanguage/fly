@@ -4,7 +4,7 @@ open Ast
 %}
 
 %token SEMI COLON DCOLON DOT COMMA LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET
-%token PLUS MINUS DIVIDE MODULO TIMES INCR DECR EXPONENT
+%token PLUS MINUS DIVIDE MODULO TIMES INCR DECR POW
 %token EQUAL WALRUS PLUS_ASSIGN MINUS_ASSIGN MULT_ASSIGN DIV_ASSIGN
 %token BEQ NEQ LT LEQ GT GEQ AND OR NOT
 
@@ -86,7 +86,7 @@ expr:
   | expr TIMES expr                     { Binop($1, Mult, $3) }
   | expr DIVIDE expr                    { Binop($1, Div, $3) }
   | expr MODULO expr                    { Binop($1, Mod, $3) }
-  | expr EXPONENT expr                  { Binop($1, Exp, $3) }
+  | expr POW expr                       { Binop($1, Pow, $3) }
   | expr OR expr                        { Binop($1, Or, $3) }
   | expr AND expr                       { Binop($1, And, $3) }
   | expr BEQ expr                       { Binop($1, Equal, $3) }

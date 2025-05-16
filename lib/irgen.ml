@@ -293,65 +293,105 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
     let se1 = build_expr e1 vars var_types the_module builder in
     let se2 = build_expr e2 vars var_types the_module builder in
     let lval =
-      match typ with
-      | RInt ->
+      match typ, op with
+      | RInt, A.Pow ->
+        (* se1 = base, se2 = exponent *)
+        let parent_func = L.block_parent (L.insertion_block builder) in
+
+        let result = L.build_alloca l_int "pow_result" builder in
+        ignore (L.build_store (L.const_int l_int 1) result builder);
+
+        let i = L.build_alloca l_int "pow_i" builder in
+        ignore (L.build_store (L.const_int l_int 0) i builder);
+
+        let loop_bb = L.append_block context "pow_loop" parent_func in
+        let after_bb = L.append_block context "pow_after" parent_func in
+
+        ignore (L.build_br loop_bb builder);
+
+        (* Loop condition *)
+        L.position_at_end loop_bb builder;
+        let i_val = L.build_load i "i_val" builder in
+        let cond = L.build_icmp L.Icmp.Slt i_val se2 "pow_cond" builder in
+        let body_bb = L.append_block context "pow_body" parent_func in
+        ignore (L.build_cond_br cond body_bb after_bb builder);
+
+        (* Loop body: result *= base; i++ *)
+        L.position_at_end body_bb builder;
+        let res_val = L.build_load result "res_val" builder in
+        let new_res = L.build_mul res_val se1 "new_res" builder in
+        ignore (L.build_store new_res result builder);
+        let i_next = L.build_add i_val (L.const_int l_int 1) "i_next" builder in
+        ignore (L.build_store i_next i builder);
+        ignore (L.build_br loop_bb builder);
+
+        (* After loop *)
+        L.position_at_end after_bb builder;
+        L.build_load result "pow_result" builder
+      | RInt, _ ->
+        let op_fn =
+          match op with
+          | A.Add -> L.build_add se1 se2 "tmp_int" builder
+          | A.Sub -> L.build_sub se1 se2 "tmp_int" builder
+          | A.Mult -> L.build_mul se1 se2 "tmp_int" builder
+          | A.Div -> L.build_sdiv se1 se2 "tmp_int" builder
+          | A.Mod -> L.build_srem se1 se2 "tmp_int" builder
+          | A.Equal -> L.build_icmp L.Icmp.Eq se1 se2 "tmp_bool" builder
+          | A.Neq -> L.build_icmp L.Icmp.Ne se1 se2 "tmp_bool" builder
+          | A.Less -> L.build_icmp L.Icmp.Slt se1 se2 "tmp_bool" builder
+          | A.Leq -> L.build_icmp L.Icmp.Sle se1 se2 "tmp_bool" builder
+          | A.Greater -> L.build_icmp L.Icmp.Sgt se1 se2 "tmp_bool" builder
+          | A.Geq -> L.build_icmp L.Icmp.Sge se1 se2 "tmp_bool" builder
+          | _ ->
+            failwith
+              (Printf.sprintf
+                 "Integer binary operator %s not yet implemented"
+                 (Utils.string_of_op op))
+        in
+        op_fn
+      | RFloat, _ ->
+        let op_fn =
+          match op with
+          | A.Add -> L.build_fadd se1 se2 "tmp_float" builder
+          | A.Sub -> L.build_fsub se1 se2 "tmp_float" builder
+          | A.Mult -> L.build_fmul se1 se2 "tmp_float" builder
+          | A.Div -> L.build_fdiv se1 se2 "tmp_float" builder
+          | A.Mod -> L.build_frem se1 se2 "tmp_float" builder
+          | A.Equal -> L.build_fcmp L.Fcmp.Oeq se1 se2 "tmp_bool" builder
+          | A.Neq -> L.build_fcmp L.Fcmp.One se1 se2 "tmp_bool" builder
+          | A.Less -> L.build_fcmp L.Fcmp.Olt se1 se2 "tmp_bool" builder
+          | A.Leq -> L.build_fcmp L.Fcmp.Ole se1 se2 "tmp_bool" builder
+          | A.Greater -> L.build_fcmp L.Fcmp.Ogt se1 se2 "tmp_bool" builder
+          | A.Geq -> L.build_fcmp L.Fcmp.Oge se1 se2 "tmp_bool" builder
+          | _ ->
+            failwith
+              (Printf.sprintf
+                 "Float binary operator %s not yet implemented"
+                 (Utils.string_of_op op))
+        in
+        op_fn
+      | RBool, _ ->
         (match op with
-         | A.Add -> L.build_add
-         | A.Sub -> L.build_sub
-         | A.Mult -> L.build_mul
-         | A.Div -> L.build_sdiv
-         | A.Mod -> L.build_srem
-         | A.Equal -> L.build_icmp L.Icmp.Eq
-         | A.Neq -> L.build_icmp L.Icmp.Ne
-         | A.Less -> L.build_icmp L.Icmp.Slt
-         | A.Leq -> L.build_icmp L.Icmp.Sle
-         | A.Greater -> L.build_icmp L.Icmp.Sgt
-         | A.Geq -> L.build_icmp L.Icmp.Sge
-         | _ ->
-           failwith
-             (Printf.sprintf
-                "Integer binary operator %s not yet implemented"
-                (Utils.string_of_op op)))
-      | RFloat ->
-        (match op with
-         | A.Add -> L.build_fadd
-         | A.Sub -> L.build_fsub
-         | A.Mult -> L.build_fmul
-         | A.Div -> L.build_fdiv
-         | A.Mod -> L.build_frem
-         | A.Equal -> L.build_fcmp L.Fcmp.Oeq
-         | A.Neq -> L.build_fcmp L.Fcmp.One
-         | A.Less -> L.build_fcmp L.Fcmp.Olt
-         | A.Leq -> L.build_fcmp L.Fcmp.Ole
-         | A.Greater -> L.build_fcmp L.Fcmp.Ogt
-         | A.Geq -> L.build_fcmp L.Fcmp.Oge
-         | _ ->
-           failwith
-             (Printf.sprintf
-                "Float binary operator %s not yet implemented"
-                (Utils.string_of_op op)))
-      | RBool ->
-        (match op with
-         | A.And -> L.build_and
-         | A.Or -> L.build_or
-         | A.Equal -> L.build_icmp L.Icmp.Eq
-         | A.Neq -> L.build_icmp L.Icmp.Ne
+         | A.And -> L.build_and se1 se2 "tmp_bool" builder
+         | A.Or -> L.build_or se1 se2 "tmp_bool" builder
+         | A.Equal -> L.build_icmp L.Icmp.Eq se1 se2 "tmp_bool" builder
+         | A.Neq -> L.build_icmp L.Icmp.Ne se1 se2 "tmp_bool" builder
          | _ ->
            failwith
              (Printf.sprintf
                 "Boolean binary operator %s not yet implemented"
                 (Utils.string_of_op op)))
-      | REnumType _ ->
+      | REnumType _, _ ->
         (match op with
-         | A.Equal -> L.build_icmp L.Icmp.Eq
-         | A.Neq -> L.build_icmp L.Icmp.Ne
+         | A.Equal -> L.build_icmp L.Icmp.Eq se1 se2 "tmp_enum" builder
+         | A.Neq -> L.build_icmp L.Icmp.Ne se1 se2 "tmp_enum" builder
          | _ ->
            failwith
              (Printf.sprintf
                 "Internal Compiler Error: Operator %s on EnumType %s reached IRgen."
                 (Utils.string_of_op op)
                 (Utils.string_of_resolved_type typ)))
-      | RString -> failwith "GOT A STRING\n"
+      | RString, _ -> failwith "GOT A STRING\n"
       | _ ->
         failwith
           (Printf.sprintf
@@ -359,7 +399,7 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
              (Utils.string_of_op op)
              (Utils.string_of_resolved_type typ))
     in
-    lval se1 se2 ("tmp_" ^ Utils.string_of_resolved_type typ) builder
+    lval
   | SUDTInstance (typename, fields) ->
     let struct_type = Hashtbl.find udt_structs typename in
     let field_indices = Hashtbl.find udt_field_indices typename in
