@@ -154,6 +154,7 @@ and get_binop_return_type expr t1 binop t2 =
     (match t1, t2 with
      | RInt, RInt -> RInt
      | RFloat, RFloat -> RFloat
+     | RString, RString -> RString
      | _, _ -> raise (Failure (format_binop_error expr t1 t2)))
   | Equal | Neq ->
     (match t1, t2 with
