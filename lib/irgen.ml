@@ -60,7 +60,7 @@ let lookup_value (vars : variable StringMap.t) var =
     raise (Failure (Printf.sprintf "var lookup error: failed to find variable %s\n" var))
 ;;
 
-let rec build_expr expr (vars : variable StringMap.t) the_module builder =
+let rec build_expr expr (vars : variable StringMap.t) the_module builder func_blocks =
   let sx = snd expr in
   match sx with
   | SLiteral l -> L.const_int l_int l
@@ -78,7 +78,7 @@ let rec build_expr expr (vars : variable StringMap.t) the_module builder =
     then vbl.v_value
     else L.build_load vbl.v_value var builder
   | SUnop (e, op) ->
-    let llval = build_expr e vars the_module builder in
+    let llval = build_expr e vars the_module builder func_blocks in
     let typ = fst e in
     (match op with
      | A.Not ->
@@ -117,12 +117,23 @@ let rec build_expr expr (vars : variable StringMap.t) the_module builder =
      | A.Postincr | A.Postdecr -> ll_original_val
      | A.Preincr | A.Predecr -> ll_new_val
      | _ -> failwith "Could apply incr/decr to variable")
-  | SFunctionCall func ->
-    let func_name = fst func in
-
-    if func_name = print_func_name
-    then print func vars the_module builder
-    else raise (Failure "function calls not implemented")
+  | SFunctionCall (func_name, params) -> 
+    if func_name = print_func_name then
+      print (func_name, params) vars the_module builder
+    else
+      (* print_endline "HELLO"; *)
+      (*List.iter (fun (f, _, _) -> print_endline (L.value_name f)) func_blocks;*)
+      let (fdef, _, _) = List.find (fun (f, _, _) -> L.value_name f = func_name) func_blocks in
+      let llargs = List.map (fun param -> build_expr param vars the_module builder func_blocks) params in
+      let result = if L.type_of fdef = l_unit then "" else func_name ^ "_result" in
+      L.build_call fdef (Array.of_list llargs) result builder
+  (*| SFunctionCall (func_name, args) ->
+    (* let (fdef, fast) = StringMap.find *)
+    let func_ll = StringMap.find (string_of_svar func_name) func_map in
+    let llargs = List.rev (List.map (build_expr var_map func_map builder) (List.rev args))
+    in
+    let result = string_of_svar func_name ^ "_result" in
+    L.build_call func_ll (Array.of_list llargs) result builder*)
   | SEnumAccess (enum_name, variant_name) ->
     let key = enum_name ^ "::" ^ variant_name in
     if not (StringMap.mem key vars)
@@ -133,8 +144,8 @@ let rec build_expr expr (vars : variable StringMap.t) the_module builder =
     else lookup_value vars key
   | SBinop (e1, op, e2) ->
     let typ = fst e1 in
-    let se1 = build_expr e1 vars the_module builder in
-    let se2 = build_expr e2 vars the_module builder in
+    let se1 = build_expr e1 vars the_module builder func_blocks in
+    let se2 = build_expr e2 vars the_module builder func_blocks in
     let lval =
       match typ with
       | A.Int ->
@@ -205,7 +216,7 @@ and print (func : sfunc) vars the_module builder =
   then failwith "Incorrect number of args to print: expected 1"
   else (
     let func_arg = List.hd (snd func) in
-    let lexpr = build_expr func_arg vars the_module builder in
+    let lexpr = build_expr func_arg vars the_module builder [] in
     let arr =
       match fst func_arg with
       | A.Int -> [| int_format_str builder; lexpr |]
@@ -266,7 +277,7 @@ let add_local_val typ var vars (expr : A.typ * Sast.sx) the_module builder =
   assert_types expr_type typ;
 
   let local_var_allocation : L.llvalue = L.build_alloca (ltype_of_typ typ) var builder in
-  let ll_initializer_value : L.llvalue = build_expr expr vars the_module builder in
+  let ll_initializer_value : L.llvalue = build_expr expr vars the_module builder [] in
 
   ignore (L.build_store ll_initializer_value local_var_allocation builder);
 
@@ -331,18 +342,82 @@ let translate blocks =
     (lfunc, formals, body) :: func_blocks
   in
 
-  (* Receives all func blocks after all functions have been declared and fills each func blocks' body *)
+  (* before build_call, collect all function declarations *)
+  let rec collect_func_decls blocks func_blocks =
+    match blocks with
+    | [] -> func_blocks
+    | SFunctionDefinition (typ, id, formals, body) :: rest ->
+        let func_blocks' = declare_function typ id formals body func_blocks in
+        (* for nested functions *)
+        let func_blocks'' = collect_func_decls body func_blocks' in
+        collect_func_decls rest func_blocks''
+    | SIfEnd (_, blks) :: rest ->
+        let func_blocks' = collect_func_decls blks func_blocks in
+        collect_func_decls rest func_blocks'
+    | SIfNonEnd (_, blks, else_blk) :: rest ->
+        let func_blocks' = collect_func_decls blks func_blocks in
+        let func_blocks'' = collect_func_decls [else_blk] func_blocks' in
+        collect_func_decls rest func_blocks''
+    | _ :: rest -> collect_func_decls rest func_blocks
+  in
+
   let rec process_func_blocks func_blocks vars =
     match func_blocks with
     | [] -> ()
-    | _blk :: rst ->
-      process_func_block _blk vars;
-      process_func_blocks rst vars
-  and process_func_block (func_block : L.llvalue * A.formal list * sblock list) vars =
-    let lfunc, _, blocks = func_block in
-    let curr_func = Some lfunc in
+    | (lfunc, formals, blocks) :: rest ->
+        let builder = L.builder_at_end context (L.entry_block lfunc) in
+        let vars_with_formals = 
+          List.fold_left2
+            (fun acc (name, typ) param ->
+              let alloca = L.build_alloca (ltype_of_typ typ) name builder in
+              ignore (L.build_store param alloca builder);
+              StringMap.add name 
+                { v_value = alloca; v_type = typ; v_scope = Local }
+                acc)
+            vars
+            formals
+            (Array.to_list (L.params lfunc))
+        in
+        
+        (* function body *)
+        ignore (process_blocks blocks vars_with_formals (Some lfunc) func_blocks (Some builder));
+        
+        (* add return if it isn't there *)
+        (match L.block_terminator (L.insertion_block builder) with
+         | Some _ -> ()
+         | None ->
+             if L.return_type (L.type_of lfunc) = l_unit
+             then ignore (L.build_ret_void builder));
+        
+        (* Process remaining functions *)
+        process_func_blocks rest vars
+
+(*  and process_func_block (func_block : L.llvalue * A.formal list * sblock list) vars func_blocks =
+    let (lfunc, formals, blocks) = func_block in
     let builder = L.builder_at_end context (L.entry_block lfunc) in
-    process_blocks blocks vars curr_func [] (Some builder)
+    let vars_with_formals = 
+      List.fold_left2
+        (fun acc (name, typ) param ->
+          let alloca = L.build_alloca (ltype_of_typ typ) name builder in
+          ignore (L.build_store param alloca builder);
+          StringMap.add name 
+            { v_value = alloca; v_type = typ; v_scope = Local }
+            acc)
+        vars
+        formals
+        (Array.to_list (L.params lfunc))
+    in
+    process_blocks blocks vars_with_formals (Some lfunc) func_blocks (Some builder)
+*)
+  and process_blocks blocks vars (curr_func : L.llvalue option) func_blocks builder =
+    match blocks with
+    | [] -> ()
+    | block :: rest ->
+      let updated_vars, updated_curr_func, u_func_blocks, u_builder =
+        process_block block vars curr_func func_blocks builder
+      in
+      process_blocks rest updated_vars updated_curr_func u_func_blocks u_builder
+
   and process_block block vars (curr_func : L.llvalue option) func_blocks builder =
     match block with
     | SDeclTyped (id, typ, expr) ->
@@ -353,22 +428,22 @@ let translate blocks =
         , func_blocks
         , builder )
       else add_global_val typ id vars expr the_module, curr_func, func_blocks, builder
-    | SFunctionDefinition (typ, id, formals, body) ->
-      let u_func_blocks = declare_function typ id formals body func_blocks in
-      vars, curr_func, u_func_blocks, builder
+    | SFunctionDefinition (_, _, _, _) ->
+      (* handled by collect_func_decls already *)
+      vars, curr_func, func_blocks, builder
     | SReturnUnit ->
       ignore (L.build_ret_void (Option.get builder));
       vars, curr_func, func_blocks, builder
     | SReturnVal expr ->
-      let ret = build_expr expr vars the_module (Option.get builder) in
+      let ret = build_expr expr vars the_module (Option.get builder) func_blocks in
       ignore (L.build_ret ret (Option.get builder));
       vars, curr_func, func_blocks, builder
     | SExpr expr ->
-      ignore (build_expr expr vars the_module (Option.get builder));
+      ignore (build_expr expr vars the_module (Option.get builder) func_blocks);
       vars, curr_func, func_blocks, builder
     | SIfEnd (expr, blks) ->
       (* expression should be bool *)
-      let bool_val = build_expr expr vars the_module (Option.get builder) in
+      let bool_val = build_expr expr vars the_module (Option.get builder) func_blocks in
 
       (* We require curr_func to be Some - no if-else in global scope *)
       let then_bb = L.append_block context "then" (Option.get curr_func) in
@@ -386,7 +461,7 @@ let translate blocks =
       (* expression should be bool *)
       assert_types (fst expr) A.Bool;
 
-      let bool_val = build_expr expr vars the_module (Option.get builder) in
+      let bool_val = build_expr expr vars the_module (Option.get builder) func_blocks in
 
       let then_bb = L.append_block context "then" (Option.get curr_func) in
       let then_builder = Some (L.builder_at_end context then_bb) in
@@ -438,15 +513,15 @@ let translate blocks =
       raise
         (Failure
            (Printf.sprintf "expression not implemented: %s" (Utils.string_of_sblock b)))
-  and process_blocks blocks vars (curr_func : L.llvalue option) func_blocks builder =
+  (*  and process_blocks blocks vars (curr_func : L.llvalue option) func_blocks builder =
     match blocks with
     (* We've declared all objects, lets fill in all function bodies *)
-    | [] -> process_func_blocks func_blocks vars
+    | [] -> ()
     | block :: rest ->
       let updated_vars, updated_curr_func, u_func_blocks, u_builder =
         process_block block vars curr_func func_blocks builder
       in
-      process_blocks rest updated_vars updated_curr_func u_func_blocks u_builder
+      process_blocks rest updated_vars updated_curr_func u_func_blocks u_builder*)
   and process_elseifs vars block end_bb curr_func func_blocks builder =
     match block with
     | SElseEnd blks ->
@@ -458,7 +533,7 @@ let translate blocks =
     | SElifEnd (expr, blks) ->
       assert_types (fst expr) A.Bool;
 
-      let bool_val = build_expr expr vars the_module (Option.get builder) in
+      let bool_val = build_expr expr vars the_module (Option.get builder) func_blocks in
 
       let then_bb = L.append_block context "then" (Option.get curr_func) in
       let then_builder = Some (L.builder_at_end context then_bb) in
@@ -474,7 +549,7 @@ let translate blocks =
     | SElifNonEnd (expr, blks, else_blk) ->
       assert_types (fst expr) A.Bool;
 
-      let bool_val = build_expr expr vars the_module (Option.get builder) in
+      let bool_val = build_expr expr vars the_module (Option.get builder) func_blocks in
 
       let then_bb = L.append_block context "then" (Option.get curr_func) in
       let then_builder = Some (L.builder_at_end context then_bb) in
@@ -496,12 +571,30 @@ let translate blocks =
     | _ -> raise (Failure "Only SElseEnd, SElifEnd and SElifNonEnd can follow SIfNonEnd")
   in
 
-  (* we start off in no function.. *)
-  let curr_func = None in
-  (* ..and have come across no functions.. *)
-  let func_blocks = [] in
+  (* process global variables first *)
+  let process_globals blocks vars =
+    let rec aux blocks vars =
+      match blocks with
+      | [] -> vars
+      | SDeclTyped (id, typ, expr) :: rest ->
+          let updated_vars = add_global_val typ id vars expr the_module in
+          aux rest updated_vars
+      | _ :: rest -> aux rest vars
+    in
+    aux blocks vars
+  in
+
+  (* start by collecting func declarations *)
+  let func_blocks = collect_func_decls blocks [] in
+  
+  (*(* Debug print: print all function names in func_blocks *)
+  List.iter (fun (f, _, _) -> print_endline (L.value_name f)) func_blocks;
   (* ..and start off with no builder.. *)
   let builder = None in
-  process_blocks blocks local_vars curr_func func_blocks builder;
+  process_func_blocks func_blocks local_vars;*)
+  let vars_with_globals = process_globals blocks local_vars in
+  
+  (* process all functions *)
+  process_func_blocks func_blocks vars_with_globals;
   the_module
 ;;

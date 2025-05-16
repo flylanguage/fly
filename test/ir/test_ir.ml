@@ -81,6 +81,8 @@ let tests =
              source_filename = \"Fly\"\n\n\
              define i32 @function(i32 %0) {\n\
              entry:\n\
+             \  %num = alloca i32, align 4\n\
+             \  store i32 %0, i32* %num, align 4\n\
              }\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
@@ -97,9 +99,13 @@ let tests =
              source_filename = \"Fly\"\n\n\
              define i32 @function(i32 %0) {\n\
              entry:\n\
+             \  %num = alloca i32, align 4\n\
+             \  store i32 %0, i32* %num, align 4\n\
              }\n\n\
              define float @function2(float %0) {\n\
              entry:\n\
+             \  %num2 = alloca float, align 4\n\
+             \  store float %0, float* %num2, align 4\n\
              }\n"
           in
           assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
@@ -113,6 +119,8 @@ let tests =
              source_filename = \"Fly\"\n\n\
              define i32 @function(i32 %0) {\n\
              entry:\n\
+            \  %num = alloca i32, align 4\n\
+            \  store i32 %0, i32* %num, align 4\n\
             \  %b = alloca i32, align 4\n\
             \  store i32 5, i32* %b, align 4\n\
              }\n"
@@ -128,6 +136,8 @@ let tests =
              source_filename = \"Fly\"\n\n\
              define i32 @function(i32 %0) {\n\
              entry:\n\
+             \  %num = alloca i32, align 4\n\
+             \  store i32 %0, i32* %num, align 4\n\
              }\n\n\
              define void @nested() {\n\
              entry:\n\
@@ -244,7 +254,55 @@ let tests =
           in
           (* _write_to_file actual "test.out"; *)
           assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
+       ; ("process_function_call"
+          >:: fun _ ->
+          let sast = get_sast "fun foo() -> int {return 10;} fun main() -> int {return foo();}" in
+          let mdl = Irgen.translate sast in
+          let actual = L.string_of_llmodule mdl in
+          let expected =
+            "; ModuleID = 'Fly'\n\
+            source_filename = \"Fly\"\n\n\
+            define i32 @foo() {\n\
+            entry:\n\
+            \  ret i32 10\n\
+            }\n\n\
+            define i32 @main() {\n\
+            entry:\n\
+            \  %foo_result = call i32 @foo()\n\
+            \  ret i32 %foo_result\n\
+            }\n"
+          in
+          assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))        
          (* TODO: THIS FAILS - we have to get back the outer function builder when leaving nested() *)
+         ; ("process_nested_functions_with_locals"
+            >:: fun _ ->
+            let sast =
+            get_sast
+               "fun function(num : int) -> int {\n\
+               \    let a := 5;\n\
+               \    fun nested() -> () {}\n\
+               \    let b := 1;\n\
+                  }\n"
+            in
+            let mdl = Irgen.translate sast in
+            let actual = L.string_of_llmodule mdl in
+            let expected =
+            "; ModuleID = 'Fly'\n\
+               source_filename = \"Fly\"\n\n\
+               define i32 @function(i32 %0) {\n\
+               entry:\n\
+               \  %num = alloca i32, align 4\n\
+               \  store i32 %0, i32* %num, align 4\n\
+               \  %a = alloca i32, align 4\n\
+               \  store i32 5, i32* %a, align 4\n\
+               \  %b = alloca i32, align 4\n\
+               \  store i32 1, i32* %b, align 4\n\
+               }\n\n\
+               define void @nested() {\n\
+               entry:\n\
+               }\n"
+            in
+            assert_equal expected actual ~printer:(fun s -> "\n---\n" ^ s ^ "\n---\n"))
          (* ; ("process_nested_functions_with_locals" *)
          (*    >:: fun _ -> *)
          (*    let sast = *)
