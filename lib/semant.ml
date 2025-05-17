@@ -367,7 +367,7 @@ and check_expr expr envs special_blocks =
         | None ->
           raise
             (Failure
-               (fst udt_func ^ "is not a method bound to "
+               (fst udt_func ^ " is not a method bound to "
                 ^ string_of_resolved_type udt_typ))))
   | UDTStaticAccess (udt_name, (func_name, args)) ->
     let udt_typ = find_udt udt_name envs.udt_env in
@@ -540,7 +540,7 @@ and check_block block envs special_blocks func_ret_type =
     let updated_checked_func_body =
       update_func_body checked_func_body func_name is_unit rtyp envs
     in
-    ( updated_envs2
+    ( updated_envs1
     , updated_special_blocks
     , rtyp
     , SFunctionDefinition (rt, func_name, args, updated_checked_func_body) )
@@ -553,26 +553,26 @@ and check_block block envs special_blocks func_ret_type =
     let new_func_env = func_def_helper func_name args rt envs in
     (* add function name to environment *)
     let updated_envs1 = { envs with func_env = new_func_env } in
+    let new_udt_env =
+          add_bound_func_def func_name (string_of_resolved_type bound_type) envs
+    in
+    let updated_envs2 = { updated_envs1 with udt_env = new_udt_env } in
     let new_var_env = add_func_args args updated_envs1 in
     (* add function arguments to environment *)
-    let updated_envs2 = { updated_envs1 with var_env = new_var_env } in
+    let updated_envs3 = { updated_envs2 with var_env = new_var_env } in
     let updated_special_blocks =
       if rtyp = Unit
       then StringSet.add "ReturnUnit" special_blocks
       else StringSet.add "ReturnVal" special_blocks
     in
     let checked_func_body =
-      check_block_list func_body updated_envs2 updated_special_blocks rtyp
+      check_block_list func_body updated_envs3 updated_special_blocks rtyp
     in
     let is_unit = rtyp = Unit in
     let updated_checked_func_body =
       update_func_body checked_func_body func_name is_unit rtyp envs
     in
-    let new_udt_env =
-      add_bound_func_def func_name (string_of_resolved_type bound_type) envs
-    in
-    let updated_envs3 = { updated_envs2 with udt_env = new_udt_env } in
-    ( updated_envs3
+    ( updated_envs2
     , updated_special_blocks
     , rtyp
     , SBoundFunctionDefinition (rt, func_name, args, updated_checked_func_body, bound_type)
