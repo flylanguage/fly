@@ -5,9 +5,10 @@ module L = Llvm
 let get_sast input =
   try
     let lexbuf = Lexing.from_string input in
-    let ast = Parser.program_rule Scanner.tokenize lexbuf in
-    let sast = Semant.check ast.body in
-    sast
+    let ast = Fly_lib.Parser.program_rule Fly_lib.Scanner.tokenize lexbuf in
+    let sast = Fly_lib.Semant.check ast.body in
+    let unbound_sast = Fly_lib.Unbind.unbind sast in
+    unbound_sast
   with
   | err ->
     failwith

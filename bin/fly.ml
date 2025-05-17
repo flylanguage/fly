@@ -53,7 +53,8 @@ let read_and_print_ir channel =
   let lexbuf = Lexing.from_channel channel in
   let ast = Fly_lib.Parser.program_rule Fly_lib.Scanner.tokenize lexbuf in
   let sast = Semant.check ast.body in
-  let md = Irgen.translate sast in
+  let unbound_sast = Unbind.unbind sast in
+  let md = Irgen.translate unbound_sast in
   print_endline (L.string_of_llmodule md)
 ;;
 
@@ -61,7 +62,8 @@ let read_and_compile channel =
   let lexbuf = Lexing.from_channel channel in
   let ast = Fly_lib.Parser.program_rule Fly_lib.Scanner.tokenize lexbuf in
   let sast = Semant.check ast.body in
-  let md = Irgen.translate sast in
+  let unbound_sast = Unbind.unbind sast in
+  let md = Irgen.translate unbound_sast in
 
   (* Inititalize triples that llvm needs to create a target *)
   Llvm_all_backends.initialize ();
