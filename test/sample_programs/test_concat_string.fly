@@ -1,0 +1,5 @@
+fun main() -> () {
+	let a := "hello";
+	let b := " World";
+	print(a + b);
+}

@@ -31,6 +31,10 @@ and l_unit = L.void_type context
 and l_float = L.float_type context
 
 let l_str = L.pointer_type l_char
+let l_strcat : L.lltype = L.function_type l_str [| l_str; l_str |]
+let strcat_func the_module = L.declare_function "strcat" l_strcat the_module
+let l_strcmp : L.lltype = L.function_type l_int [| l_str; l_str |]
+let strcmp_func the_module = L.declare_function "strcmp" l_strcmp the_module
 
 let rec ltype_of_typ = function
   | RInt -> l_int
@@ -292,74 +296,117 @@ let rec build_expr expr (vars : variable StringMap.t) var_types the_module build
     let typ = fst e1 in
     let se1 = build_expr e1 vars var_types the_module builder in
     let se2 = build_expr e2 vars var_types the_module builder in
-    let lval =
-      match typ with
-      | RInt ->
-        (match op with
-         | A.Add -> L.build_add
-         | A.Sub -> L.build_sub
-         | A.Mult -> L.build_mul
-         | A.Div -> L.build_sdiv
-         | A.Mod -> L.build_srem
-         | A.Equal -> L.build_icmp L.Icmp.Eq
-         | A.Neq -> L.build_icmp L.Icmp.Ne
-         | A.Less -> L.build_icmp L.Icmp.Slt
-         | A.Leq -> L.build_icmp L.Icmp.Sle
-         | A.Greater -> L.build_icmp L.Icmp.Sgt
-         | A.Geq -> L.build_icmp L.Icmp.Sge
+    (match typ with
+     | RString ->
+       (match op with
+        | A.Add ->
+          let len1 = L.build_call (strlen_func the_module) [| se1 |] "strlen1" builder in
+          let len2 = L.build_call (strlen_func the_module) [| se2 |] "strlen2" builder in
+          let total_len = L.build_add len1 len2 "total_len" builder in
+          let total_len_plus_one =
+            L.build_add total_len (L.const_int l_int 1) "total_len_plus_one" builder
+          in
+          let new_str =
+            L.build_array_alloca l_char total_len_plus_one "new_str" builder
+          in
+          let new_str_ptr = L.build_pointercast new_str l_str "new_str_ptr" builder in
+          ignore (L.build_store (L.const_int l_char 0) new_str_ptr builder);
+          ignore
+            (L.build_call
+               (strcat_func the_module)
+               [| new_str_ptr; se1 |]
+               "strcat1"
+               builder);
+          ignore
+            (L.build_call
+               (strcat_func the_module)
+               [| new_str_ptr; se2 |]
+               "strcat2"
+               builder);
+          new_str_ptr
+        | A.Equal ->
+          let cmp =
+            L.build_call (strcmp_func the_module) [| se1; se2 |] "strcmp" builder
+          in
+          L.build_icmp L.Icmp.Eq cmp (L.const_int l_int 0) "eq" builder
+        | A.Neq ->
+          let cmp =
+            L.build_call (strcmp_func the_module) [| se1; se2 |] "strcmp" builder
+          in
+          L.build_icmp L.Icmp.Ne cmp (L.const_int l_int 0) "neq" builder
+        | _ ->
+          failwith
+            (Printf.sprintf
+               "String binary operator %s not yet implemented"
+               (Utils.string_of_op op)))
+     | _ ->
+       let lval =
+         match typ with
+         | RInt ->
+           (match op with
+            | A.Add -> L.build_add
+            | A.Sub -> L.build_sub
+            | A.Mult -> L.build_mul
+            | A.Div -> L.build_sdiv
+            | A.Mod -> L.build_srem
+            | A.Equal -> L.build_icmp L.Icmp.Eq
+            | A.Neq -> L.build_icmp L.Icmp.Ne
+            | A.Less -> L.build_icmp L.Icmp.Slt
+            | A.Leq -> L.build_icmp L.Icmp.Sle
+            | A.Greater -> L.build_icmp L.Icmp.Sgt
+            | A.Geq -> L.build_icmp L.Icmp.Sge
+            | _ ->
+              failwith
+                (Printf.sprintf
+                   "Integer binary operator %s not yet implemented"
+                   (Utils.string_of_op op)))
+         | RFloat ->
+           (match op with
+            | A.Add -> L.build_fadd
+            | A.Sub -> L.build_fsub
+            | A.Mult -> L.build_fmul
+            | A.Div -> L.build_fdiv
+            | A.Mod -> L.build_frem
+            | A.Equal -> L.build_fcmp L.Fcmp.Oeq
+            | A.Neq -> L.build_fcmp L.Fcmp.One
+            | A.Less -> L.build_fcmp L.Fcmp.Olt
+            | A.Leq -> L.build_fcmp L.Fcmp.Ole
+            | A.Greater -> L.build_fcmp L.Fcmp.Ogt
+            | A.Geq -> L.build_fcmp L.Fcmp.Oge
+            | _ ->
+              failwith
+                (Printf.sprintf
+                   "Float binary operator %s not yet implemented"
+                   (Utils.string_of_op op)))
+         | RBool ->
+           (match op with
+            | A.And -> L.build_and
+            | A.Or -> L.build_or
+            | A.Equal -> L.build_icmp L.Icmp.Eq
+            | A.Neq -> L.build_icmp L.Icmp.Ne
+            | _ ->
+              failwith
+                (Printf.sprintf
+                   "Boolean binary operator %s not yet implemented"
+                   (Utils.string_of_op op)))
+         | REnumType _ ->
+           (match op with
+            | A.Equal -> L.build_icmp L.Icmp.Eq
+            | A.Neq -> L.build_icmp L.Icmp.Ne
+            | _ ->
+              failwith
+                (Printf.sprintf
+                   "Internal Compiler Error: Operator %s on EnumType %s reached IRgen."
+                   (Utils.string_of_op op)
+                   (Utils.string_of_resolved_type typ)))
          | _ ->
            failwith
              (Printf.sprintf
-                "Integer binary operator %s not yet implemented"
-                (Utils.string_of_op op)))
-      | RFloat ->
-        (match op with
-         | A.Add -> L.build_fadd
-         | A.Sub -> L.build_fsub
-         | A.Mult -> L.build_fmul
-         | A.Div -> L.build_fdiv
-         | A.Mod -> L.build_frem
-         | A.Equal -> L.build_fcmp L.Fcmp.Oeq
-         | A.Neq -> L.build_fcmp L.Fcmp.One
-         | A.Less -> L.build_fcmp L.Fcmp.Olt
-         | A.Leq -> L.build_fcmp L.Fcmp.Ole
-         | A.Greater -> L.build_fcmp L.Fcmp.Ogt
-         | A.Geq -> L.build_fcmp L.Fcmp.Oge
-         | _ ->
-           failwith
-             (Printf.sprintf
-                "Float binary operator %s not yet implemented"
-                (Utils.string_of_op op)))
-      | RBool ->
-        (match op with
-         | A.And -> L.build_and
-         | A.Or -> L.build_or
-         | A.Equal -> L.build_icmp L.Icmp.Eq
-         | A.Neq -> L.build_icmp L.Icmp.Ne
-         | _ ->
-           failwith
-             (Printf.sprintf
-                "Boolean binary operator %s not yet implemented"
-                (Utils.string_of_op op)))
-      | REnumType _ ->
-        (match op with
-         | A.Equal -> L.build_icmp L.Icmp.Eq
-         | A.Neq -> L.build_icmp L.Icmp.Ne
-         | _ ->
-           failwith
-             (Printf.sprintf
-                "Internal Compiler Error: Operator %s on EnumType %s reached IRgen."
+                "Binary operator %s not yet implemented for type %s"
                 (Utils.string_of_op op)
-                (Utils.string_of_resolved_type typ)))
-      | RString -> failwith "GOT A STRING\n"
-      | _ ->
-        failwith
-          (Printf.sprintf
-             "Binary operator %s not yet implemented for type %s"
-             (Utils.string_of_op op)
-             (Utils.string_of_resolved_type typ))
-    in
-    lval se1 se2 ("tmp_" ^ Utils.string_of_resolved_type typ) builder
+                (Utils.string_of_resolved_type typ))
+       in
+       lval se1 se2 "tmp" builder)
   | SUDTInstance (typename, fields) ->
     let struct_type = Hashtbl.find udt_structs typename in
     let field_indices = Hashtbl.find udt_field_indices typename in
