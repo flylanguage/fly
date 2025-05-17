@@ -554,7 +554,7 @@ and check_block block envs special_blocks func_ret_type =
     (* add function name to environment *)
     let updated_envs1 = { envs with func_env = new_func_env } in
     let new_udt_env =
-          add_bound_func_def func_name (string_of_resolved_type bound_type) envs
+      add_bound_func_def func_name (string_of_resolved_type bound_type) envs
     in
     let updated_envs2 = { updated_envs1 with udt_env = new_udt_env } in
     let new_var_env = add_func_args args updated_envs1 in
