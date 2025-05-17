@@ -12,12 +12,14 @@ fun binsearch(lis : list<int>, target : int, lo : int, hi : int) -> int {
 }
 
 fun main() {
-	let lis := [1, 2, 4, 10, 20, 30, 100, 200];
+	let my_lis := [1, 2, 4, 10, 20, 30, 100, 200];
 
-	let lo := 0;
-	let hi := len(lis) - 1;
+	let low := 0;
+	let high := 8 - 1;
 
-	let idx := binsearch(lis, 10, lo, hi);
+	let TARGET := 10;
+
+	let idx := binsearch(my_lis, TARGET, low, high);
 
 	print("idx:");
 	print(idx);
