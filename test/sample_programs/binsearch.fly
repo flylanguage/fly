@@ -1,0 +1,24 @@
+fun binsearch(lis : list<int>, target : int, lo : int, hi : int) -> int {
+	let mid := (lo + hi) / 2;
+
+	if (lo > hi) { return -1;}
+	if (lis[mid] == target) { return mid;}
+
+	if (lis[mid] < target) {
+		return binsearch(lis, target, mid + 1, hi);
+	}
+
+	return binsearch(lis, target, lo, mid - 1);
+}
+
+fun main() {
+	let lis := [1, 2, 4, 10, 20, 30, 100, 200];
+
+	let lo := 0;
+	let hi := len(lis) - 1;
+
+	let idx := binsearch(lis, 10, lo, hi);
+
+	print("idx:");
+	print(idx);
+}

@@ -1,0 +1,12 @@
+fun sum(n : int, curr : int) -> int {
+	if (n == 0) { return curr;}
+
+	return sum(n - 1, curr + n);
+}
+
+fun main() -> int {
+	let result := sum(10, 0);
+	print(result);
+
+	return 0;
+}

@@ -1,0 +1,26 @@
+fun helper(m : int, curr : int) {
+	if (curr > m) {return;}
+
+	if (curr % 15 == 0) {
+		print("fizzbuzz");
+	} else if (curr % 3 == 0) {
+		print("fizz");
+	}
+	else if (curr % 5 == 0) {
+		print("buzz");
+	} 
+	else {
+		print(curr);
+	}
+
+	helper(m, curr + 1);
+}
+
+fun fizzbuzz(max : int) {
+	helper(max, 1);
+}
+
+
+fun main() {
+	fizzbuzz(30);
+}

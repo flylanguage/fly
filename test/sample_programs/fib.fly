@@ -1,0 +1,12 @@
+fun fib(num : int) -> int {
+	if (num < 2) {return 1;}
+
+	return fib(num - 1) + fib(num - 2);
+}
+
+fun main() -> int {
+	let fib_res := fib(5);
+	print(fib_res);
+
+	return 0;
+}
