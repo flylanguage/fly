@@ -5,9 +5,7 @@ fun fib(num : int) -> int {
 }
 
 fun main() -> int {
-	let lis := [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-
-	for val := lis {
+	for val := [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] {
 		let fib_res := fib(val);
 		print(fib_res);
 	}

@@ -17,7 +17,7 @@ fun main() {
 	let low := 0;
 	let high := 8 - 1;
 
-	let TARGET := 10;
+	let TARGET := 50;
 
 	let idx := binsearch(my_lis, TARGET, low, high);
 
