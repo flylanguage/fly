@@ -1,0 +1,30 @@
+
+enum Color {
+    Red,
+    Green,
+    Blue
+}
+
+type Person {
+    name: string,
+    age: int,
+    color: Color
+}
+
+bind get_color<Person>(self) -> Color{
+    return self.color;
+}
+
+fun main() -> int {
+    let person : Person = Person { name: "Bob", age: 30, color: Color::Red };
+
+    let c1 := person.get_color();
+
+    if (c1 == Color::Red) {
+        print("Color is red");
+    } else {
+        print("Color is not red");
+    }
+
+    return 0;
+}
