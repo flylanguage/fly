@@ -826,6 +826,108 @@ and process_block
         ll_function
     in
     vars, var_types, curr_func, func_blocks, final_builder_opt
+  | SFor (loop_var_name, iterable_sexpr, body_sblocks) ->
+    let current_builder = Option.get builder in
+    let ll_function = Option.get curr_func in
+    let ll_list_data_ptr =
+      build_expr iterable_sexpr vars var_types the_module current_builder
+    in
+    let iterable_sast_typ, iterable_sx_detail = iterable_sexpr in
+    let list_llvm_length, element_sast_typ =
+      match iterable_sast_typ with
+      | RList inner_typ ->
+        (match iterable_sx_detail with
+         | SList concrete_list_items ->
+           L.const_int l_int (List.length concrete_list_items), inner_typ
+         | SId list_var_name ->
+           Printf.eprintf
+             "Warning: SFor over SId list '%s'. Placeholder length used. Implement \
+              proper length tracking.\n"
+             list_var_name;
+           L.const_int l_int 3, inner_typ (* !!! PLACEHOLDER / TODO !!! *)
+         | _ ->
+           failwith
+             ("SFor: Iterable RList expression not SList or SId: "
+              ^ Utils.string_of_sexpr iterable_sx_detail))
+      | _ ->
+        failwith
+          ("SFor: Iterable expression not RList. Got: "
+           ^ Utils.string_of_resolved_type iterable_sast_typ)
+    in
+    let llvm_element_typ = ltype_of_typ element_sast_typ in
+
+    let pred_bb = L.insertion_block current_builder in
+    let cond_bb = L.append_block context (loop_var_name ^ ".cond") ll_function in
+    let body_bb = L.append_block context (loop_var_name ^ ".body") ll_function in
+    let inc_bb = L.append_block context (loop_var_name ^ ".inc") ll_function in
+    let exit_bb = L.append_block context (loop_var_name ^ ".exit") ll_function in
+
+    ignore (L.build_br cond_bb current_builder);
+
+    L.position_at_end cond_bb current_builder;
+    let index_phi =
+      L.build_phi
+        [ L.const_int l_int 0, pred_bb ]
+        (loop_var_name ^ "_idx")
+        current_builder
+    in
+    let loop_condition =
+      L.build_icmp L.Icmp.Slt index_phi list_llvm_length "loopcond" current_builder
+    in
+    ignore (L.build_cond_br loop_condition body_bb exit_bb current_builder);
+
+    L.position_at_end body_bb current_builder;
+    let element_ptr =
+      L.build_in_bounds_gep
+        ll_list_data_ptr
+        [| index_phi |]
+        (loop_var_name ^ "_elem_ptr")
+        current_builder
+    in
+    let element_val =
+      L.build_load element_ptr (loop_var_name ^ "_elem_val") current_builder
+    in
+    let loop_var_alloca = L.build_alloca llvm_element_typ loop_var_name current_builder in
+    ignore (L.build_store element_val loop_var_alloca current_builder);
+
+    let body_vars =
+      StringMap.add
+        loop_var_name
+        { v_value = loop_var_alloca; v_scope = Local; v_type = element_sast_typ }
+        vars
+    in
+    let body_var_types = StringMap.add loop_var_name element_sast_typ var_types in
+
+    let ( _processed_body_vars
+        , _processed_body_var_types
+        , _processed_curr_func
+        , _processed_func_blocks
+        , builder_after_body_opt )
+      =
+      process_blocks
+        body_sblocks
+        body_vars
+        body_var_types
+        curr_func
+        func_blocks
+        (Some current_builder)
+        the_module
+    in
+    if Option.is_some builder_after_body_opt
+    then add_terminal (Option.get builder_after_body_opt) (L.build_br inc_bb);
+
+    L.position_at_end inc_bb current_builder;
+    let next_index_val =
+      L.build_add
+        index_phi
+        (L.const_int l_int 1)
+        (loop_var_name ^ "_next_idx")
+        current_builder
+    in
+    ignore (L.build_br cond_bb current_builder);
+    L.add_incoming (next_index_val, inc_bb) index_phi;
+    L.position_at_end exit_bb current_builder;
+    vars, var_types, curr_func, func_blocks, Some current_builder
   | SUDTDef _ | SEnumDeclaration _ | SFunctionDefinition _ ->
     failwith
       (Printf.sprintf
